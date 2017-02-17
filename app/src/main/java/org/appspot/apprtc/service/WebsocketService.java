@@ -6,6 +6,8 @@ import android.os.Binder;
 import android.os.IBinder;
 
 import org.appspot.apprtc.AppRTCClient;
+import org.appspot.apprtc.SerializableIceCandidate;
+import org.appspot.apprtc.User;
 import org.appspot.apprtc.WebSocketRTCClient;
 import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
@@ -22,14 +24,17 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_ADDRESS = "org.appspot.apprtc.service.EXTRA_ADDRESS";
     public static final String ACTION_CONNECTED_TO_ROOM = "org.appspot.apprtc.service.ACTION_CONNECTED_TO_ROOM";
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.service.EXTRA_ROOM_NAME";
+    public static final String ACTION_USER_ENTERED = "org.appspot.apprtc.service.ACTION_USER_ENTERED";
+    public static final String ACTION_USER_LEFT = "org.appspot.apprtc.service.ACTION_USER_LEFT";
+    public static final String ACTION_REMOTE_ICE_CANDIDATE = "org.appspot.apprtc.service.ACTION_REMOTE_ICE_CANDIDATE";
 
     // Binder given to clients
     private final IBinder mBinder = new WebsocketBinder();
 
     private AppRTCClient appRtcClient;
-    private HashMap<String, ArrayList<String>> mUsers = new HashMap<String, ArrayList<String>>();
+    private HashMap<String, ArrayList<User>> mUsers = new HashMap<String, ArrayList<User>>();
 
-    public ArrayList<String> getUsersInRoom(String roomName) {
+    public ArrayList<User> getUsersInRoom(String roomName) {
         return mUsers.get(roomName);
     }
 
@@ -57,13 +62,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendLocalIceCandidate(IceCandidate iceCandidate) {
+    public void sendLocalIceCandidate(SerializableIceCandidate iceCandidate) {
         if (appRtcClient != null) {
             appRtcClient.sendLocalIceCandidate(iceCandidate);
         }
     }
 
-    public void sendLocalIceCandidateRemovals(IceCandidate[] iceCandidates) {
+    public void sendLocalIceCandidateRemovals(SerializableIceCandidate[] iceCandidates) {
         if (appRtcClient != null) {
             appRtcClient.sendLocalIceCandidateRemovals(iceCandidates);
         }
@@ -84,8 +89,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onUserEnteredRoom(String user, String room) {
-        ArrayList<String> users = mUsers.get(room);
+    public void onUserEnteredRoom(User user, String room) {
+        ArrayList<User> users = mUsers.get(room);
+
+        if (users == null) {
+            users = new ArrayList<User>();
+        }
+
         if (!users.contains(user)) {
             users.add(user);
             mUsers.put(room, users);
@@ -93,8 +103,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onUserLeftRoom(String user, String room) {
-        ArrayList<String> users = mUsers.get(room);
+    public void onUserLeftRoom(User user, String room) {
+        ArrayList<User> users = mUsers.get(room);
         if (users.contains(user)) {
             users.remove(user);
             mUsers.put(room, users);
@@ -107,12 +117,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteIceCandidate(IceCandidate candidate) {
-
+    public void onRemoteIceCandidate(SerializableIceCandidate candidate) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
+        broadcastIntent.putExtra("candidate", candidate);
+        sendBroadcast(broadcastIntent);
     }
 
     @Override
-    public void onRemoteIceCandidatesRemoved(IceCandidate[] candidates) {
+    public void onRemoteIceCandidatesRemoved(SerializableIceCandidate[] candidates) {
 
     }
 

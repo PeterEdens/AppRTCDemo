@@ -13,6 +13,7 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -192,6 +193,17 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     @Override
     public void onServiceDisconnected(ComponentName arg0) {
       mWebsocketServiceBound = false;
+    }
+  };
+
+  private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+
+      if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
+       onIceCandidate((SerializableIceCandidate)intent.getSerializableExtra("candidate"));
+
+      }
     }
   };
 
@@ -799,7 +811,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onRemoteIceCandidate(final IceCandidate candidate) {
+  public void onRemoteIceCandidate(final SerializableIceCandidate candidate) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -813,7 +825,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onRemoteIceCandidatesRemoved(final IceCandidate[] candidates) {
+  public void onRemoteIceCandidatesRemoved(final SerializableIceCandidate[] candidates) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -848,12 +860,12 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onUserEnteredRoom(String user, String room) {
-    
+  public void onUserEnteredRoom(User user, String room) {
+
   }
 
   @Override
-  public void onUserLeftRoom(String user, String room) {
+  public void onUserLeftRoom(User user, String room) {
 
   }
 
@@ -884,7 +896,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onIceCandidate(final IceCandidate candidate) {
+  public void onIceCandidate(final SerializableIceCandidate candidate) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -896,7 +908,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onIceCandidatesRemoved(final IceCandidate[] candidates) {
+  public void onIceCandidatesRemoved(final SerializableIceCandidate[] candidates) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {

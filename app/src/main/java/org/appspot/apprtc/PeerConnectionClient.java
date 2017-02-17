@@ -231,12 +231,12 @@ public class PeerConnectionClient {
     /**
      * Callback fired once local Ice candidate is generated.
      */
-    void onIceCandidate(final IceCandidate candidate);
+    void onIceCandidate(final SerializableIceCandidate candidate);
 
     /**
      * Callback fired once local ICE candidates are removed.
      */
-    void onIceCandidatesRemoved(final IceCandidate[] candidates);
+    void onIceCandidatesRemoved(final SerializableIceCandidate[] candidates);
 
     /**
      * Callback fired once connection is established (IceConnectionState is
@@ -1058,7 +1058,7 @@ public class PeerConnectionClient {
       executor.execute(new Runnable() {
         @Override
         public void run() {
-          events.onIceCandidate(candidate);
+          events.onIceCandidate((SerializableIceCandidate) candidate);
         }
       });
     }
@@ -1068,7 +1068,7 @@ public class PeerConnectionClient {
       executor.execute(new Runnable() {
         @Override
         public void run() {
-          events.onIceCandidatesRemoved(candidates);
+          events.onIceCandidatesRemoved((SerializableIceCandidate[]) candidates);
         }
       });
     }

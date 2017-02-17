@@ -183,7 +183,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendLocalIceCandidate(final IceCandidate candidate) {
+  public void sendLocalIceCandidate(final SerializableIceCandidate candidate) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -204,7 +204,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   /** Send removed Ice candidates to the other participant. */
   @Override
-  public void sendLocalIceCandidateRemovals(final IceCandidate[] candidates) {
+  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -259,7 +259,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
         events.onRemoteIceCandidate(toJavaCandidate(json));
       } else if (type.equals("remove-candidates")) {
         JSONArray candidateArray = json.getJSONArray("candidates");
-        IceCandidate[] candidates = new IceCandidate[candidateArray.length()];
+        SerializableIceCandidate[] candidates = new SerializableIceCandidate[candidateArray.length()];
         for (int i = 0; i < candidateArray.length(); ++i) {
           candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i));
         }
@@ -345,8 +345,8 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   // Converts a JSON candidate to a Java object.
-  private static IceCandidate toJavaCandidate(JSONObject json) throws JSONException {
-    return new IceCandidate(
+  private static SerializableIceCandidate toJavaCandidate(JSONObject json) throws JSONException {
+    return new SerializableIceCandidate(
         json.getString("id"), json.getInt("label"), json.getString("candidate"));
   }
 }

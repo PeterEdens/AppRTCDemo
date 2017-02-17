@@ -10,6 +10,7 @@
 
 package org.appspot.apprtc;
 
+import org.appspot.apprtc.service.WebsocketService;
 import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
@@ -56,12 +57,12 @@ public interface AppRTCClient {
   /**
    * Send Ice candidate to the other participant.
    */
-  void sendLocalIceCandidate(final IceCandidate candidate);
+  void sendLocalIceCandidate(final SerializableIceCandidate candidate);
 
   /**
    * Send removed ICE candidates to the other participant.
    */
-  void sendLocalIceCandidateRemovals(final IceCandidate[] candidates);
+  void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates);
 
   /**
    * Disconnect from room.
@@ -113,12 +114,12 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote Ice candidate is received.
      */
-    void onRemoteIceCandidate(final IceCandidate candidate);
+    void onRemoteIceCandidate(final SerializableIceCandidate candidate);
 
     /**
      * Callback fired once remote Ice candidate removals are received.
      */
-    void onRemoteIceCandidatesRemoved(final IceCandidate[] candidates);
+    void onRemoteIceCandidatesRemoved(final SerializableIceCandidate[] candidates);
 
     /**
      * Callback fired once channel is closed.
@@ -135,8 +136,8 @@ public interface AppRTCClient {
      */
     void onChannelError(final String description);
 
-    void onUserEnteredRoom(String user, String room);
+    void onUserEnteredRoom(User user, String room);
 
-    void onUserLeftRoom(String user, String room);
+    void onUserLeftRoom(User user, String room);
   }
 }

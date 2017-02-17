@@ -13,6 +13,7 @@ package org.appspot.apprtc;
 import org.appspot.apprtc.RoomParametersFetcher.RoomParametersFetcherEvents;
 import org.appspot.apprtc.WebSocketChannelClient.WebSocketChannelEvents;
 import org.appspot.apprtc.WebSocketChannelClient.WebSocketConnectionState;
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
@@ -25,6 +26,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
+
+import java.util.Iterator;
 
 /**
  * Negotiates signaling for chatting with https://appr.tc "rooms".
@@ -241,7 +244,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send Ice candidate to the other participant.
   @Override
-  public void sendLocalIceCandidate(final IceCandidate candidate) {
+  public void sendLocalIceCandidate(final SerializableIceCandidate candidate) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -270,14 +273,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send removed Ice candidates to the other participant.
   @Override
-  public void sendLocalIceCandidateRemovals(final IceCandidate[] candidates) {
+  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates) {
     handler.post(new Runnable() {
       @Override
       public void run() {
         JSONObject json = new JSONObject();
         jsonPut(json, "type", "remove-candidates");
         JSONArray jsonArray = new JSONArray();
-        for (final IceCandidate candidate : candidates) {
+        for (final SerializableIceCandidate candidate : candidates) {
           jsonArray.put(toJsonCandidate(candidate));
         }
         jsonPut(json, "candidates", jsonArray);
@@ -346,22 +349,48 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           String roomText = json.getString("Room");
           JSONObject roomJson = new JSONObject(roomText);
           String roomType = roomJson.optString("Type");
+          String roomName = "";
           if (roomType.equals("Room")) {
-            String roomName = roomJson.optString("Name");
+            roomName = roomJson.optString("Name");
             String credentials = roomJson.optString("Credentials");
             events.onConnectedToRoom(roomName);
           }
+
+          String usersText = json.getString("Users");
+          JSONArray array = new JSONArray(usersText);
+          for (int i = 0; i < array.length(); i++) {
+            JSONObject usersJson = array.getJSONObject(i);
+            String usersType = usersJson.optString("Type");
+            if (usersType.equals("Online")) {
+              Iterator<String> it = usersJson.keys();
+              String Id = usersJson.optString("Id");
+              String userId = usersJson.optString("Userid");
+              String status = usersJson.optString("Status");
+              JSONObject statusJson = new JSONObject(status);
+              String buddyPicture = statusJson.optString("buddyPicture");
+              String displayName = statusJson.optString("displayName");
+
+              if (!mId.equals(Id)) {
+                User user = new User(userId, buddyPicture, displayName, Id);
+                events.onUserEnteredRoom(user, roomName);
+              }
+            }
+          }
+
+
         }
-        else if (type.equals("candidate")) {
-          events.onRemoteIceCandidate(toJavaCandidate(json));
+        else if (type.equals("Candidate")) {
+          String candidateTxt = json.optString("Candidate");
+          JSONObject candidateJson = new JSONObject(candidateTxt);
+          events.onRemoteIceCandidate(toJavaCandidate(candidateJson));
         } else if (type.equals("remove-candidates")) {
           JSONArray candidateArray = json.getJSONArray("candidates");
-          IceCandidate[] candidates = new IceCandidate[candidateArray.length()];
+          SerializableIceCandidate[] candidates = new SerializableIceCandidate[candidateArray.length()];
           for (int i = 0; i < candidateArray.length(); ++i) {
             candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i));
           }
           events.onRemoteIceCandidatesRemoved(candidates);
-        } else if (type.equals("answer")) {
+        } else if (type.equals("Answer")) {
           if (initiator) {
             SessionDescription sdp = new SessionDescription(
                 SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
@@ -369,15 +398,17 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           } else {
             reportError("Received answer for call initiator: " + msg);
           }
-        } else if (type.equals("offer")) {
+        } else if (type.equals("Offer")) {
           if (!initiator) {
+            String offerTxt = json.optString("Offer");
+            JSONObject offerJson = new JSONObject(offerTxt);
             SessionDescription sdp = new SessionDescription(
-                SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
+                SessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"));
             events.onRemoteDescription(sdp);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
-        } else if (type.equals("bye")) {
+        } else if (type.equals("Bye")) {
           events.onChannelClose();
         } else {
           reportError("Unexpected WebSocket message: " + msg);
@@ -462,7 +493,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   // Converts a Java candidate to a JSONObject.
-  private JSONObject toJsonCandidate(final IceCandidate candidate) {
+  private JSONObject toJsonCandidate(final SerializableIceCandidate candidate) {
     JSONObject json = new JSONObject();
     jsonPut(json, "label", candidate.sdpMLineIndex);
     jsonPut(json, "id", candidate.sdpMid);
@@ -471,8 +502,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   // Converts a JSON candidate to a Java object.
-  IceCandidate toJavaCandidate(JSONObject json) throws JSONException {
-    return new IceCandidate(
-        json.getString("id"), json.getInt("label"), json.getString("candidate"));
+  SerializableIceCandidate toJavaCandidate(JSONObject json) throws JSONException {
+    return new SerializableIceCandidate(
+        json.getString("sdpMid"), json.getInt("sdpMLineIndex"), json.getString("candidate"));
   }
 }

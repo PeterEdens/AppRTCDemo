@@ -1,4 +1,4 @@
-<LinearLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout  xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
@@ -6,11 +6,29 @@
     <ImageView
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:id="@+id/image_id"/>
+        android:id="@+id/image_id"
+        android:layout_margin="5dp"
+        android:layout_alignParentLeft="true"
+        android:src="@drawable/user_icon"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="User Name"
+        android:layout_margin="5dp"
+        android:layout_toRightOf="@+id/image_id"
+        android:layout_toLeftOf="@+id/call_button"
+        android:layout_alignTop="@+id/image_id"
+        android:layout_alignBottom="@+id/image_id"
         android:id="@+id/text_id"/>
-</LinearLayout>
+
+    <ImageButton
+        android:id="@+id/call_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_margin="5dp"
+        android:src="@drawable/ic_call_black_24dp"
+        android:background="#00000000"/>
+</RelativeLayout>

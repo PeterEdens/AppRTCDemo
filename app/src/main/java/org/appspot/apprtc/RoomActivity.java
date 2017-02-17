@@ -21,12 +21,16 @@ import java.util.ArrayList;
 
 public class RoomActivity extends AppCompatActivity {
     static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
+    static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
+
+    static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
 
     private RecyclerView recyclerView;
     private RecyclerView.Adapter adapter;
     private RecyclerView.LayoutManager layoutManager;
-    private ArrayList<String> userList=new ArrayList();
+    private ArrayList<User> userList=new ArrayList();
     private String mRoomName = "";
+    private String mServerName = "";
     TextView mRoomNameTextView;
 
     WebsocketService mService;
@@ -44,8 +48,10 @@ public class RoomActivity extends AppCompatActivity {
             mService = binder.getService();
             mWebsocketServiceBound = true;
 
-            ArrayList<String> users = mService.getUsersInRoom(mRoomName);
-            userList.addAll(users);
+            ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
+            if (users != null) {
+                userList.addAll(users);
+            }
             adapter.notifyDataSetChanged();
         }
 
@@ -62,8 +68,11 @@ public class RoomActivity extends AppCompatActivity {
             if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
                 //mConnectionTextView.setText(getString(R.string.connected));
             } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
-                //mConnectionTextView.setText(getString(R.string.disconnected));
-            } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
+                finish();
+            } else if (intent.getAction().equals(WebsocketService.ACTION_USER_ENTERED)) {
+
+
+            } else if (intent.getAction().equals(WebsocketService.ACTION_USER_LEFT)) {
 
 
             }
@@ -75,10 +84,20 @@ public class RoomActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
 
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
+        mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
+        mIntentFilter.addAction(WebsocketService.ACTION_USER_ENTERED);
+        mIntentFilter.addAction(WebsocketService.ACTION_USER_LEFT);
+
         Intent intent = getIntent();
 
         if (intent != null && intent.hasExtra(EXTRA_ROOM_NAME)) {
             mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
+        }
+
+        if (intent != null && intent.hasExtra(EXTRA_SERVER_NAME)) {
+            mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
         }
 
         mRoomNameTextView = (TextView) findViewById(R.id.roomName);
@@ -87,7 +106,7 @@ public class RoomActivity extends AppCompatActivity {
         layoutManager=new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
-        adapter=new UsersAdapter(userList,getApplicationContext());
+        adapter=new UsersAdapter(userList,getApplicationContext(), mServerName);
         recyclerView.setAdapter(adapter);
     }
 

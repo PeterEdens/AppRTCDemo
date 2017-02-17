@@ -56,7 +56,8 @@
 
         <service android:name=".service.WebsocketService"></service>
 
-        <activity android:name=".RoomActivity"></activity>
+        <activity android:name=".RoomActivity"
+            android:theme="@style/RoomActivityTheme"></activity>
     </application>
 
 </manifest>

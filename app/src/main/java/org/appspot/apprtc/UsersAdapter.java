@@ -8,14 +8,19 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+
 import java.util.ArrayList;
 
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder> {
 
-    ArrayList<String> planetList;
+    String mServer = "";
+    ArrayList<User> userList;
+    Context mContext;
 
-    public UsersAdapter(ArrayList<String> planetList, Context context) {
-        this.planetList = planetList;
+    public UsersAdapter(ArrayList<User> userList, Context context, String server) {
+        this.userList = userList;
+        mServer = server;
+        mContext = context;
     }
 
     @Override
@@ -27,13 +32,20 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
 
     @Override
     public void onBindViewHolder(UsersAdapter.UsersViewHolder holder, int position) {
-        holder.image.setImageResource(R.drawable.user_icon);
-        holder.text.setText(planetList.get(position).toString());
+        String buddyPic = userList.get(position).buddyPicture;
+        if (buddyPic.length() != 0) {
+            String path = buddyPic.substring(4);
+            String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
+        }
+        else {
+            holder.image.setImageResource(R.drawable.user_icon);
+        }
+        holder.text.setText(userList.get(position).displayName);
     }
 
     @Override
     public int getItemCount() {
-        return planetList.size();
+        return userList.size();
     }
 
     public static class UsersViewHolder extends RecyclerView.ViewHolder{

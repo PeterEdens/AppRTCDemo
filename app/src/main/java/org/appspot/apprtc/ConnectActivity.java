@@ -59,6 +59,7 @@ public class ConnectActivity extends Activity {
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
   private IntentFilter mIntentFilter;
+  String mServerName;
 
   TextView mConnectionTextView;
   private Button connectButton;
@@ -401,6 +402,7 @@ public class ConnectActivity extends Activity {
       boolean useValuesFromIntent, int runTimeMs) {
     Intent intent = new Intent(this, RoomActivity.class);
     intent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomId);
+    intent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
     startActivity(intent);
 
     /*this.commandLineRun = commandLineRun;
@@ -697,6 +699,7 @@ public class ConnectActivity extends Activity {
     @Override
     public void onClick(View view) {
       mConnectionTextView.setText(getString(R.string.connecting));
+      mServerName = roomEditText.getText().toString();
       mService.connectToServer(roomEditText.getText().toString());
     }
   };
