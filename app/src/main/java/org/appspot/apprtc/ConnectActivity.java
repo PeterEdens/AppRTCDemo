@@ -12,11 +12,17 @@ package org.appspot.apprtc;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -29,12 +35,15 @@ import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Random;
+
+import org.appspot.apprtc.service.WebsocketService;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -47,8 +56,12 @@ public class ConnectActivity extends Activity {
   private static final int REMOVE_FAVORITE_INDEX = 0;
   private static boolean commandLineRun = false;
 
-  private ImageButton connectButton;
-  private ImageButton addFavoriteButton;
+  WebsocketService mService;
+  boolean mWebsocketServiceBound = false;
+  private IntentFilter mIntentFilter;
+
+  TextView mConnectionTextView;
+  private Button connectButton;
   private EditText roomEditText;
   private ListView roomListView;
   private SharedPreferences sharedPref;
@@ -88,6 +101,48 @@ public class ConnectActivity extends Activity {
   private String keyprefDataProtocol;
   private String keyprefNegotiated;
   private String keyprefDataId;
+
+  /** Defines callbacks for service binding, passed to bindService() */
+  private ServiceConnection mConnection = new ServiceConnection() {
+
+    @Override
+    public void onServiceConnected(ComponentName className,
+                                   IBinder service) {
+      // We've bound to LocalService, cast the IBinder and get LocalService instance
+      WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
+      mService = binder.getService();
+      mWebsocketServiceBound = true;
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName arg0) {
+      mWebsocketServiceBound = false;
+    }
+  };
+
+  private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+
+      if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
+        mConnectionTextView.setText(getString(R.string.connected));
+      } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
+        mConnectionTextView.setText(getString(R.string.disconnected));
+      } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
+        String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+        if (roomName.length() == 0) {
+          roomName = getString(R.string.default_room);
+        }
+
+        if (!roomList.contains(roomName)) {
+            adapter.add(roomName);
+            adapter.notifyDataSetChanged();
+
+        }
+
+      }
+    }
+  };
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -138,7 +193,6 @@ public class ConnectActivity extends Activity {
       @Override
       public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
         if (i == EditorInfo.IME_ACTION_DONE) {
-          addFavoriteButton.performClick();
           return true;
         }
         return false;
@@ -150,10 +204,15 @@ public class ConnectActivity extends Activity {
     roomListView.setEmptyView(findViewById(android.R.id.empty));
     roomListView.setOnItemClickListener(roomListClickListener);
     registerForContextMenu(roomListView);
-    connectButton = (ImageButton) findViewById(R.id.connect_button);
+    mConnectionTextView = (TextView) findViewById(R.id.connected_state);
+    connectButton = (Button) findViewById(R.id.connect_button);
     connectButton.setOnClickListener(connectListener);
-    addFavoriteButton = (ImageButton) findViewById(R.id.add_favorite_button);
-    addFavoriteButton.setOnClickListener(addFavoriteListener);
+
+
+    mIntentFilter = new IntentFilter();
+    mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
+    mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
+    mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED_TO_ROOM);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
@@ -164,6 +223,27 @@ public class ConnectActivity extends Activity {
           intent.getBooleanExtra(CallActivity.EXTRA_USE_VALUES_FROM_INTENT, false);
       String room = sharedPref.getString(keyprefRoom, "");
       connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
+    }
+  }
+
+  @Override
+  protected void onStart() {
+    super.onStart();
+    // Bind to LocalService
+    Intent intent = new Intent(this, WebsocketService.class);
+    startService(intent);
+    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+    registerReceiver(mReceiver, mIntentFilter);
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    // Unbind from the service
+    if (mWebsocketServiceBound) {
+      unbindService(mConnection);
+      mWebsocketServiceBound = false;
     }
   }
 
@@ -319,7 +399,11 @@ public class ConnectActivity extends Activity {
 
   private void connectToRoom(String roomId, boolean commandLineRun, boolean loopback,
       boolean useValuesFromIntent, int runTimeMs) {
-    this.commandLineRun = commandLineRun;
+    Intent intent = new Intent(this, RoomActivity.class);
+    intent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomId);
+    startActivity(intent);
+
+    /*this.commandLineRun = commandLineRun;
 
     // roomId is random for loopback.
     if (loopback) {
@@ -566,11 +650,11 @@ public class ConnectActivity extends Activity {
       }
 
       startActivityForResult(intent, CONNECTION_REQUEST);
-    }
+    }*/
   }
 
   private boolean validateUrl(String url) {
-    if (URLUtil.isHttpsUrl(url) || URLUtil.isHttpUrl(url)) {
+    if (URLUtil.isHttpsUrl(url) || URLUtil.isHttpUrl(url) || url.startsWith("wss://")) {
       return true;
     }
 
@@ -612,7 +696,8 @@ public class ConnectActivity extends Activity {
   private final OnClickListener connectListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      connectToRoom(roomEditText.getText().toString(), false, false, false, 0);
+      mConnectionTextView.setText(getString(R.string.connecting));
+      mService.connectToServer(roomEditText.getText().toString());
     }
   };
 }

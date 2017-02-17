@@ -55,12 +55,31 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   private String messageUrl;
   private String leaveUrl;
 
+  // Spreedbox
+  String mId;
+  String mSid;
+
   public WebSocketRTCClient(SignalingEvents events) {
     this.events = events;
     roomState = ConnectionState.NEW;
     final HandlerThread handlerThread = new HandlerThread(TAG);
     handlerThread.start();
     handler = new Handler(handlerThread.getLooper());
+  }
+
+  // --------------------------------------------------------------------
+  // AppRTCClient interface implementation.
+  // Asynchronously connect to an AppRTC room URL using supplied connection
+  // parameters, retrieves room parameters and connect to WebSocket server.
+  @Override
+  public void connectToServer(final String address) {
+    this.connectionParameters = connectionParameters;
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        connectToServerInternal(address);
+      }
+    });
   }
 
   // --------------------------------------------------------------------
@@ -89,14 +108,20 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+  // Connects to server - function runs on a local looper thread.
+  private void connectToServerInternal(String address) {
+    wsClient = new WebSocketChannelClient(handler, this);
+
+    wsClient.connect("wss://" + address + "/webrtc/ws", "wss://" + address + "/webrtc/ws");
+  }
+
   // Connects to room - function runs on a local looper thread.
   private void connectToRoomInternal() {
     String connectionUrl = getConnectionUrl(connectionParameters);
     Log.d(TAG, "Connect to room: " + connectionUrl);
     roomState = ConnectionState.NEW;
-    wsClient = new WebSocketChannelClient(handler, this);
 
-    RoomParametersFetcherEvents callbacks = new RoomParametersFetcherEvents() {
+    /*RoomParametersFetcherEvents callbacks = new RoomParametersFetcherEvents() {
       @Override
       public void onSignalingParametersReady(final SignalingParameters params) {
         WebSocketRTCClient.this.handler.post(new Runnable() {
@@ -113,7 +138,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       }
     };
 
-    new RoomParametersFetcher(connectionUrl, null, callbacks).makeRequest();
+    new RoomParametersFetcher(connectionUrl, null, callbacks).makeRequest();*/
   }
 
   // Disconnect from room and send bye messages - runs on a local looper thread.
@@ -131,19 +156,17 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Helper functions to get connection, post message and leave message URLs
   private String getConnectionUrl(RoomConnectionParameters connectionParameters) {
-    return connectionParameters.roomUrl + "/" + ROOM_JOIN + "/" + connectionParameters.roomId;
+    return connectionParameters.roomUrl + "/api/v1/rooms";
   }
 
   private String getMessageUrl(
       RoomConnectionParameters connectionParameters, SignalingParameters signalingParameters) {
-    return connectionParameters.roomUrl + "/" + ROOM_MESSAGE + "/" + connectionParameters.roomId
-        + "/" + signalingParameters.clientId;
+    return "192.168.0.211/webrtc/ws" + "/";
   }
 
   private String getLeaveUrl(
       RoomConnectionParameters connectionParameters, SignalingParameters signalingParameters) {
-    return connectionParameters.roomUrl + "/" + ROOM_LEAVE + "/" + connectionParameters.roomId + "/"
-        + signalingParameters.clientId;
+    return "192.168.0.211/webrtc/ws" + "/";
   }
 
   // Callback issued when room parameters are extracted. Runs on local
@@ -167,7 +190,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     roomState = ConnectionState.CONNECTED;
 
     // Fire connection and signaling parameters events.
-    events.onConnectedToRoom(signalingParameters);
+    events.onConnectedToRoom("");
 
     // Connect and register WebSocket client.
     wsClient.connect(signalingParameters.wssUrl, signalingParameters.wssPostUrl);
@@ -283,17 +306,53 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   @Override
   public void onWebSocketMessage(final String msg) {
     if (wsClient.getState() != WebSocketConnectionState.REGISTERED) {
-      Log.e(TAG, "Got WebSocket message in non registered state.");
+
+      events.onChannelOpen();
+
+      JSONObject json = null;
+      try {
+        json = new JSONObject(msg);
+        String dataText = json.getString("Data");
+        if (dataText.length() != 0) {
+          json = new JSONObject(dataText);
+
+          String typeText = json.getString("Type");
+          if (typeText.equals("Self")) {
+            String id = json.getString("Id");
+            mId = id;
+            String sid = json.getString("Sid");
+            mSid = sid;
+
+            JSONObject hello = new JSONObject("{ Type: \"Hello\", Hello: {\"Version\": \"1.0.0\", \"Ua\": \"Spreedbox Android 1.0\", \"Name\": \"\", \"Type\": \"\" } }");
+            wsClient.send(hello.toString());
+            wsClient.setState(WebSocketConnectionState.REGISTERED);
+          }
+        }
+      } catch (JSONException e) {
+        e.printStackTrace();
+      }
       return;
     }
+
+
     try {
       JSONObject json = new JSONObject(msg);
-      String msgText = json.getString("msg");
+      String msgText = json.getString("Data");
       String errorText = json.optString("error");
       if (msgText.length() > 0) {
         json = new JSONObject(msgText);
-        String type = json.optString("type");
-        if (type.equals("candidate")) {
+        String type = json.optString("Type");
+        if (type.equals("Welcome")) {
+          String roomText = json.getString("Room");
+          JSONObject roomJson = new JSONObject(roomText);
+          String roomType = roomJson.optString("Type");
+          if (roomType.equals("Room")) {
+            String roomName = roomJson.optString("Name");
+            String credentials = roomJson.optString("Credentials");
+            events.onConnectedToRoom(roomName);
+          }
+        }
+        else if (type.equals("candidate")) {
           events.onRemoteIceCandidate(toJavaCandidate(json));
         } else if (type.equals("remove-candidates")) {
           JSONArray candidateArray = json.getJSONArray("candidates");

@@ -90,18 +90,12 @@ public class RoomParametersFetcher {
       SessionDescription offerSdp = null;
       JSONObject roomJson = new JSONObject(response);
 
-      String result = roomJson.getString("result");
-      if (!result.equals("SUCCESS")) {
-        events.onSignalingParametersError("Room response error: " + result);
-        return;
-      }
-      response = roomJson.getString("params");
-      roomJson = new JSONObject(response);
-      String roomId = roomJson.getString("room_id");
-      String clientId = roomJson.getString("client_id");
-      String wssUrl = roomJson.getString("wss_url");
-      String wssPostUrl = roomJson.getString("wss_post_url");
-      boolean initiator = (roomJson.getBoolean("is_initiator"));
+
+      String roomId = roomJson.getString("name");
+      String clientId = roomJson.getString("name");
+      String wssUrl = "wss://192.168.0.211/webrtc/ws";
+      String wssPostUrl = "wss://192.168.0.211/webrtc/ws";
+      boolean initiator = true;
       if (!initiator) {
         iceCandidates = new LinkedList<IceCandidate>();
         String messagesString = roomJson.getString("messages");
@@ -128,8 +122,8 @@ public class RoomParametersFetcher {
       Log.d(TAG, "WSS url: " + wssUrl);
       Log.d(TAG, "WSS POST url: " + wssPostUrl);
 
-      LinkedList<PeerConnection.IceServer> iceServers =
-          iceServersFromPCConfigJSON(roomJson.getString("pc_config"));
+      LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<PeerConnection.IceServer>();
+//          iceServersFromPCConfigJSON(roomJson.getString("pc_config"));
       boolean isTurnPresent = false;
       for (PeerConnection.IceServer server : iceServers) {
         Log.d(TAG, "IceServer: " + server);
@@ -140,8 +134,8 @@ public class RoomParametersFetcher {
       }
       // Request TURN servers.
       if (!isTurnPresent) {
-        LinkedList<PeerConnection.IceServer> turnServers =
-            requestTurnServers(roomJson.getString("ice_server_url"));
+        LinkedList<PeerConnection.IceServer> turnServers = new LinkedList<PeerConnection.IceServer>();
+           // requestTurnServers(roomJson.getString("ice_server_url"));
         for (PeerConnection.IceServer turnServer : turnServers) {
           Log.d(TAG, "TurnServer: " + turnServer);
           iceServers.add(turnServer);
@@ -153,8 +147,6 @@ public class RoomParametersFetcher {
       events.onSignalingParametersReady(params);
     } catch (JSONException e) {
       events.onSignalingParametersError("Room JSON parsing error: " + e.toString());
-    } catch (IOException e) {
-      events.onSignalingParametersError("Room IO error: " + e.toString());
     }
   }
 

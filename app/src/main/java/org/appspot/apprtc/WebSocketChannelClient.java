@@ -13,11 +13,14 @@ package org.appspot.apprtc;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
+import android.net.SSLCertificateSocketFactory;
 import android.os.Handler;
 import android.util.Log;
 
+import de.tavendo.autobahn.WebSocket;
 import de.tavendo.autobahn.WebSocket.WebSocketConnectionObserver;
 import de.tavendo.autobahn.WebSocketConnection;
+import de.tavendo.autobahn.WebSocketConnectionCustom;
 import de.tavendo.autobahn.WebSocketException;
 
 import org.json.JSONException;
@@ -25,7 +28,11 @@ import org.json.JSONObject;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.cert.X509Certificate;
 import java.util.LinkedList;
+
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * WebSocket client implementation.
@@ -40,7 +47,7 @@ public class WebSocketChannelClient {
   private static final int CLOSE_TIMEOUT = 1000;
   private final WebSocketChannelEvents events;
   private final Handler handler;
-  private WebSocketConnection ws;
+  private WebSocketConnectionCustom ws;
   private WebSocketObserver wsObserver;
   private String wsServerUrl;
   private String postServerUrl;
@@ -77,6 +84,10 @@ public class WebSocketChannelClient {
     state = WebSocketConnectionState.NEW;
   }
 
+  public void setState(WebSocketConnectionState s) {
+    this.state = s;
+  }
+
   public WebSocketConnectionState getState() {
     return state;
   }
@@ -92,7 +103,7 @@ public class WebSocketChannelClient {
     closeEvent = false;
 
     Log.d(TAG, "Connecting WebSocket to: " + wsUrl + ". Post URL: " + postUrl);
-    ws = new WebSocketConnection();
+    ws = new WebSocketConnectionCustom();
     wsObserver = new WebSocketObserver();
     try {
       ws.connect(new URI(wsServerUrl), wsObserver);
@@ -135,27 +146,14 @@ public class WebSocketChannelClient {
     switch (state) {
       case NEW:
       case CONNECTED:
-        // Store outgoing messages and send them after websocket client
-        // is registered.
+      case REGISTERED:
         Log.d(TAG, "WS ACC: " + message);
-        wsSendQueue.add(message);
+        ws.sendTextMessage(message);
         return;
       case ERROR:
       case CLOSED:
         Log.e(TAG, "WebSocket send() in error or closed state : " + message);
         return;
-      case REGISTERED:
-        JSONObject json = new JSONObject();
-        try {
-          json.put("cmd", "send");
-          json.put("msg", message);
-          message = json.toString();
-          Log.d(TAG, "C->WSS: " + message);
-          ws.sendTextMessage(message);
-        } catch (JSONException e) {
-          reportError("WebSocket send JSON error: " + e.getMessage());
-        }
-        break;
     }
   }
 
@@ -174,7 +172,7 @@ public class WebSocketChannelClient {
       send("{\"type\": \"bye\"}");
       state = WebSocketConnectionState.CONNECTED;
       // Send http DELETE to http WebSocket server.
-      sendWSSMessage("DELETE", "");
+      //sendWSSMessage("DELETE", "");
     }
     // Close WebSocket in CONNECTED or ERROR states only.
     if (state == WebSocketConnectionState.CONNECTED || state == WebSocketConnectionState.ERROR) {

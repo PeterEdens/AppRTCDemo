@@ -13,15 +13,18 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -40,6 +43,7 @@ import org.appspot.apprtc.AppRTCClient.RoomConnectionParameters;
 import org.appspot.apprtc.AppRTCClient.SignalingParameters;
 import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
+import org.appspot.apprtc.service.WebsocketService;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -135,7 +139,13 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
   private PeerConnectionClient peerConnectionClient = null;
-  private AppRTCClient appRtcClient;
+
+  //private AppRTCClient appRtcClient;
+
+  WebsocketService mService;
+  boolean mWebsocketServiceBound = false;
+
+
   private SignalingParameters signalingParameters;
   private AppRTCAudioManager audioManager = null;
   private EglBase rootEglBase;
@@ -166,6 +176,24 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   private CallFragment callFragment;
   private HudFragment hudFragment;
   private CpuMonitor cpuMonitor;
+
+  /** Defines callbacks for service binding, passed to bindService() */
+  private ServiceConnection mConnection = new ServiceConnection() {
+
+    @Override
+    public void onServiceConnected(ComponentName className,
+                                   IBinder service) {
+      // We've bound to LocalService, cast the IBinder and get LocalService instance
+      WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
+      mService = binder.getService();
+      mWebsocketServiceBound = true;
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName arg0) {
+      mWebsocketServiceBound = false;
+    }
+  };
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -307,12 +335,12 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
     // Create connection client. Use DirectRTCClient if room name is an IP otherwise use the
     // standard WebSocketRTCClient.
-    if (loopback || !DirectRTCClient.IP_PATTERN.matcher(roomId).matches()) {
-      appRtcClient = new WebSocketRTCClient(this);
-    } else {
-      Log.i(TAG, "Using DirectRTCClient because room name looks like an IP.");
-      appRtcClient = new DirectRTCClient(this);
-    }
+    //if (loopback || !DirectRTCClient.IP_PATTERN.matcher(roomId).matches()) {
+   //   appRtcClient = new WebSocketRTCClient(this);
+   // } else {
+   //   Log.i(TAG, "Using DirectRTCClient because room name looks like an IP.");
+   //   appRtcClient = new DirectRTCClient(this);
+   // }
     // Create connection parameters.
     roomConnectionParameters = new RoomConnectionParameters(roomUri.toString(), roomId, loopback);
 
@@ -356,6 +384,24 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           mediaProjectionManager.createScreenCaptureIntent(), CAPTURE_PERMISSION_REQUEST_CODE);
     } else {
       startCall();
+    }
+  }
+
+  @Override
+  protected void onStart() {
+    super.onStart();
+    // Bind to LocalService
+    Intent intent = new Intent(this, WebsocketService.class);
+    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    // Unbind from the service
+    if (mWebsocketServiceBound) {
+      unbindService(mConnection);
+      mWebsocketServiceBound = false;
     }
   }
 
@@ -518,15 +564,12 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   private void startCall() {
-    if (appRtcClient == null) {
-      Log.e(TAG, "AppRTC client is not allocated for a call.");
-      return;
-    }
+
     callStartedTimeMs = System.currentTimeMillis();
 
     // Start room connection.
     logAndToast(getString(R.string.connecting_to, roomConnectionParameters.roomUrl));
-    appRtcClient.connectToRoom(roomConnectionParameters);
+    mService.connectToRoom(roomConnectionParameters);
 
     // Create and audio manager that will take care of audio routing,
     // audio modes, audio device enumeration etc.
@@ -571,10 +614,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   // Disconnect from remote resources, dispose of local resources, and exit.
   private void disconnect() {
     activityRunning = false;
-    if (appRtcClient != null) {
-      appRtcClient.disconnectFromRoom();
-      appRtcClient = null;
-    }
+    mService.disconnectFromRoom();
+
     if (peerConnectionClient != null) {
       peerConnectionClient.close();
       peerConnectionClient = null;
@@ -691,8 +732,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   // -----Implementation of AppRTCClient.AppRTCSignalingEvents ---------------
   // All callbacks are invoked from websocket signaling looper thread and
   // are routed to UI thread.
-  private void onConnectedToRoomInternal(final SignalingParameters params) {
-    final long delta = System.currentTimeMillis() - callStartedTimeMs;
+  private void onConnectedToRoomInternal(final String roomName) {
+   /* final long delta = System.currentTimeMillis() - callStartedTimeMs;
 
     signalingParameters = params;
     logAndToast("Creating peer connection, delay=" + delta + "ms");
@@ -722,15 +763,15 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           peerConnectionClient.addRemoteIceCandidate(iceCandidate);
         }
       }
-    }
+    }*/
   }
 
   @Override
-  public void onConnectedToRoom(final SignalingParameters params) {
+  public void onConnectedToRoom(final String roomName) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        onConnectedToRoomInternal(params);
+        onConnectedToRoomInternal(roomName);
       }
     });
   }
@@ -786,6 +827,11 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
+  public void onChannelOpen() {
+
+  }
+
+  @Override
   public void onChannelClose() {
     runOnUiThread(new Runnable() {
       @Override
@@ -801,6 +847,16 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     reportError(description);
   }
 
+  @Override
+  public void onUserEnteredRoom(String user, String room) {
+    
+  }
+
+  @Override
+  public void onUserLeftRoom(String user, String room) {
+
+  }
+
   // -----Implementation of PeerConnectionClient.PeerConnectionEvents.---------
   // Send local peer connection SDP and ICE candidates to remote party.
   // All callbacks are invoked from peer connection client looper thread and
@@ -811,12 +867,12 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        if (appRtcClient != null) {
+        if (mService != null) {
           logAndToast("Sending " + sdp.type + ", delay=" + delta + "ms");
           if (signalingParameters.initiator) {
-            appRtcClient.sendOfferSdp(sdp);
+            mService.sendOfferSdp(sdp);
           } else {
-            appRtcClient.sendAnswerSdp(sdp);
+            mService.sendAnswerSdp(sdp);
           }
         }
         if (peerConnectionParameters.videoMaxBitrate > 0) {
@@ -832,8 +888,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        if (appRtcClient != null) {
-          appRtcClient.sendLocalIceCandidate(candidate);
+        if (mService != null) {
+          mService.sendLocalIceCandidate(candidate);
         }
       }
     });
@@ -844,8 +900,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        if (appRtcClient != null) {
-          appRtcClient.sendLocalIceCandidateRemovals(candidates);
+        if (mService != null) {
+          mService.sendLocalIceCandidateRemovals(candidates);
         }
       }
     });

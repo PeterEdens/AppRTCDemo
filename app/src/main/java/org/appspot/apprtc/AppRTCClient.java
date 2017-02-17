@@ -34,6 +34,8 @@ public interface AppRTCClient {
     }
   }
 
+  void connectToServer(final String address);
+
   /**
    * Asynchronously connect to an AppRTC room URL using supplied connection
    * parameters. Once connection is established onConnectedToRoom()
@@ -101,7 +103,7 @@ public interface AppRTCClient {
      * Callback fired once the room's signaling parameters
      * SignalingParameters are extracted.
      */
-    void onConnectedToRoom(final SignalingParameters params);
+    void onConnectedToRoom(final String roomName);
 
     /**
      * Callback fired once remote SDP is received.
@@ -121,11 +123,20 @@ public interface AppRTCClient {
     /**
      * Callback fired once channel is closed.
      */
+    void onChannelOpen();
+
+    /**
+     * Callback fired once channel is closed.
+     */
     void onChannelClose();
 
     /**
      * Callback fired once channel error happened.
      */
     void onChannelError(final String description);
+
+    void onUserEnteredRoom(String user, String room);
+
+    void onUserLeftRoom(String user, String room);
   }
 }

@@ -13,10 +13,12 @@ package org.appspot.apprtc.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.Scanner;
+
+import javax.net.ssl.HttpsURLConnection;
+
 
 /**
  * Asynchronous http requests implementation.
@@ -59,8 +61,10 @@ public class AsyncHttpURLConnection {
   }
 
   private void sendHttpMessage() {
+    HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier());
+
     try {
-      HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+      HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
       byte[] postData = new byte[0];
       if (message != null) {
         postData = message.getBytes("UTF-8");

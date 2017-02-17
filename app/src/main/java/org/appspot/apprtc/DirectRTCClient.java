@@ -68,6 +68,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
     roomState = ConnectionState.NEW;
   }
 
+  @Override
+  public void connectToServer(String address) {
+
+  }
+
   /**
    * Connects to the room, roomId in connectionsParameters is required. roomId must be a valid
    * IP address matching IP_PATTERN.
@@ -241,7 +246,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
           null, // offerSdp
           null // iceCandidates
           );
-      events.onConnectedToRoom(parameters);
+      events.onConnectedToRoom("");
     }
   }
 
@@ -278,7 +283,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
             null // iceCandidates
             );
         roomState = ConnectionState.CONNECTED;
-        events.onConnectedToRoom(parameters);
+        events.onConnectedToRoom("");
       } else {
         reportError("Unexpected TCP message: " + msg);
       }
