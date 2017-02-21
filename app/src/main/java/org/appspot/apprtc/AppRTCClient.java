@@ -78,7 +78,7 @@ public interface AppRTCClient {
     public final String clientId;
     public final String wssUrl;
     public final String wssPostUrl;
-    public final SessionDescription offerSdp;
+    public SessionDescription offerSdp;
     public final List<IceCandidate> iceCandidates;
 
     public SignalingParameters(List<PeerConnection.IceServer> iceServers, boolean initiator,
@@ -109,7 +109,7 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote SDP is received.
      */
-    void onRemoteDescription(final SessionDescription sdp);
+    void onRemoteDescription(final SerializableSessionDescription sdp);
 
     /**
      * Callback fired once remote Ice candidate is received.
@@ -139,5 +139,7 @@ public interface AppRTCClient {
     void onUserEnteredRoom(User user, String room);
 
     void onUserLeftRoom(User user, String room);
+
+    void onBye(final String reason);
   }
 }

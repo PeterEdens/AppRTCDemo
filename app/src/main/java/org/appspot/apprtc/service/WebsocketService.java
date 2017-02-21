@@ -7,6 +7,7 @@ import android.os.IBinder;
 
 import org.appspot.apprtc.AppRTCClient;
 import org.appspot.apprtc.SerializableIceCandidate;
+import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.WebSocketRTCClient;
 import org.webrtc.IceCandidate;
@@ -27,6 +28,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_USER_ENTERED = "org.appspot.apprtc.service.ACTION_USER_ENTERED";
     public static final String ACTION_USER_LEFT = "org.appspot.apprtc.service.ACTION_USER_LEFT";
     public static final String ACTION_REMOTE_ICE_CANDIDATE = "org.appspot.apprtc.service.ACTION_REMOTE_ICE_CANDIDATE";
+    public static final String ACTION_REMOTE_DESCRIPTION = "org.appspot.apprtc.service.ACTION_REMOTE_DESCRIPTION";
+    public static final String ACTION_BYE = "org.appspot.apprtc.service.ACTION_BYE";
+    public static final String EXTRA_REASON = "org.appspot.apprtc.service.EXTRA_REASON";
+    public static final String EXTRA_USER = "org.appspot.apprtc.service.EXTRA_USER";
+    public static final String EXTRA_CANDIDATE = "org.appspot.apprtc.service.EXTRA_CANDIDATE";
+    public static final String EXTRA_REMOTE_DESCRIPTION = "org.appspot.apprtc.service.EXTRA_REMOTE_DESCRIPTION";
 
     // Binder given to clients
     private final IBinder mBinder = new WebsocketBinder();
@@ -58,7 +65,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     public void sendAnswerSdp(SessionDescription sdp) {
         if (appRtcClient != null) {
-            appRtcClient.sendOfferSdp(sdp);
+            appRtcClient.sendAnswerSdp(sdp);
         }
     }
 
@@ -100,6 +107,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             users.add(user);
             mUsers.put(room, users);
         }
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_USER_ENTERED);
+        broadcastIntent.putExtra(EXTRA_USER, user);
+        broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
+        sendBroadcast(broadcastIntent);
     }
 
     @Override
@@ -109,18 +122,35 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             users.remove(user);
             mUsers.put(room, users);
         }
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_USER_LEFT);
+        broadcastIntent.putExtra(EXTRA_USER, user);
+        broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
+        sendBroadcast(broadcastIntent);
     }
 
     @Override
-    public void onRemoteDescription(SessionDescription sdp) {
+    public void onBye(final String reason) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_BYE);
+        broadcastIntent.putExtra(EXTRA_REASON, reason);
+        sendBroadcast(broadcastIntent);
+    }
 
+    @Override
+    public void onRemoteDescription(SerializableSessionDescription sdp) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
+        broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+        sendBroadcast(broadcastIntent);
     }
 
     @Override
     public void onRemoteIceCandidate(SerializableIceCandidate candidate) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
-        broadcastIntent.putExtra("candidate", candidate);
+        broadcastIntent.putExtra(EXTRA_CANDIDATE, candidate);
         sendBroadcast(broadcastIntent);
     }
 
@@ -179,10 +209,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             appRtcClient = new WebSocketRTCClient(this);
         }
 
-        if (intent.getAction() != null && intent.getAction().equals(ACTION_CONNECT)) {
-            if (intent.hasExtra(EXTRA_ADDRESS)) {
-                String address = intent.getExtras().getString(EXTRA_ADDRESS);
-                appRtcClient.connectToServer(address);
+        if (intent != null) {
+            if (intent.getAction() != null && intent.getAction().equals(ACTION_CONNECT)) {
+                if (intent.hasExtra(EXTRA_ADDRESS)) {
+                    String address = intent.getExtras().getString(EXTRA_ADDRESS);
+                    appRtcClient.connectToServer(address);
+                }
             }
         }
         // We want this service to continue running until it is explicitly

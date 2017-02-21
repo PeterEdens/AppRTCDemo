@@ -131,6 +131,7 @@ public class PeerConnectionClient {
   private DataChannel dataChannel;
   private boolean dataChannelEnabled;
 
+
   /**
    * Peer connection parameters.
    */
@@ -264,6 +265,8 @@ public class PeerConnectionClient {
      * Callback fired once peer connection error happened.
      */
     void onPeerConnectionError(final String description);
+
+    void onPeerConnectionFactoryCreated();
   }
 
   private PeerConnectionClient() {
@@ -359,11 +362,11 @@ public class PeerConnectionClient {
   }
 
   private void createPeerConnectionFactoryInternal(Context context) {
-    PeerConnectionFactory.initializeInternalTracer();
+   // PeerConnectionFactory.initializeInternalTracer();
     if (peerConnectionParameters.tracing) {
-      PeerConnectionFactory.startInternalTracingCapture(
-          Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
-          + "webrtc-trace.txt");
+      //PeerConnectionFactory.startInternalTracingCapture(
+      //    Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
+      //    + "webrtc-trace.txt");
     }
     Log.d(TAG,
         "Create peer connection factory. Use video: " + peerConnectionParameters.videoCallEnabled);
@@ -435,6 +438,7 @@ public class PeerConnectionClient {
     }
     this.context = context;
     factory = new PeerConnectionFactory(options);
+    events.onPeerConnectionFactoryCreated();
     Log.d(TAG, "Peer connection factory created.");
   }
 
@@ -621,8 +625,8 @@ public class PeerConnectionClient {
     options = null;
     Log.d(TAG, "Closing peer connection done.");
     events.onPeerConnectionClosed();
-    PeerConnectionFactory.stopInternalTracingCapture();
-    PeerConnectionFactory.shutdownInternalTracer();
+    //PeerConnectionFactory.stopInternalTracingCapture();
+    //PeerConnectionFactory.shutdownInternalTracer();
   }
 
   public boolean isHDVideo() {
@@ -721,6 +725,10 @@ public class PeerConnectionClient {
         }
       }
     });
+  }
+
+  public boolean isConnected() {
+    return peerConnection != null && !isError;
   }
 
   public void addRemoteIceCandidate(final IceCandidate candidate) {
@@ -1058,7 +1066,8 @@ public class PeerConnectionClient {
       executor.execute(new Runnable() {
         @Override
         public void run() {
-          events.onIceCandidate((SerializableIceCandidate) candidate);
+          SerializableIceCandidate sic = new SerializableIceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
+          events.onIceCandidate(sic);
         }
       });
     }
@@ -1068,7 +1077,11 @@ public class PeerConnectionClient {
       executor.execute(new Runnable() {
         @Override
         public void run() {
-          events.onIceCandidatesRemoved((SerializableIceCandidate[]) candidates);
+          SerializableIceCandidate[] sic = new SerializableIceCandidate[candidates.length];
+          for (int candidate = 0; candidate < candidates.length; candidate++) {
+            sic[candidate] = new SerializableIceCandidate(candidates[candidate].sdpMid, candidates[candidate].sdpMLineIndex, candidates[candidate].sdp);
+          }
+          events.onIceCandidatesRemoved(sic);
         }
       });
     }

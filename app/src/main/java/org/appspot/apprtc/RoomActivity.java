@@ -70,14 +70,30 @@ public class RoomActivity extends AppCompatActivity {
             } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
                 finish();
             } else if (intent.getAction().equals(WebsocketService.ACTION_USER_ENTERED)) {
-
-
+                User userEntered = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+                AddUser(userEntered);
             } else if (intent.getAction().equals(WebsocketService.ACTION_USER_LEFT)) {
-
-
+                User userLeft = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+                RemoveUser(userLeft);
             }
         }
     };
+
+    private void AddUser(User userEntered) {
+
+        if (userEntered != null && !userList.contains(userEntered)) {
+            userList.add(userEntered);
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    private void RemoveUser(User userLeft) {
+
+        if (userLeft != null && userList.contains(userLeft)) {
+            userList.remove(userLeft);
+        }
+        adapter.notifyDataSetChanged();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,6 +145,7 @@ public class RoomActivity extends AppCompatActivity {
             unbindService(mConnection);
             mWebsocketServiceBound = false;
         }
+        unregisterReceiver(mReceiver);
     }
 
 }

@@ -211,7 +211,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
         JSONObject json = new JSONObject();
         jsonPut(json, "type", "remove-candidates");
         JSONArray jsonArray = new JSONArray();
-        for (final IceCandidate candidate : candidates) {
+        for (final SerializableIceCandidate candidate : candidates) {
           jsonArray.put(toJsonCandidate(candidate));
         }
         jsonPut(json, "candidates", jsonArray);
@@ -265,8 +265,8 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
         }
         events.onRemoteIceCandidatesRemoved(candidates);
       } else if (type.equals("answer")) {
-        SessionDescription sdp = new SessionDescription(
-            SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
+        SerializableSessionDescription sdp = new SerializableSessionDescription(
+                SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
         events.onRemoteDescription(sdp);
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(
@@ -336,7 +336,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   // Converts a Java candidate to a JSONObject.
-  private static JSONObject toJsonCandidate(final IceCandidate candidate) {
+  private static JSONObject toJsonCandidate(final SerializableIceCandidate candidate) {
     JSONObject json = new JSONObject();
     jsonPut(json, "label", candidate.sdpMLineIndex);
     jsonPut(json, "id", candidate.sdpMid);

@@ -51,6 +51,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   private final Handler handler;
   private boolean initiator;
+  private boolean loopback = false;
   private SignalingEvents events;
   private WebSocketChannelClient wsClient;
   private ConnectionState roomState;
@@ -61,6 +62,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // Spreedbox
   String mId;
   String mSid;
+  String mIdFrom;
 
   public WebSocketRTCClient(SignalingEvents events) {
     this.events = events;
@@ -176,12 +178,12 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // looper thread.
   private void signalingParametersReady(final SignalingParameters signalingParameters) {
     Log.d(TAG, "Room connection completed.");
-    if (connectionParameters.loopback
+    if (loopback
         && (!signalingParameters.initiator || signalingParameters.offerSdp != null)) {
       reportError("Loopback room is busy.");
       return;
     }
-    if (!connectionParameters.loopback && !signalingParameters.initiator
+    if (!loopback && !signalingParameters.initiator
         && signalingParameters.offerSdp == null) {
       Log.w(TAG, "No offer SDP in room response.");
     }
@@ -214,10 +216,10 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(json, "sdp", sdp.description);
         jsonPut(json, "type", "offer");
         sendPostMessage(MessageType.MESSAGE, messageUrl, json.toString());
-        if (connectionParameters.loopback) {
+        if (loopback) {
           // In loopback mode rename this offer to answer and route it back.
-          SessionDescription sdpAnswer = new SessionDescription(
-              SessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
+          SerializableSessionDescription sdpAnswer = new SerializableSessionDescription(
+                  SerializableSessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
           events.onRemoteDescription(sdpAnswer);
         }
       }
@@ -230,14 +232,26 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     handler.post(new Runnable() {
       @Override
       public void run() {
-        if (connectionParameters.loopback) {
+        if (loopback) {
           Log.e(TAG, "Sending answer in loopback mode.");
           return;
         }
+        JSONObject jsonAnswerWrap = new JSONObject();
+        jsonPut(jsonAnswerWrap, "Type", "Answer");
+
         JSONObject json = new JSONObject();
         jsonPut(json, "sdp", sdp.description);
         jsonPut(json, "type", "answer");
-        wsClient.send(json.toString());
+
+        JSONObject jsonAnswer = new JSONObject();
+        jsonPut(jsonAnswer, "To", mIdFrom);
+        jsonPut(jsonAnswer, "Type", "Answer");
+        jsonPut(jsonAnswer, "Answer", json);
+
+        jsonPut(jsonAnswerWrap, "Answer", jsonAnswer);
+        jsonPut(jsonAnswer, "Type", "Answer");
+
+        wsClient.send(jsonAnswerWrap.toString());
       }
     });
   }
@@ -248,25 +262,28 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     handler.post(new Runnable() {
       @Override
       public void run() {
+        JSONObject jsonCandidateWrap = new JSONObject();
+        jsonPut(jsonCandidateWrap, "Type", "Candidate");
+
+
         JSONObject json = new JSONObject();
         jsonPut(json, "type", "candidate");
         jsonPut(json, "label", candidate.sdpMLineIndex);
         jsonPut(json, "id", candidate.sdpMid);
         jsonPut(json, "candidate", candidate.sdp);
-        if (initiator) {
-          // Call initiator sends ice candidates to GAE server.
-          if (roomState != ConnectionState.CONNECTED) {
-            reportError("Sending ICE candidate in non connected state.");
-            return;
-          }
-          sendPostMessage(MessageType.MESSAGE, messageUrl, json.toString());
-          if (connectionParameters.loopback) {
-            events.onRemoteIceCandidate(candidate);
-          }
-        } else {
-          // Call receiver sends ice candidates to websocket server.
-          wsClient.send(json.toString());
-        }
+
+        JSONObject jsonCandidate = new JSONObject();
+        jsonPut(jsonCandidate, "To", mIdFrom);
+        jsonPut(jsonCandidate, "Type", "Candidate");
+        jsonPut(jsonCandidate, "Candidate", json);
+
+        jsonPut(jsonCandidateWrap, "Candidate", jsonCandidate);
+        jsonPut(jsonCandidate, "Type", "Candidate");
+
+
+        // Call  sends ice candidates to websocket server.
+        wsClient.send(jsonCandidateWrap.toString());
+
       }
     });
   }
@@ -291,7 +308,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             return;
           }
           sendPostMessage(MessageType.MESSAGE, messageUrl, json.toString());
-          if (connectionParameters.loopback) {
+          if (loopback) {
             events.onRemoteIceCandidatesRemoved(candidates);
           }
         } else {
@@ -341,6 +358,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     try {
       JSONObject json = new JSONObject(msg);
       String msgText = json.getString("Data");
+      mIdFrom = json.optString("From");
       String errorText = json.optString("error");
       if (msgText.length() > 0) {
         json = new JSONObject(msgText);
@@ -392,8 +410,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           events.onRemoteIceCandidatesRemoved(candidates);
         } else if (type.equals("Answer")) {
           if (initiator) {
-            SessionDescription sdp = new SessionDescription(
-                SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
+            SerializableSessionDescription sdp = new SerializableSessionDescription(
+                    SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
             events.onRemoteDescription(sdp);
           } else {
             reportError("Received answer for call initiator: " + msg);
@@ -402,16 +420,18 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           if (!initiator) {
             String offerTxt = json.optString("Offer");
             JSONObject offerJson = new JSONObject(offerTxt);
-            SessionDescription sdp = new SessionDescription(
-                SessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"));
+            SerializableSessionDescription sdp = new SerializableSessionDescription(
+                    SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"));
             events.onRemoteDescription(sdp);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
         } else if (type.equals("Bye")) {
-          events.onChannelClose();
+          String byeTxt = json.optString("Bye");
+          JSONObject byeJson = new JSONObject(byeTxt);
+          events.onBye(byeJson.optString("Reason"));
         } else {
-          reportError("Unexpected WebSocket message: " + msg);
+          //reportError("Unexpected WebSocket message: " + msg);
         }
       } else {
         if (errorText != null && errorText.length() > 0) {
@@ -421,7 +441,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         }
       }
     } catch (JSONException e) {
-      reportError("WebSocket message JSON parsing error: " + e.toString());
+      e.printStackTrace();
     }
   }
 

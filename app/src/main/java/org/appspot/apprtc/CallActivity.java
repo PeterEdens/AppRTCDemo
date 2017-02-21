@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -52,6 +53,7 @@ import org.webrtc.EglBase;
 import org.webrtc.FileVideoCapturer;
 import org.webrtc.IceCandidate;
 import org.webrtc.Logging;
+import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.RendererCommon.ScalingType;
 import org.webrtc.ScreenCapturerAndroid;
@@ -145,8 +147,9 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
+  private SerializableSessionDescription mSdp = null;
 
-
+  private boolean initiator = false;
   private SignalingParameters signalingParameters;
   private AppRTCAudioManager audioManager = null;
   private EglBase rootEglBase;
@@ -196,16 +199,6 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     }
   };
 
-  private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-    @Override
-    public void onReceive(Context context, Intent intent) {
-
-      if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
-       onIceCandidate((SerializableIceCandidate)intent.getSerializableExtra("candidate"));
-
-      }
-    }
-  };
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -223,7 +216,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     setContentView(R.layout.activity_call);
 
     iceConnected = false;
-    signalingParameters = null;
+    signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
     scalingType = ScalingType.SCALE_ASPECT_FILL;
 
     // Create UI controls.
@@ -283,7 +276,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       }
     }
 
-    Uri roomUri = intent.getData();
+   /* Uri roomUri = intent.getData();
     if (roomUri == null) {
       logAndToast(getString(R.string.missing_url));
       Log.e(TAG, "Didn't get any URL in intent!");
@@ -301,10 +294,10 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       setResult(RESULT_CANCELED);
       finish();
       return;
-    }
+    }*/
 
     boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
-    boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, false);
+    boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, true);
 
     int videoWidth = intent.getIntExtra(EXTRA_VIDEO_WIDTH, 0);
     int videoHeight = intent.getIntExtra(EXTRA_VIDEO_HEIGHT, 0);
@@ -320,7 +313,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       videoHeight = displayMetrics.heightPixels;
     }
     DataChannelParameters dataChannelParameters = null;
-    if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, true)) {
+    if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, false)) {
       dataChannelParameters = new DataChannelParameters(intent.getBooleanExtra(EXTRA_ORDERED, true),
           intent.getIntExtra(EXTRA_MAX_RETRANSMITS_MS, -1),
           intent.getIntExtra(EXTRA_MAX_RETRANSMITS, -1), intent.getStringExtra(EXTRA_PROTOCOL),
@@ -354,7 +347,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
    //   appRtcClient = new DirectRTCClient(this);
    // }
     // Create connection parameters.
-    roomConnectionParameters = new RoomConnectionParameters(roomUri.toString(), roomId, loopback);
+    //roomConnectionParameters = new RoomConnectionParameters(roomUri.toString(), roomId, loopback);
 
     // Create CPU monitor
     cpuMonitor = new CpuMonitor(this);
@@ -388,6 +381,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     peerConnectionClient.createPeerConnectionFactory(
         CallActivity.this, peerConnectionParameters, CallActivity.this);
 
+    handleIntent(intent);
+
     if (screencaptureEnabled) {
       MediaProjectionManager mediaProjectionManager =
           (MediaProjectionManager) getApplication().getSystemService(
@@ -397,6 +392,32 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     } else {
       startCall();
     }
+  }
+
+  @Override
+  protected void onNewIntent(Intent intent) {
+    handleIntent(intent);
+  }
+
+  void handleIntent(Intent intent) {
+    if (intent == null || intent.getAction() == null) {
+      return;
+    }
+
+    if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
+      onIceCandidate((SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE));
+    }
+    else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
+      SerializableSessionDescription sdp = (SerializableSessionDescription) intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
+
+      if (peerConnectionClient.isConnected()) {
+        onRemoteDescription(sdp);
+      }
+      else {
+        mSdp = sdp;
+      }
+    }
+
   }
 
   @Override
@@ -580,8 +601,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     callStartedTimeMs = System.currentTimeMillis();
 
     // Start room connection.
-    logAndToast(getString(R.string.connecting_to, roomConnectionParameters.roomUrl));
-    mService.connectToRoom(roomConnectionParameters);
+    //logAndToast(getString(R.string.connecting_to, roomConnectionParameters.roomUrl));
+    //mService.connectToRoom(roomConnectionParameters);
 
     // Create and audio manager that will take care of audio routing,
     // audio modes, audio device enumeration etc.
@@ -626,7 +647,9 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   // Disconnect from remote resources, dispose of local resources, and exit.
   private void disconnect() {
     activityRunning = false;
-    mService.disconnectFromRoom();
+    if (mService != null) {
+     // mService.disconnectFromRoom();
+    }
 
     if (peerConnectionClient != null) {
       peerConnectionClient.close();
@@ -741,14 +764,11 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     return videoCapturer;
   }
 
-  // -----Implementation of AppRTCClient.AppRTCSignalingEvents ---------------
-  // All callbacks are invoked from websocket signaling looper thread and
-  // are routed to UI thread.
-  private void onConnectedToRoomInternal(final String roomName) {
-   /* final long delta = System.currentTimeMillis() - callStartedTimeMs;
+  private void setupCall(SignalingParameters params) {
+    final long delta = System.currentTimeMillis() - callStartedTimeMs;
 
     signalingParameters = params;
-    logAndToast("Creating peer connection, delay=" + delta + "ms");
+   // logAndToast("Creating peer connection, delay=" + delta + "ms");
     VideoCapturer videoCapturer = null;
     if (peerConnectionParameters.videoCallEnabled) {
       videoCapturer = createVideoCapturer();
@@ -757,14 +777,14 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         remoteRenderers, videoCapturer, signalingParameters);
 
     if (signalingParameters.initiator) {
-      logAndToast("Creating OFFER...");
+     // logAndToast("Creating OFFER...");
       // Create offer. Offer SDP will be sent to answering client in
       // PeerConnectionEvents.onLocalDescription event.
       peerConnectionClient.createOffer();
     } else {
       if (params.offerSdp != null) {
         peerConnectionClient.setRemoteDescription(params.offerSdp);
-        logAndToast("Creating ANSWER...");
+      //  logAndToast("Creating ANSWER...");
         // Create answer. Answer SDP will be sent to offering client in
         // PeerConnectionEvents.onLocalDescription event.
         peerConnectionClient.createAnswer();
@@ -775,7 +795,14 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           peerConnectionClient.addRemoteIceCandidate(iceCandidate);
         }
       }
-    }*/
+    }
+  }
+
+  // -----Implementation of AppRTCClient.AppRTCSignalingEvents ---------------
+  // All callbacks are invoked from websocket signaling looper thread and
+  // are routed to UI thread.
+  private void onConnectedToRoomInternal(final String roomName) {
+
   }
 
   @Override
@@ -789,7 +816,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   }
 
   @Override
-  public void onRemoteDescription(final SessionDescription sdp) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -799,8 +826,9 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           return;
         }
         logAndToast("Received remote " + sdp.type + ", delay=" + delta + "ms");
-        peerConnectionClient.setRemoteDescription(sdp);
-        if (!signalingParameters.initiator) {
+        SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
+        peerConnectionClient.setRemoteDescription(sd);
+        if (!initiator) {
           logAndToast("Creating ANSWER...");
           // Create answer. Answer SDP will be sent to offering client in
           // PeerConnectionEvents.onLocalDescription event.
@@ -819,7 +847,9 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           Log.e(TAG, "Received ICE candidate for a non-initialized peer connection.");
           return;
         }
-        peerConnectionClient.addRemoteIceCandidate(candidate);
+
+        IceCandidate ic = new IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
+        peerConnectionClient.addRemoteIceCandidate(ic);
       }
     });
   }
@@ -833,7 +863,11 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
           Log.e(TAG, "Received ICE candidate removals for a non-initialized peer connection.");
           return;
         }
-        peerConnectionClient.removeRemoteIceCandidates(candidates);
+        IceCandidate[] ic = new IceCandidate[candidates.length];
+        for (int candidate = 0; candidate < candidates.length; candidate++) {
+          ic[candidate] = new IceCandidate(candidates[candidate].sdpMid, candidates[candidate].sdpMLineIndex, candidates[candidate].sdp);
+        }
+        peerConnectionClient.removeRemoteIceCandidates(ic);
       }
     });
   }
@@ -869,6 +903,18 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
   }
 
+  @Override
+  public void onBye(final String reason) {
+
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        logAndToast(reason);
+        disconnect();
+      }
+    });
+  }
+
   // -----Implementation of PeerConnectionClient.PeerConnectionEvents.---------
   // Send local peer connection SDP and ICE candidates to remote party.
   // All callbacks are invoked from peer connection client looper thread and
@@ -881,7 +927,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
       public void run() {
         if (mService != null) {
           logAndToast("Sending " + sdp.type + ", delay=" + delta + "ms");
-          if (signalingParameters.initiator) {
+          if (initiator) {
             mService.sendOfferSdp(sdp);
           } else {
             mService.sendAnswerSdp(sdp);
@@ -962,5 +1008,22 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
   @Override
   public void onPeerConnectionError(final String description) {
     reportError(description);
+  }
+
+  @Override
+  public void onPeerConnectionFactoryCreated() {
+
+    runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+        if (mSdp != null) {
+          SessionDescription sdp = new SessionDescription(mSdp.type, mSdp.description);
+          signalingParameters.offerSdp = sdp;
+        }
+        setupCall(signalingParameters);
+      }
+    });
+
   }
 }
