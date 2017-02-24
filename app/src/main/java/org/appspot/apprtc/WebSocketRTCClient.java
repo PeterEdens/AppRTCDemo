@@ -19,6 +19,7 @@ import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -27,7 +28,11 @@ import org.json.JSONObject;
 import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
 
+import java.net.URLEncoder;
 import java.util.Iterator;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Negotiates signaling for chatting with https://appr.tc "rooms".
@@ -44,6 +49,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   private static final String ROOM_JOIN = "join";
   private static final String ROOM_MESSAGE = "message";
   private static final String ROOM_LEAVE = "leave";
+  private static final String COMBO_VERSION = "2";
+  private String mRoomName = "";
 
   private enum ConnectionState { NEW, CONNECTED, CLOSED, ERROR }
 
@@ -92,12 +99,12 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // Asynchronously connect to an AppRTC room URL using supplied connection
   // parameters, retrieves room parameters and connect to WebSocket server.
   @Override
-  public void connectToRoom(RoomConnectionParameters connectionParameters) {
-    this.connectionParameters = connectionParameters;
+  public void connectToRoom(final String roomName) {
+    ;
     handler.post(new Runnable() {
       @Override
       public void run() {
-        connectToRoomInternal();
+        connectToRoomInternal(roomName);
       }
     });
   }
@@ -113,6 +120,55 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+    @Override
+    public void sendBye(final String to) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+
+                JSONObject jsonByeWrap = new JSONObject();
+                jsonPut(jsonByeWrap, "Type", "Bye");
+
+                JSONObject json = new JSONObject();
+
+                JSONObject jsonBye = new JSONObject();
+                jsonPut(jsonBye, "To", to);
+                jsonPut(jsonBye, "Type", "Bye");
+                jsonPut(jsonBye, "Offer", json);
+
+                jsonPut(jsonByeWrap, "Bye", jsonBye);
+                jsonPut(jsonBye, "Type", "Bye");
+
+                wsClient.send(jsonByeWrap.toString());
+
+
+
+            }
+        });
+    }
+
+  @Override
+  public void sendPostMessage(String username, String password, String url) {
+    String message = "Basic " + Base64.encode(new String(username + ":" + password).getBytes(), Base64.NO_WRAP).toString();
+
+    AsyncHttpURLConnection httpConnection =
+            new AsyncHttpURLConnection("GET", url, "", new AsyncHttpEvents() {
+              @Override
+              public void onHttpError(String errorMessage) {
+                reportError("GAE POST error: " + errorMessage);
+              }
+
+              @Override
+              public void onHttpComplete(String response) {
+                events.onPostResponse(response);
+              }
+            });
+
+    httpConnection.setContentType("application/x-www-form-urlencoded");
+    httpConnection.setAuthorization(message);
+    httpConnection.send();
+  }
+
   // Connects to server - function runs on a local looper thread.
   private void connectToServerInternal(String address) {
     wsClient = new WebSocketChannelClient(handler, this);
@@ -121,29 +177,29 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   // Connects to room - function runs on a local looper thread.
-  private void connectToRoomInternal() {
-    String connectionUrl = getConnectionUrl(connectionParameters);
-    Log.d(TAG, "Connect to room: " + connectionUrl);
-    roomState = ConnectionState.NEW;
-
-    /*RoomParametersFetcherEvents callbacks = new RoomParametersFetcherEvents() {
+  private void connectToRoomInternal(final String roomName) {
+    handler.post(new Runnable() {
       @Override
-      public void onSignalingParametersReady(final SignalingParameters params) {
-        WebSocketRTCClient.this.handler.post(new Runnable() {
-          @Override
-          public void run() {
-            WebSocketRTCClient.this.signalingParametersReady(params);
-          }
-        });
-      }
+      public void run() {
 
-      @Override
-      public void onSignalingParametersError(String description) {
-        WebSocketRTCClient.this.reportError(description);
-      }
-    };
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Name", roomName);
+        jsonPut(json, "Id", roomName); // obsolete may not be needed
+        jsonPut(json, "Version", "1.0.0");
+        jsonPut(json, "Ua", "Spreedbox Android 1.0");
+        jsonPut(json, "Type", "");
+        jsonPut(json, "Iid", mId);
 
-    new RoomParametersFetcher(connectionUrl, null, callbacks).makeRequest();*/
+        JSONObject jsonRoom = new JSONObject();
+        jsonPut(jsonRoom, "Hello", json);
+        jsonPut(jsonRoom, "Type", "Hello");
+
+        wsClient.send(jsonRoom.toString());
+
+
+
+      }
+    });
   }
 
   // Disconnect from room and send bye messages - runs on a local looper thread.
@@ -204,31 +260,37 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send local offer SDP to the other participant.
   @Override
-  public void sendOfferSdp(final SessionDescription sdp) {
+  public void sendOfferSdp(final SessionDescription sdp, final String to) {
     handler.post(new Runnable() {
       @Override
       public void run() {
-        if (roomState != ConnectionState.CONNECTED) {
-          reportError("Sending offer SDP in non connected state.");
-          return;
-        }
-        JSONObject json = new JSONObject();
-        jsonPut(json, "sdp", sdp.description);
-        jsonPut(json, "type", "offer");
-        sendPostMessage(MessageType.MESSAGE, messageUrl, json.toString());
-        if (loopback) {
-          // In loopback mode rename this offer to answer and route it back.
-          SerializableSessionDescription sdpAnswer = new SerializableSessionDescription(
-                  SerializableSessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
-          events.onRemoteDescription(sdpAnswer);
-        }
+
+          JSONObject jsonOfferWrap = new JSONObject();
+          jsonPut(jsonOfferWrap, "Type", "Offer");
+
+          JSONObject json = new JSONObject();
+          jsonPut(json, "sdp", sdp.description);
+          jsonPut(json, "type", "offer");
+
+          JSONObject jsonOffer = new JSONObject();
+          jsonPut(jsonOffer, "To", to);
+          jsonPut(jsonOffer, "Type", "Offer");
+          jsonPut(jsonOffer, "Offer", json);
+
+          jsonPut(jsonOfferWrap, "Offer", jsonOffer);
+          jsonPut(jsonOffer, "Type", "Offer");
+
+          wsClient.send(jsonOfferWrap.toString());
+
+
+
       }
     });
   }
 
   // Send local answer SDP to the other participant.
   @Override
-  public void sendAnswerSdp(final SessionDescription sdp) {
+  public void sendAnswerSdp(final SessionDescription sdp, final String to) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -244,7 +306,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(json, "type", "answer");
 
         JSONObject jsonAnswer = new JSONObject();
-        jsonPut(jsonAnswer, "To", mIdFrom);
+        jsonPut(jsonAnswer, "To", to);
         jsonPut(jsonAnswer, "Type", "Answer");
         jsonPut(jsonAnswer, "Answer", json);
 
@@ -256,9 +318,34 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+  // Send Authentication.
+  @Override
+  public void sendAuthentication(final String userid, final String nonce) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        JSONObject jsonAuthenticationWrap = new JSONObject();
+        jsonPut(jsonAuthenticationWrap, "Type", "Authentication");
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Userid", userid);
+        jsonPut(json, "Nonce", nonce);
+
+        JSONObject jsonAuthentication = new JSONObject();
+        jsonPut(jsonAuthentication, "Type", "Authentication");
+        jsonPut(jsonAuthentication, "Authentication", json);
+
+        jsonPut(jsonAuthenticationWrap, "Authentication", jsonAuthentication);
+        jsonPut(jsonAuthentication, "Type", "Authentication");
+
+        wsClient.send(jsonAuthenticationWrap.toString());
+      }
+    });
+  }
+
   // Send Ice candidate to the other participant.
   @Override
-  public void sendLocalIceCandidate(final SerializableIceCandidate candidate) {
+  public void sendLocalIceCandidate(final SerializableIceCandidate candidate, final String to) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -273,7 +360,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(json, "candidate", candidate.sdp);
 
         JSONObject jsonCandidate = new JSONObject();
-        jsonPut(jsonCandidate, "To", mIdFrom);
+        jsonPut(jsonCandidate, "To", to);
         jsonPut(jsonCandidate, "Type", "Candidate");
         jsonPut(jsonCandidate, "Candidate", json);
 
@@ -290,7 +377,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send removed Ice candidates to the other participant.
   @Override
-  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates) {
+  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates, String to) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -371,6 +458,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           if (roomType.equals("Room")) {
             roomName = roomJson.optString("Name");
             String credentials = roomJson.optString("Credentials");
+            mRoomName = roomName;
             events.onConnectedToRoom(roomName);
           }
 
@@ -384,18 +472,59 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               String Id = usersJson.optString("Id");
               String userId = usersJson.optString("Userid");
               String status = usersJson.optString("Status");
-              JSONObject statusJson = new JSONObject(status);
-              String buddyPicture = statusJson.optString("buddyPicture");
-              String displayName = statusJson.optString("displayName");
+              if (status.length() != 0) {
+                JSONObject statusJson = new JSONObject(status);
+                String buddyPicture = statusJson.optString("buddyPicture");
+                String displayName = statusJson.optString("displayName");
 
-              if (!mId.equals(Id)) {
-                User user = new User(userId, buddyPicture, displayName, Id);
-                events.onUserEnteredRoom(user, roomName);
+                if (!mId.equals(Id)) {
+                  User user = new User(userId, buddyPicture, displayName, Id);
+                  events.onUserEnteredRoom(user, roomName);
+                }
               }
-            }
+
+          }
           }
 
 
+        }
+        else if (type.equals("Joined")) {
+          //{"Type":"Joined","Id":"bktktUup1ReVkLdrrN7cw4iev1ewPKbD4XTZNh5MEFN8PT1nRER5UTFQZ3RtR3FSLUpxZHVFSTU4dXJDbFlsbzBfZGU2ajhBSmdwR2k4d0lRSGQ2SE11QUkxY0c3MmhjZHp2SGJlRWYxfDQ1MDAyNzc4NDE=","Userid":"admin","Ua":"Chrome 56","Prio":100,"Status":{"buddyPicture":"img:NfDqvZdFAyD9EhgwL6vq\/sZjrk6Kw3NIU\/picture.png","displayName":"admin","message":null}}
+          JSONObject usersJson = new JSONObject(msgText);
+          String usersType = usersJson.optString("Type");
+          if (usersType.equals("Joined")) {
+            Iterator<String> it = usersJson.keys();
+            String Id = usersJson.optString("Id");
+            String userId = usersJson.optString("Userid");
+            String status = usersJson.optString("Status");
+            JSONObject statusJson = new JSONObject(status);
+            String buddyPicture = statusJson.optString("buddyPicture");
+            String displayName = statusJson.optString("displayName");
+
+            if (!mId.equals(Id)) {
+              User user = new User(userId, buddyPicture, displayName, Id);
+              events.onUserEnteredRoom(user, mRoomName);
+            }
+          }
+        }
+        else if (type.equals("Left")) {
+
+          JSONObject usersJson = new JSONObject(msgText);
+          String usersType = usersJson.optString("Type");
+          if (usersType.equals("Left")) {
+            Iterator<String> it = usersJson.keys();
+            String Id = usersJson.optString("Id");
+            String userId = usersJson.optString("Userid");
+            String status = usersJson.optString("Status");
+            JSONObject statusJson = new JSONObject(status);
+            String buddyPicture = statusJson.optString("buddyPicture");
+            String displayName = statusJson.optString("displayName");
+
+            if (!mId.equals(Id)) {
+              User user = new User(userId, buddyPicture, displayName, Id);
+              events.onUserEnteredRoom(user, mRoomName);
+            }
+          }
         }
         else if (type.equals("Candidate")) {
           String candidateTxt = json.optString("Candidate");
@@ -409,19 +538,18 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           }
           events.onRemoteIceCandidatesRemoved(candidates);
         } else if (type.equals("Answer")) {
-          if (initiator) {
+          String answerTxt = json.optString("Answer");
+          JSONObject answerJson = new JSONObject(answerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
-                    SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
+                    SerializableSessionDescription.Type.fromCanonicalForm(type), answerJson.getString("sdp"), mIdFrom);
             events.onRemoteDescription(sdp);
-          } else {
-            reportError("Received answer for call initiator: " + msg);
-          }
+
         } else if (type.equals("Offer")) {
           if (!initiator) {
             String offerTxt = json.optString("Offer");
             JSONObject offerJson = new JSONObject(offerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
-                    SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"));
+                    SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"), mIdFrom);
             events.onRemoteDescription(sdp);
           } else {
             reportError("Received offer for call receiver: " + msg);
@@ -509,6 +637,49 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             }
           }
         });
+    httpConnection.send();
+  }
+
+  public static String encode(String key, String data) throws Exception {
+    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+    SecretKeySpec secret_key = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256");
+    sha256_HMAC.init(secret_key);
+
+    return Base64.encodeToString(sha256_HMAC.doFinal(data.getBytes("UTF-8")), Base64.NO_WRAP);
+  }
+
+  @Override
+   public void sendPatchMessage(
+           String username, String password, final String url) {
+    long unixTime = (System.currentTimeMillis() / 1000L) + (60 * 60);
+    String useridcombo = unixTime + ":" + username;
+    JSONObject json = new JSONObject();
+    try {
+      json.put("id", mId);
+      json.put("sid", mSid);
+      json.put("useridcombo", useridcombo);
+      json.put("secret", encode("4f581d554a691d8c082c686af706010b9e2d26306d595c04803304af69e838d8", useridcombo));
+    } catch (JSONException e) {
+      e.printStackTrace();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    String requestURL = url + mId + "/";
+
+    AsyncHttpURLConnection httpConnection =
+            new AsyncHttpURLConnection("PATCH", requestURL, json.toString(), new AsyncHttpEvents() {
+              @Override
+              public void onHttpError(String errorMessage) {
+                reportError("PATCH error: " + errorMessage);
+              }
+
+              @Override
+              public void onHttpComplete(String response) {
+                events.onPatchResponse(response);
+              }
+            });
+    httpConnection.setContentType("application/json");
     httpConnection.send();
   }
 

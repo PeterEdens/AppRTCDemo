@@ -50,6 +50,7 @@ public class RoomActivity extends AppCompatActivity {
 
             ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
             if (users != null) {
+                userList.clear();
                 userList.addAll(users);
             }
             adapter.notifyDataSetChanged();
@@ -124,6 +125,7 @@ public class RoomActivity extends AppCompatActivity {
 
         adapter=new UsersAdapter(userList,getApplicationContext(), mServerName);
         recyclerView.setAdapter(adapter);
+
     }
 
     @Override

@@ -78,7 +78,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
    * IP address matching IP_PATTERN.
    */
   @Override
-  public void connectToRoom(RoomConnectionParameters connectionParameters) {
+  public void connectToRoom(String room) {
     this.connectionParameters = connectionParameters;
 
     if (connectionParameters.loopback) {
@@ -101,6 +101,26 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
         disconnectFromRoomInternal();
       }
     });
+  }
+
+  @Override
+  public void sendBye(String to) {
+
+  }
+
+  @Override
+  public void sendPostMessage(String username, String password, String url) {
+
+  }
+
+  @Override
+  public void sendPatchMessage(String username, String password, String url) {
+
+  }
+
+  @Override
+  public void sendAuthentication(String userid, String nonce) {
+
   }
 
   /**
@@ -153,7 +173,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendOfferSdp(final SessionDescription sdp) {
+  public void sendOfferSdp(final SessionDescription sdp, String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -170,7 +190,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendAnswerSdp(final SessionDescription sdp) {
+  public void sendAnswerSdp(final SessionDescription sdp, String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -183,7 +203,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendLocalIceCandidate(final SerializableIceCandidate candidate) {
+  public void sendLocalIceCandidate(final SerializableIceCandidate candidate, String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -204,7 +224,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   /** Send removed Ice candidates to the other participant. */
   @Override
-  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates) {
+  public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates, String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -266,7 +286,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
         events.onRemoteIceCandidatesRemoved(candidates);
       } else if (type.equals("answer")) {
         SerializableSessionDescription sdp = new SerializableSessionDescription(
-                SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
+                SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"), "");
         events.onRemoteDescription(sdp);
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(

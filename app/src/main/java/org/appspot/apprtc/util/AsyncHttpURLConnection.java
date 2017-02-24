@@ -10,14 +10,26 @@
 
 package org.appspot.apprtc.util;
 
+import android.text.TextUtils;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 
 /**
@@ -26,11 +38,18 @@ import javax.net.ssl.HttpsURLConnection;
 public class AsyncHttpURLConnection {
   private static final int HTTP_TIMEOUT_MS = 8000;
   private static final String HTTP_ORIGIN = "https://appr.tc";
+  static final String COOKIES_HEADER = "Set-Cookie";
   private final String method;
   private final String url;
   private final String message;
   private final AsyncHttpEvents events;
   private String contentType;
+  static java.net.CookieManager msCookieManager = new java.net.CookieManager();
+  private String authorization = "";
+
+  public void setAuthorization(String message) {
+    authorization = message;
+  }
 
   /**
    * Http requests callbacks.
@@ -60,8 +79,42 @@ public class AsyncHttpURLConnection {
     new Thread(runHttp).start();
   }
 
+  void getCookies(HttpsURLConnection connection) {
+
+    Map<String, List<String>> headerFields = connection.getHeaderFields();
+    List<String> cookiesHeader = headerFields.get(COOKIES_HEADER);
+
+    if (cookiesHeader != null) {
+      for (String cookie : cookiesHeader) {
+        msCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
+      }
+    }
+  }
+
   private void sendHttpMessage() {
     HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier());
+// Create a trust manager that does not validate certificate chains
+    TrustManager[] trustAllCerts = new TrustManager[] {
+            new X509TrustManager() {
+              public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+              }
+              public void checkClientTrusted(
+                      java.security.cert.X509Certificate[] certs, String authType) {
+              }
+              public void checkServerTrusted(
+                      java.security.cert.X509Certificate[] certs, String authType) {
+              }
+            }
+    };
+
+// Install the all-trusting trust manager
+    try {
+      SSLContext sc = SSLContext.getInstance("SSL");
+      sc.init(null, trustAllCerts, new java.security.SecureRandom());
+      HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+    } catch (GeneralSecurityException e) {
+    }
 
     try {
       HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
@@ -69,7 +122,17 @@ public class AsyncHttpURLConnection {
       if (message != null) {
         postData = message.getBytes("UTF-8");
       }
+
+      if (msCookieManager.getCookieStore().getCookies().size() > 0) {
+        // While joining the Cookies, use ',' or ';' as needed. Most of the servers are using ';'
+        connection.setRequestProperty("Cookie",
+                TextUtils.join(";",  msCookieManager.getCookieStore().getCookies()));
+      }
+
       connection.setRequestMethod(method);
+      if (authorization.length() != 0) {
+        connection.addRequestProperty("Authorization", authorization);
+      }
       connection.setUseCaches(false);
       connection.setDoInput(true);
       connection.setConnectTimeout(HTTP_TIMEOUT_MS);
@@ -77,7 +140,7 @@ public class AsyncHttpURLConnection {
       // TODO(glaznev) - query request origin from pref_room_server_url_key preferences.
       connection.addRequestProperty("origin", HTTP_ORIGIN);
       boolean doOutput = false;
-      if (method.equals("POST")) {
+      if (method.equals("POST") || method.equals("PATCH")) {
         doOutput = true;
         connection.setDoOutput(true);
         connection.setFixedLengthStreamingMode(postData.length);
@@ -97,13 +160,15 @@ public class AsyncHttpURLConnection {
 
       // Get response.
       int responseCode = connection.getResponseCode();
-      if (responseCode != 200) {
-        events.onHttpError("Non-200 response to " + method + " to URL: " + url + " : "
-            + connection.getHeaderField(null));
-        connection.disconnect();
-        return;
+      getCookies(connection);
+      InputStream responseStream;
+
+      if (responseCode > 400) {
+        responseStream = connection.getErrorStream();
       }
-      InputStream responseStream = connection.getInputStream();
+      else {
+        responseStream = connection.getInputStream();
+      }
       String response = drainStream(responseStream);
       responseStream.close();
       connection.disconnect();

@@ -21,6 +21,8 @@ import java.util.List;
  * AppRTCClient is the interface representing an AppRTC client.
  */
 public interface AppRTCClient {
+
+
   /**
    * Struct holding the connection parameters of an AppRTC room.
    */
@@ -42,32 +44,40 @@ public interface AppRTCClient {
    * parameters. Once connection is established onConnectedToRoom()
    * callback with room parameters is invoked.
    */
-  void connectToRoom(RoomConnectionParameters connectionParameters);
+  void connectToRoom(String roomName);
 
   /**
    * Send offer SDP to the other participant.
    */
-  void sendOfferSdp(final SessionDescription sdp);
+  void sendOfferSdp(final SessionDescription sdp, String to);
 
   /**
    * Send answer SDP to the other participant.
    */
-  void sendAnswerSdp(final SessionDescription sdp);
+  void sendAnswerSdp(final SessionDescription sdp, String to);
 
   /**
    * Send Ice candidate to the other participant.
    */
-  void sendLocalIceCandidate(final SerializableIceCandidate candidate);
+  void sendLocalIceCandidate(final SerializableIceCandidate candidate, String to);
 
   /**
    * Send removed ICE candidates to the other participant.
    */
-  void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates);
+  void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates, String to);
 
   /**
    * Disconnect from room.
    */
   void disconnectFromRoom();
+
+  void sendBye(String to);
+
+  void sendPostMessage(String username, String password, final String url);
+
+  void sendPatchMessage(String username, String password, final String url);
+
+  void sendAuthentication(String userid, String nonce);
 
   /**
    * Struct holding the signaling parameters of an AppRTC room.
@@ -141,5 +151,12 @@ public interface AppRTCClient {
     void onUserLeftRoom(User user, String room);
 
     void onBye(final String reason);
+
+    void sendBye(String mPeerId);
+
+
+    void onPatchResponse(String response);
+
+    void onPostResponse(String response);
   }
 }

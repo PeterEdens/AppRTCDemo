@@ -12,6 +12,7 @@ package org.appspot.apprtc;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +21,7 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import org.appspot.apprtc.sound.SoundPlayer;
 import org.webrtc.RendererCommon.ScalingType;
 
 /**
@@ -37,6 +39,8 @@ public class CallFragment extends Fragment {
   private OnCallEvents callEvents;
   private ScalingType scalingType;
   private boolean videoCallEnabled = true;
+  private SoundPlayer mSoundPlayer;
+  private Context mContext;
 
   /**
    * Call control interface for container activity.
@@ -53,6 +57,7 @@ public class CallFragment extends Fragment {
   public View onCreateView(
       LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     controlView = inflater.inflate(R.layout.fragment_call, container, false);
+    mContext = container.getContext();
 
     // Create UI controls.
     contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
@@ -126,6 +131,17 @@ public class CallFragment extends Fragment {
     } else {
       captureFormatText.setVisibility(View.GONE);
       captureFormatSlider.setVisibility(View.GONE);
+    }
+
+    mSoundPlayer = new SoundPlayer(mContext, R.raw.connect1);
+    mSoundPlayer.Play(false);
+  }
+
+  @Override
+  public void onStop() {
+    super.onStop();
+    if (mSoundPlayer != null) {
+      mSoundPlayer.Stop();
     }
   }
 

@@ -34,6 +34,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_USER = "org.appspot.apprtc.service.EXTRA_USER";
     public static final String EXTRA_CANDIDATE = "org.appspot.apprtc.service.EXTRA_CANDIDATE";
     public static final String EXTRA_REMOTE_DESCRIPTION = "org.appspot.apprtc.service.EXTRA_REMOTE_DESCRIPTION";
+    public static final String EXTRA_RESPONSE = "org.appspot.apprtc.service.EXTRA_RESPONSE";
+    public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
+    public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
 
     // Binder given to clients
     private final IBinder mBinder = new WebsocketBinder();
@@ -45,9 +48,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         return mUsers.get(roomName);
     }
 
-    public void connectToRoom(AppRTCClient.RoomConnectionParameters connectionParameters) {
+    public void connectToRoom(String roomName) {
         if (appRtcClient != null) {
-            appRtcClient.connectToRoom(connectionParameters);
+            appRtcClient.connectToRoom(roomName);
         }
     }
 
@@ -57,33 +60,45 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendOfferSdp(SessionDescription sdp) {
+    public void sendOfferSdp(SessionDescription sdp, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendOfferSdp(sdp);
+            appRtcClient.sendOfferSdp(sdp, to);
         }
     }
 
-    public void sendAnswerSdp(SessionDescription sdp) {
+    public void sendAnswerSdp(SessionDescription sdp, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendAnswerSdp(sdp);
+            appRtcClient.sendAnswerSdp(sdp, to);
         }
     }
 
-    public void sendLocalIceCandidate(SerializableIceCandidate iceCandidate) {
+    public void sendLocalIceCandidate(SerializableIceCandidate iceCandidate, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendLocalIceCandidate(iceCandidate);
+            appRtcClient.sendLocalIceCandidate(iceCandidate, to);
         }
     }
 
-    public void sendLocalIceCandidateRemovals(SerializableIceCandidate[] iceCandidates) {
+    public void sendLocalIceCandidateRemovals(SerializableIceCandidate[] iceCandidates, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendLocalIceCandidateRemovals(iceCandidates);
+            appRtcClient.sendLocalIceCandidateRemovals(iceCandidates, to);
         }
     }
 
     public void connectToServer(String address) {
         if (appRtcClient != null) {
             appRtcClient.connectToServer(address);
+        }
+    }
+
+    public void sendPatchMessage(String username, String password, String url) {
+        if (appRtcClient != null) {
+            appRtcClient.sendPatchMessage(username, password, url);
+        }
+    }
+
+    public void sendPostMessage(String username, String password, String url) {
+        if (appRtcClient != null) {
+            appRtcClient.sendPostMessage(username, password, url);
         }
     }
 
@@ -139,6 +154,29 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
+    public void sendBye(String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendBye(to);
+        }
+    }
+
+    @Override
+    public void onPatchResponse(String response) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_PATCH_RESPONSE);
+        broadcastIntent.putExtra(EXTRA_RESPONSE, response);
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
+    public void onPostResponse(String response) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_POST_RESPONSE);
+        broadcastIntent.putExtra(EXTRA_RESPONSE, response);
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
     public void onRemoteDescription(SerializableSessionDescription sdp) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
@@ -183,6 +221,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_DISCONNECTED);
         sendBroadcast(broadcastIntent);
+    }
+
+    public void sendAuthentication(String userid, String nonce) {
+        if (appRtcClient != null) {
+            appRtcClient.sendAuthentication(userid, nonce);
+        }
     }
 
     /**

@@ -38,7 +38,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Random;
@@ -46,6 +48,7 @@ import java.util.Random;
 import org.appspot.apprtc.service.WebsocketService;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Handles the initial setup where the user selects which room to join.
@@ -60,7 +63,17 @@ public class ConnectActivity extends Activity {
   boolean mWebsocketServiceBound = false;
   private IntentFilter mIntentFilter;
   String mServerName;
+  ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
 
+  LinearLayout mConnectionLayout;
+  RelativeLayout mLoginLayout;
+  RelativeLayout mRoomListLayout;
+
+  private TextView mTextDescription;
+  private EditText mUsernameEditText;
+  private EditText mPasswordEditText;
+  ImageButton mAddRoom;
+  EditText mAddRoomEditText;
   TextView mConnectionTextView;
   private Button connectButton;
   private EditText roomEditText;
@@ -94,7 +107,7 @@ public class ConnectActivity extends Activity {
   private String keyprefRoom;
   private String keyprefRoomList;
   private ArrayList<String> roomList;
-  private ArrayAdapter<String> adapter;
+  private RoomAdapter adapter;
   private String keyprefEnableDataChannel;
   private String keyprefOrdered;
   private String keyprefMaxRetransmitTimeMs;
@@ -102,7 +115,14 @@ public class ConnectActivity extends Activity {
   private String keyprefDataProtocol;
   private String keyprefNegotiated;
   private String keyprefDataId;
+  private Button mLoginButton;
+  private boolean mWaitingToEnterRoom;
 
+  private enum ConnectionState {
+    DISCONNECTED,
+    CONNECTED,
+    LOGGED_IN
+  }
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -127,13 +147,18 @@ public class ConnectActivity extends Activity {
 
       if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
         mConnectionTextView.setText(getString(R.string.connected));
+        mConnectionState = ConnectionState.CONNECTED;
+        mConnectionLayout.setVisibility(View.GONE);
+        mTextDescription.setText(getString(R.string.login_desc));
+        mLoginLayout.setVisibility(View.VISIBLE);
+        mRoomListLayout.setVisibility(View.VISIBLE);
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
         mConnectionTextView.setText(getString(R.string.disconnected));
+        mConnectionState = ConnectionState.DISCONNECTED;
+        mConnectionLayout.setVisibility(View.VISIBLE);
+        mLoginLayout.setVisibility(View.GONE);
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
-        if (roomName.length() == 0) {
-          roomName = getString(R.string.default_room);
-        }
 
         if (!roomList.contains(roomName)) {
             adapter.add(roomName);
@@ -141,6 +166,36 @@ public class ConnectActivity extends Activity {
 
         }
 
+        if (mWaitingToEnterRoom) {
+          mWaitingToEnterRoom = false;
+
+          Intent roomIntent = new Intent(getApplicationContext(), RoomActivity.class);
+          roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
+          roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
+          startActivity(roomIntent);
+        }
+      }
+      else if (intent.getAction().equals(WebsocketService.ACTION_POST_RESPONSE)) {
+        String response = intent.getStringExtra(WebsocketService.EXTRA_RESPONSE);
+        if (response.length() != 0) {
+
+        }
+      }
+      else if (intent.getAction().equals(WebsocketService.ACTION_PATCH_RESPONSE)) {
+        String response = intent.getStringExtra(WebsocketService.EXTRA_RESPONSE);
+        if (response.length() != 0) {
+          JSONObject json = null;
+          try {
+            json = new JSONObject(response);
+            if (json.optBoolean("success")) {
+              String userid = json.optString("userid");
+              String nonce = json.optString("nonce");
+              mService.sendAuthentication(userid, nonce);
+            }
+          } catch (JSONException e) {
+            e.printStackTrace();
+          }
+        }
       }
     }
   };
@@ -208,12 +263,24 @@ public class ConnectActivity extends Activity {
     mConnectionTextView = (TextView) findViewById(R.id.connected_state);
     connectButton = (Button) findViewById(R.id.connect_button);
     connectButton.setOnClickListener(connectListener);
-
+    mAddRoom = (ImageButton) findViewById(R.id.add_room_button);
+    mAddRoom.setOnClickListener(addRoomListener);
+    mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
+    mConnectionLayout = (LinearLayout) findViewById(R.id.connect_layout);
+    mLoginLayout = (RelativeLayout) findViewById(R.id.login_layout);
+    mRoomListLayout = (RelativeLayout) findViewById(R.id.room_list_layout);
+    mLoginButton = (Button) findViewById(R.id.login_button);
+    mLoginButton.setOnClickListener(loginButtonListener);
+    mUsernameEditText = (EditText) findViewById(R.id.username_edittext);
+    mPasswordEditText = (EditText) findViewById(R.id.password_edittext);
+    mTextDescription = (TextView) findViewById(R.id.room_edittext_description);
 
     mIntentFilter = new IntentFilter();
     mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
     mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
     mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED_TO_ROOM);
+    mIntentFilter.addAction(WebsocketService.ACTION_PATCH_RESPONSE);
+    mIntentFilter.addAction(WebsocketService.ACTION_POST_RESPONSE);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
@@ -246,6 +313,7 @@ public class ConnectActivity extends Activity {
       unbindService(mConnection);
       mWebsocketServiceBound = false;
     }
+    unregisterReceiver(mReceiver);
   }
 
   @Override
@@ -288,9 +356,6 @@ public class ConnectActivity extends Activity {
       Intent intent = new Intent(this, SettingsActivity.class);
       startActivity(intent);
       return true;
-    } else if (item.getItemId() == R.id.action_loopback) {
-      connectToRoom(null, false, true, false, 0);
-      return true;
     } else {
       return super.onOptionsItemSelected(item);
     }
@@ -324,7 +389,7 @@ public class ConnectActivity extends Activity {
         Log.e(TAG, "Failed to load room list: " + e.toString());
       }
     }
-    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, roomList);
+    adapter = new RoomAdapter(this, android.R.layout.simple_list_item_1, roomList);
     roomListView.setAdapter(adapter);
     if (adapter.getCount() > 0) {
       roomListView.requestFocus();
@@ -400,10 +465,11 @@ public class ConnectActivity extends Activity {
 
   private void connectToRoom(String roomId, boolean commandLineRun, boolean loopback,
       boolean useValuesFromIntent, int runTimeMs) {
-    Intent intent = new Intent(this, RoomActivity.class);
-    intent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomId);
-    intent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
-    startActivity(intent);
+    if (mService != null) {
+      mService.connectToRoom(roomId);
+    }
+
+    mWaitingToEnterRoom = true;
 
     /*this.commandLineRun = commandLineRun;
 
@@ -701,6 +767,32 @@ public class ConnectActivity extends Activity {
       mConnectionTextView.setText(getString(R.string.connecting));
       mServerName = roomEditText.getText().toString();
       mService.connectToServer(roomEditText.getText().toString());
+    }
+  };
+
+  private final OnClickListener addRoomListener = new OnClickListener() {
+    @Override
+    public void onClick(View view) {
+      if (mAddRoomEditText.getVisibility() == View.GONE) {
+        mAddRoomEditText.setVisibility(View.VISIBLE);
+        mAddRoom.setImageResource(R.drawable.ic_input_white_24dp);
+      }
+      else {
+        mService.connectToRoom(mAddRoomEditText.getText().toString());
+        mAddRoomEditText.setVisibility(View.GONE);
+        mAddRoom.setImageResource(R.drawable.ic_add_white_24dp);
+      }
+    }
+  };
+
+  private OnClickListener loginButtonListener = new OnClickListener() {
+    @Override
+    public void onClick(View view) {
+      String username = mUsernameEditText.getText().toString();
+      String password = mPasswordEditText.getText().toString();
+      //mService.sendPostMessage(username, password, "https://" + mServerName + "/webrtc/api/v1/user/token/");
+      mService.sendPatchMessage(username, password, "https://" + mServerName + "/webrtc/api/v1/sessions/");
+
     }
   };
 }

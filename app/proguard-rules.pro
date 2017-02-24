@@ -15,13 +15,16 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+-dontobfuscate
+-dontoptimize
+-dontshrink
 
 -dontwarn android.support.**
-
+-dontwarn org.webrtc.voiceengine.WebRtcAudioTrack.**
 
 -keep class org.webrtc.**  { *; }
 
-
+-keep class android.media.AudioTrack.** { *; }
 
 -keep class org.appspot.apprtc.**  { *; }
 
