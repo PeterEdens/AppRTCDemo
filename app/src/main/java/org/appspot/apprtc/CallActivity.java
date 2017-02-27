@@ -28,6 +28,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -70,7 +71,7 @@ import org.webrtc.VideoRenderer;
  * Activity for peer connection call setup, call waiting
  * and call view.
  */
-public class CallActivity extends Activity implements AppRTCClient.SignalingEvents,
+public class CallActivity extends AppCompatActivity implements AppRTCClient.SignalingEvents,
                                                       PeerConnectionClient.PeerConnectionEvents,
                                                       CallFragment.OnCallEvents,
                                                       InitiateCallFragment.OnInitiateCallEvents {

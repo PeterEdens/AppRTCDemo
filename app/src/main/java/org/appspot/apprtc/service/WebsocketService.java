@@ -38,6 +38,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
 
+    enum ConnectionState {
+        DISCONNECTED,
+        CONNECTED,
+        ERROR
+    }
+
+    ConnectionState mState;
+
     // Binder given to clients
     private final IBinder mBinder = new WebsocketBinder();
 
@@ -102,6 +110,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
+    public void sendStatus(String displayName, String buddyPicture) {
+        if (appRtcClient != null) {
+            appRtcClient.sendStatus(displayName, buddyPicture);
+        }
+    }
+
     @Override
     public void onConnectedToRoom(String roomName) {
         Intent broadcastIntent = new Intent();
@@ -118,7 +132,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             users = new ArrayList<User>();
         }
 
-        if (!users.contains(user)) {
+        boolean found = false;
+        for (User u : users) {
+            if (u.Id.equals(user.Id)) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
             users.add(user);
             mUsers.put(room, users);
         }
@@ -199,7 +221,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void onChannelOpen() {
-
+        mState = ConnectionState.CONNECTED;
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_CONNECTED);
         sendBroadcast(broadcastIntent);
@@ -207,12 +229,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void onChannelClose() {
+        mState = ConnectionState.DISCONNECTED;
         broadcastClose();
     }
 
     @Override
     public void onChannelError(String description) {
-
+        mState = ConnectionState.ERROR;
     }
 
 
@@ -274,5 +297,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
 
         super.onDestroy();
+    }
+
+    public boolean getIsConnected() {
+        return mState == ConnectionState.CONNECTED;
     }
 }

@@ -20,10 +20,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Base64;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -42,6 +46,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -53,7 +59,7 @@ import org.json.JSONObject;
 /**
  * Handles the initial setup where the user selects which room to join.
  */
-public class ConnectActivity extends Activity {
+public class ConnectActivity extends AppCompatActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
@@ -133,6 +139,10 @@ public class ConnectActivity extends Activity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+
+      if (mService.getIsConnected()) {
+        onConnected();
+      }
     }
 
     @Override
@@ -141,17 +151,21 @@ public class ConnectActivity extends Activity {
     }
   };
 
+  private void onConnected() {
+    mConnectionTextView.setText(getString(R.string.connected));
+    mConnectionState = ConnectionState.CONNECTED;
+    mConnectionLayout.setVisibility(View.GONE);
+    mTextDescription.setText(getString(R.string.login_desc));
+    mLoginLayout.setVisibility(View.VISIBLE);
+    mRoomListLayout.setVisibility(View.VISIBLE);
+  }
+
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
 
       if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
-        mConnectionTextView.setText(getString(R.string.connected));
-        mConnectionState = ConnectionState.CONNECTED;
-        mConnectionLayout.setVisibility(View.GONE);
-        mTextDescription.setText(getString(R.string.login_desc));
-        mLoginLayout.setVisibility(View.VISIBLE);
-        mRoomListLayout.setVisibility(View.VISIBLE);
+        onConnected();
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
         mConnectionTextView.setText(getString(R.string.disconnected));
         mConnectionState = ConnectionState.DISCONNECTED;
@@ -745,7 +759,7 @@ public class ConnectActivity extends Activity {
       new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-          String roomId = ((TextView) view).getText().toString();
+          String roomId = roomList.get(i);
           connectToRoom(roomId, false, false, false, 0);
         }
       };
@@ -790,8 +804,17 @@ public class ConnectActivity extends Activity {
     public void onClick(View view) {
       String username = mUsernameEditText.getText().toString();
       String password = mPasswordEditText.getText().toString();
+
+      Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+      byte[] byteArrayImage = baos.toByteArray();
+
+      String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+      mService.sendStatus(username, encodedImage);
+
       //mService.sendPostMessage(username, password, "https://" + mServerName + "/webrtc/api/v1/user/token/");
-      mService.sendPatchMessage(username, password, "https://" + mServerName + "/webrtc/api/v1/sessions/");
+      //mService.sendPatchMessage(username, password, "https://" + mServerName + "/webrtc/api/v1/sessions/");
 
     }
   };
