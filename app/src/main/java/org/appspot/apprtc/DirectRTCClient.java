@@ -123,6 +123,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   }
 
+  @Override
+  public void sendStatus(String displayName, String buddyPicture) {
+
+  }
+
   /**
    * Connects to the room.
    *

@@ -343,6 +343,31 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+  // Send Status.
+  @Override
+  public void sendStatus(final String displayName, final String buddyPicture) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        JSONObject jsonStatusWrap = new JSONObject();
+        jsonPut(jsonStatusWrap, "Type", "Status");
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "displayName", displayName);
+        jsonPut(json, "buddyPicture", "data:image/jpeg;base64," + buddyPicture);
+
+        JSONObject jsonStatus = new JSONObject();
+        jsonPut(jsonStatus, "Type", "Status");
+        jsonPut(jsonStatus, "Status", json);
+
+        jsonPut(jsonStatusWrap, "Status", jsonStatus);
+        jsonPut(jsonStatus, "Type", "Status");
+
+        wsClient.send(jsonStatusWrap.toString());
+      }
+    });
+  }
+
   // Send Ice candidate to the other participant.
   @Override
   public void sendLocalIceCandidate(final SerializableIceCandidate candidate, final String to) {

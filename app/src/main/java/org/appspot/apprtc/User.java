@@ -7,7 +7,7 @@ public class User implements Serializable{
     String userId;
     String buddyPicture;
     String displayName;
-    String Id;
+    public String Id;
 
     public User(String userid, String pic, String name, String id) {
         this.userId = userid;
