@@ -57,12 +57,15 @@ public class ConnectActivity extends Activity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
+  public static final String EXTRA_SERVERURL = "org.appspot.apprtc.EXTRA_SERVERURL";
+  public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
   private static boolean commandLineRun = false;
 
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
   private IntentFilter mIntentFilter;
   String mServerName;
+  String mDisplayName;
   ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
 
   LinearLayout mConnectionLayout;
@@ -133,6 +136,7 @@ public class ConnectActivity extends Activity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+      mService.connectToServer(mServerName);
     }
 
     @Override
@@ -284,12 +288,21 @@ public class ConnectActivity extends Activity {
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
+
+    if (intent.hasExtra(EXTRA_SERVERURL)) {
+      mServerName = intent.getStringExtra(EXTRA_SERVERURL);
+      if (mServerName.startsWith("https://")) {
+        mServerName = mServerName.substring(8);
+      }
+    }
+
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
       boolean loopback = intent.getBooleanExtra(CallActivity.EXTRA_LOOPBACK, false);
       int runTimeMs = intent.getIntExtra(CallActivity.EXTRA_RUNTIME, 0);
       boolean useValuesFromIntent =
           intent.getBooleanExtra(CallActivity.EXTRA_USE_VALUES_FROM_INTENT, false);
       String room = sharedPref.getString(keyprefRoom, "");
+
       connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
     }
   }

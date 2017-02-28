@@ -1,4 +1,5 @@
-apply plugin: 'com.android.application'
+
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 23
@@ -11,8 +12,7 @@ android {
 
 
     defaultConfig {
-        applicationId "org.appspot.apprtc"
-        minSdkVersion 16
+        minSdkVersion 14
         targetSdkVersion 21
 
         versionCode 15663
