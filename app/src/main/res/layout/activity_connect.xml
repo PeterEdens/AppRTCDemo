@@ -8,12 +8,6 @@
     android:weightSum="1"
     android:layout_centerHorizontal="true">
 
-    <TextView
-        android:id="@+id/room_edittext_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/enter_server_name"/>
-
     <LinearLayout
         android:id="@+id/connect_layout"
         android:orientation="horizontal"
@@ -21,6 +15,12 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/room_edittext_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/enter_server_name"/>
 
         <EditText
             android:id="@+id/room_edittext"

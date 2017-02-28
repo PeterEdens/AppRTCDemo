@@ -10,7 +10,6 @@
 
 package org.appspot.apprtc;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -22,7 +21,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -38,7 +36,6 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -49,7 +46,6 @@ import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.appspot.apprtc.service.WebsocketService;
 import org.json.JSONArray;
@@ -85,7 +81,7 @@ public class ConnectActivity extends AppCompatActivity {
   EditText mAddRoomEditText;
   TextView mConnectionTextView;
   private Button connectButton;
-  private EditText roomEditText;
+  private EditText serverNameEditText;
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefVideoCallEnabled;
@@ -126,6 +122,7 @@ public class ConnectActivity extends AppCompatActivity {
   private String keyprefDataId;
   private Button mLoginButton;
   private boolean mWaitingToEnterRoom;
+  private boolean mStatusSent = false;
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -142,8 +139,11 @@ public class ConnectActivity extends AppCompatActivity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
-      mService.connectToServer(mServerName);
-      if (mService.getIsConnected()) {
+
+      if (!mService.getIsConnected()) {
+        mService.connectToServer(mServerName);
+      }
+      else {
         onConnected();
       }
     }
@@ -159,8 +159,19 @@ public class ConnectActivity extends AppCompatActivity {
     mConnectionState = ConnectionState.CONNECTED;
     mConnectionLayout.setVisibility(View.GONE);
     mTextDescription.setText(getString(R.string.login_desc));
-    mLoginLayout.setVisibility(View.VISIBLE);
+    mLoginLayout.setVisibility(View.GONE);
     mRoomListLayout.setVisibility(View.VISIBLE);
+
+    if (!mStatusSent) {
+      Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+      byte[] byteArrayImage = baos.toByteArray();
+
+      String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+      mService.sendStatus(mDisplayName, encodedImage);
+      mStatusSent = true;
+    }
   }
 
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -170,6 +181,7 @@ public class ConnectActivity extends AppCompatActivity {
       if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
         onConnected();
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
+        mStatusSent = false;
         mConnectionTextView.setText(getString(R.string.disconnected));
         mConnectionState = ConnectionState.DISCONNECTED;
         mConnectionLayout.setVisibility(View.VISIBLE);
@@ -261,8 +273,8 @@ public class ConnectActivity extends AppCompatActivity {
 
     setContentView(R.layout.activity_connect);
 
-    roomEditText = (EditText) findViewById(R.id.room_edittext);
-    roomEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    serverNameEditText = (EditText) findViewById(R.id.room_edittext);
+    serverNameEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
       @Override
       public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
         if (i == EditorInfo.IME_ACTION_DONE) {
@@ -271,7 +283,7 @@ public class ConnectActivity extends AppCompatActivity {
         return false;
       }
     });
-    roomEditText.requestFocus();
+    serverNameEditText.requestFocus();
 
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
@@ -307,6 +319,11 @@ public class ConnectActivity extends AppCompatActivity {
       if (mServerName.startsWith("https://")) {
         mServerName = mServerName.substring(8);
       }
+      serverNameEditText.setText(mServerName);
+    }
+
+    if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
+      mDisplayName = intent.getStringExtra(EXTRA_DISPLAYNAME);
     }
 
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
@@ -390,7 +407,7 @@ public class ConnectActivity extends AppCompatActivity {
   @Override
   public void onPause() {
     super.onPause();
-    String room = roomEditText.getText().toString();
+    String room = serverNameEditText.getText().toString();
     String roomListJson = new JSONArray(roomList).toString();
     SharedPreferences.Editor editor = sharedPref.edit();
     editor.putString(keyprefRoom, room);
@@ -402,7 +419,7 @@ public class ConnectActivity extends AppCompatActivity {
   public void onResume() {
     super.onResume();
     String room = sharedPref.getString(keyprefRoom, "");
-    roomEditText.setText(room);
+    serverNameEditText.setText(room);
     roomList = new ArrayList<String>();
     String roomListJson = sharedPref.getString(keyprefRoomList, null);
     if (roomListJson != null) {
@@ -779,7 +796,7 @@ public class ConnectActivity extends AppCompatActivity {
   private final OnClickListener addFavoriteListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      String newRoom = roomEditText.getText().toString();
+      String newRoom = serverNameEditText.getText().toString();
       if (newRoom.length() > 0 && !roomList.contains(newRoom)) {
         adapter.add(newRoom);
         adapter.notifyDataSetChanged();
@@ -791,8 +808,8 @@ public class ConnectActivity extends AppCompatActivity {
     @Override
     public void onClick(View view) {
       mConnectionTextView.setText(getString(R.string.connecting));
-      mServerName = roomEditText.getText().toString();
-      mService.connectToServer(roomEditText.getText().toString());
+      mServerName = serverNameEditText.getText().toString();
+      mService.connectToServer(serverNameEditText.getText().toString());
     }
   };
 
