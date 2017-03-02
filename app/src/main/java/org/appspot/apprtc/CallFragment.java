@@ -133,6 +133,9 @@ public class CallFragment extends Fragment {
       captureFormatSlider.setVisibility(View.GONE);
     }
 
+    if (mSoundPlayer != null) {
+      mSoundPlayer.Stop();
+    }
     mSoundPlayer = new SoundPlayer(mContext, R.raw.connect1);
     mSoundPlayer.Play(false);
   }

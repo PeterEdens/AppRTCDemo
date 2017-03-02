@@ -13,6 +13,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.appspot.apprtc.service.WebsocketService;
 import org.w3c.dom.Text;
@@ -76,9 +77,24 @@ public class RoomActivity extends AppCompatActivity {
             } else if (intent.getAction().equals(WebsocketService.ACTION_USER_LEFT)) {
                 User userLeft = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 RemoveUser(userLeft);
+            } else if (intent.getAction().equals(WebsocketService.ACTION_CHAT_MESSAGE)) {
+               String message = intent.getStringExtra(WebsocketService.EXTRA_MESSAGE);
+                String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
+                String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
+                User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+
+                if (user != null && message.length() == 0) {
+                    // status message
+                    message = user.displayName + status;
+                }
+                ShowMessage(message, time, status);
             }
         }
     };
+
+    private void ShowMessage(String message, String time, String status) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
     private void AddUser(User userEntered) {
 
@@ -106,6 +122,7 @@ public class RoomActivity extends AppCompatActivity {
         mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
         mIntentFilter.addAction(WebsocketService.ACTION_USER_ENTERED);
         mIntentFilter.addAction(WebsocketService.ACTION_USER_LEFT);
+        mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
 
         Intent intent = getIntent();
 

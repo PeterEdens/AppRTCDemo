@@ -110,6 +110,10 @@ public class InitiateCallFragment extends Fragment {
             }
         }
 
+        if (mSoundPlayer != null) {
+            mSoundPlayer.Stop();
+        }
+
         if (!incomingCall) {
             // initiate call when not incoming
             disconnectButton.setText(R.string.stop_calling);
