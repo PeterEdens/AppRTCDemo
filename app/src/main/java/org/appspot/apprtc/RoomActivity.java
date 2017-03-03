@@ -7,36 +7,42 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.appspot.apprtc.fragment.ChatFragment;
+import org.appspot.apprtc.fragment.FilesFragment;
+import org.appspot.apprtc.fragment.RoomFragment;
 import org.appspot.apprtc.service.WebsocketService;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class RoomActivity extends AppCompatActivity {
-    static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
-    static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
+    public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
+    public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
 
     static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
-
-    private RecyclerView recyclerView;
-    private RecyclerView.Adapter adapter;
-    private RecyclerView.LayoutManager layoutManager;
-    private ArrayList<User> userList=new ArrayList();
-    private String mRoomName = "";
-    private String mServerName = "";
-    TextView mRoomNameTextView;
-
+    String mRoomName = "";
     WebsocketService mService;
     boolean mWebsocketServiceBound = false;
     private IntentFilter mIntentFilter;
+
+    private Toolbar toolbar;
+    private TabLayout tabLayout;
+    private ViewPager viewPager;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -50,11 +56,8 @@ public class RoomActivity extends AppCompatActivity {
             mWebsocketServiceBound = true;
 
             ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
-            if (users != null) {
-                userList.clear();
-                userList.addAll(users);
-            }
-            adapter.notifyDataSetChanged();
+
+            mRoomFragment.addUsers(users);
         }
 
         @Override
@@ -91,6 +94,7 @@ public class RoomActivity extends AppCompatActivity {
             }
         }
     };
+    private RoomFragment mRoomFragment;
 
     private void ShowMessage(String message, String time, String status) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
@@ -98,18 +102,12 @@ public class RoomActivity extends AppCompatActivity {
 
     private void AddUser(User userEntered) {
 
-        if (userEntered != null && !userList.contains(userEntered)) {
-            userList.add(userEntered);
-        }
-        adapter.notifyDataSetChanged();
+        mRoomFragment.addUser(userEntered);
     }
 
     private void RemoveUser(User userLeft) {
 
-        if (userLeft != null && userList.contains(userLeft)) {
-            userList.remove(userLeft);
-        }
-        adapter.notifyDataSetChanged();
+        mRoomFragment.removeUser(userLeft);
     }
 
     @Override
@@ -124,24 +122,18 @@ public class RoomActivity extends AppCompatActivity {
         mIntentFilter.addAction(WebsocketService.ACTION_USER_LEFT);
         mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
 
-        Intent intent = getIntent();
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        if (intent != null && intent.hasExtra(EXTRA_ROOM_NAME)) {
-            mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
-        }
+        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        setupViewPager(viewPager);
 
-        if (intent != null && intent.hasExtra(EXTRA_SERVER_NAME)) {
-            mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
-        }
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(viewPager);
+        setupTabIcons();
 
-        mRoomNameTextView = (TextView) findViewById(R.id.roomName);
-        mRoomNameTextView.setText(mRoomName);
-        recyclerView= (RecyclerView) findViewById(R.id.recycler_view);
-        layoutManager=new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
 
-        adapter=new UsersAdapter(userList,getApplicationContext(), mServerName);
-        recyclerView.setAdapter(adapter);
 
     }
 
@@ -167,4 +159,54 @@ public class RoomActivity extends AppCompatActivity {
         unregisterReceiver(mReceiver);
     }
 
+    private void setupTabIcons() {
+        int[] tabIcons = {
+                R.drawable.rooms,
+                R.drawable.recent_chats,
+                R.drawable.files
+        };
+
+        tabLayout.getTabAt(0).setIcon(tabIcons[0]);
+        tabLayout.getTabAt(1).setIcon(tabIcons[1]);
+        tabLayout.getTabAt(2).setIcon(tabIcons[2]);
+    }
+
+    private void setupViewPager(ViewPager viewPager) {
+        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        mRoomFragment = new RoomFragment();
+        adapter.addFrag(mRoomFragment, getString(R.string.rooms));
+        adapter.addFrag(new ChatFragment(), getString(R.string.recent));
+        adapter.addFrag(new FilesFragment(), getString(R.string.files));
+        viewPager.setAdapter(adapter);
+    }
+
+    class ViewPagerAdapter extends FragmentPagerAdapter {
+        private final List<Fragment> mFragmentList = new ArrayList<>();
+        private final List<String> mFragmentTitleList = new ArrayList<>();
+
+        public ViewPagerAdapter(FragmentManager manager) {
+            super(manager);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            return mFragmentList.get(position);
+        }
+
+        @Override
+        public int getCount() {
+            return mFragmentList.size();
+        }
+
+        public void addFrag(Fragment fragment, String title) {
+            mFragmentList.add(fragment);
+            mFragmentTitleList.add(title);
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+
+            return mFragmentTitleList.get(position);
+        }
+    }
 }

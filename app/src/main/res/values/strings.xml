@@ -227,4 +227,6 @@
     <string name="answer">Answer</string>
     <string name="reject_call">Reject Call</string>
     <string name="stop_calling">Stop Calling</string>
+    <string name="recent">Recent</string>
+    <string name="files">Files</string>
 </resources>
