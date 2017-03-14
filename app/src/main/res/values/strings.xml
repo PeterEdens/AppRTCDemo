@@ -229,4 +229,19 @@
     <string name="stop_calling">Stop Calling</string>
     <string name="recent">Recent</string>
     <string name="files">Files</string>
+
+    <string name="chooser_class"></string>
+    <string name="extra_mode"></string>
+    <string name="mode_im"></string>
+    <string name="mode_video_chat"></string>
+    <string name="mode_share_files"></string>
+    <string name="drawer_chat">Instant Messaging</string>
+    <string name="drawer_video_chat">Audio/Video Chat</string>
+    <string name="drawer_share_files">Share Files</string>
+    <string name="drawer_item_settings">Settings</string>
+    <string name="drawer_close">Close</string>
+    <string name="drawer_open">Open</string>
+    <string name="action_accounts">Accounts</string>
+    <string name="emptyRoom">No one else in this room\n\nShare this room with your friends to meet them here</string>
+    <string name="emptyChat">You have not received any messages or missed calls.</string>
 </resources>

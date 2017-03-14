@@ -13,6 +13,7 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -42,6 +43,8 @@ import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -365,9 +368,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Create CPU monitor
     cpuMonitor = new CpuMonitor(this);
     hudFragment.setCpuMonitor(cpuMonitor);
+    Bundle extras = intent.getExtras();
 
     // Send intent arguments to fragments.
-    initiateCallFragment.setArguments(intent.getExtras());
+    initiateCallFragment.setArguments(extras);
     callFragment.setArguments(intent.getExtras());
     hudFragment.setArguments(intent.getExtras());
     // Activate call and HUD fragments and start the call.
@@ -426,7 +430,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       initiator = true;
       signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
     }
-    if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
+    else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
      // onIceCandidate((SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE));
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
@@ -434,13 +438,29 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       mPeerId = sdp.from;
 
       if (peerConnectionClient.isConnected()) {
-        onRemoteDescription(sdp);
+        onRemoteDescription(sdp, "", "");
       }
       else {
         mRemoteSdp = sdp;
       }
     }
+    else if (intent.getAction().equals(WebsocketService.ACTION_BYE)) {
 
+      String reason = intent.getStringExtra(WebsocketService.EXTRA_REASON);
+      User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+
+      if (reason.equals("ringertimeout")) {
+        finish();
+      }
+      else if (reason.equals("pickuptimeout")) {
+        initiateCallFragment.showPickupTimeout(user);
+        finish();
+      }
+      else {
+        // normal call clearing
+        finish();
+      }
+    }
   }
 
   @Override
@@ -844,7 +864,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteDescription(final SerializableSessionDescription sdp) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp, String fromId, String roomName) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -939,7 +959,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onBye(final String reason) {
+  public void onBye(final String reason, String fromId, String roomName) {
 
     runOnUiThread(new Runnable() {
       @Override

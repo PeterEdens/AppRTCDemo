@@ -30,6 +30,7 @@ public class RoomFragment extends Fragment {
     private String mServerName = "";
     TextView mRoomNameTextView;
     private Context mContext;
+    private TextView emptyRoom;
 
     public RoomFragment() {
         // Required empty public constructor
@@ -50,6 +51,7 @@ public class RoomFragment extends Fragment {
 
         mRoomNameTextView = (TextView) controlView.findViewById(R.id.roomName);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
+        emptyRoom = (TextView) controlView.findViewById(R.id.emptyRoom);
 
         return controlView;
     }
@@ -74,6 +76,15 @@ public class RoomFragment extends Fragment {
 
         adapter=new UsersAdapter(userList,mContext, mServerName);
         recyclerView.setAdapter(adapter);
+
+
+        if (emptyRoom != null) {
+            if (userList.size() == 0) {
+                emptyRoom.setVisibility(View.VISIBLE);
+            } else if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
+                emptyRoom.setVisibility(View.GONE);
+            }
+        }
     }
 
     public void addUsers(ArrayList<User> users) {
@@ -81,7 +92,14 @@ public class RoomFragment extends Fragment {
             userList.clear();
             userList.addAll(users);
         }
-        adapter.notifyDataSetChanged();
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+
+        if (userList.size() != 0 && emptyRoom != null && emptyRoom.getVisibility() == View.VISIBLE) {
+            emptyRoom.setVisibility(View.GONE);
+        }
     }
 
     public void addUser(User userEntered) {
@@ -89,6 +107,10 @@ public class RoomFragment extends Fragment {
             userList.add(userEntered);
         }
         adapter.notifyDataSetChanged();
+
+        if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
+            emptyRoom.setVisibility(View.GONE);
+        }
     }
 
     public void removeUser(User userLeft) {
@@ -96,5 +118,9 @@ public class RoomFragment extends Fragment {
             userList.remove(userLeft);
         }
         adapter.notifyDataSetChanged();
+
+        if (userList.size() == 0 && emptyRoom.getVisibility() != View.VISIBLE) {
+            emptyRoom.setVisibility(View.VISIBLE);
+        }
     }
 }

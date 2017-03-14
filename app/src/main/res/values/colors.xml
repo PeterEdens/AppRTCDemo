@@ -3,4 +3,8 @@
     <color name="primary">#ff0091ea</color>
     <color name="primary_dark">#ff0091ff</color>
     <color name="accent">#ff0091ea</color>
+    <color name="white">#ffffffff</color>
+    <color name="white70">#b2ffffff</color>
+    <color name="incoming">#ffcccccc</color>
+    <color name="outgoing">#ffccffff</color>
 </resources>

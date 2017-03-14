@@ -46,6 +46,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
     public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
+    private String mServer = "";
 
     enum ConnectionState {
         DISCONNECTED,
@@ -68,6 +69,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     public List<PeerConnection.IceServer> getIceServers() {
         return mIceServers;
+    }
+
+    public String getServerAddress() {
+        return mServer;
     }
 
     public void connectToRoom(String roomName) {
@@ -107,8 +112,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     public void connectToServer(String address) {
+        mServer = address;
         if (appRtcClient != null) {
             appRtcClient.connectToServer(address);
+        }
+    }
+
+    public void sendChatMessage(String message, String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendChatMessage(message, to);
         }
     }
 
@@ -182,10 +194,16 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onBye(final String reason) {
+    public void onBye(final String reason, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_BYE);
         broadcastIntent.putExtra(EXTRA_REASON, reason);
+        ArrayList<User> users = mUsers.get(roomName);
+        for (User user : users) {
+            if (user.Id.equals(fromId)) {
+                broadcastIntent.putExtra(EXTRA_USER, user);
+            }
+        }
         sendBroadcast(broadcastIntent);
     }
 
@@ -254,10 +272,16 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp) {
+    public void onRemoteDescription(SerializableSessionDescription sdp, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+        ArrayList<User> users = mUsers.get(roomName);
+        for (User user : users) {
+            if (user.Id.equals(fromId)) {
+                broadcastIntent.putExtra(EXTRA_USER, user);
+            }
+        }
         sendBroadcast(broadcastIntent);
     }
 

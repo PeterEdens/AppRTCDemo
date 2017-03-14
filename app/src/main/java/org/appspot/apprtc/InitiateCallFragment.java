@@ -23,8 +23,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.appspot.apprtc.sound.SoundPlayer;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
 
 /**
@@ -49,6 +51,10 @@ public class InitiateCallFragment extends Fragment {
             connectButton.setVisibility(View.VISIBLE);
         }
         disconnectButton.setVisibility(View.VISIBLE);
+    }
+
+    public void showPickupTimeout(User user) {
+        Toast.makeText(mContext, user.displayName + " does not pickup", Toast.LENGTH_LONG).show();
     }
 
     public interface OnInitiateCallEvents {
@@ -104,7 +110,17 @@ public class InitiateCallFragment extends Fragment {
         if (args != null) {
             if (args.containsKey(CallActivity.EXTRA_USER)) {
                 User user = (User) args.getSerializable(CallActivity.EXTRA_USER);
+                String server = args.getString(ConnectActivity.EXTRA_SERVERURL);
                 contactView.setText(user.displayName);
+                String buddyPic = user.buddyPicture;
+                if (buddyPic.length() != 0) {
+                    String path = buddyPic.substring(4);
+                    String url = "https://" + server + RoomActivity.BUDDY_IMG_PATH + path;
+                    ThumbnailsCacheManager.LoadImage(url, contactImageView);
+                }
+                else {
+                    contactImageView.setImageResource(R.drawable.user_icon);
+                }
                 incomingCall = false;
                 enableCallButtons();
             }
@@ -144,5 +160,13 @@ public class InitiateCallFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         callEvents = (OnInitiateCallEvents) activity;
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mSoundPlayer != null) {
+            mSoundPlayer.Stop();
+        }
+        super.onDestroy();
     }
 }

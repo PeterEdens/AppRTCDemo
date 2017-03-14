@@ -10,6 +10,9 @@
 
 package org.appspot.apprtc.util;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.text.TextUtils;
 
 import java.io.BufferedReader;
@@ -28,6 +31,7 @@ import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -46,9 +50,14 @@ public class AsyncHttpURLConnection {
   private String contentType;
   static java.net.CookieManager msCookieManager = new java.net.CookieManager();
   private String authorization = "";
+  boolean mIsBitmap = false;
 
   public void setAuthorization(String message) {
     authorization = message;
+  }
+
+  public void setBitmap() {
+    mIsBitmap = true;
   }
 
   /**
@@ -57,6 +66,7 @@ public class AsyncHttpURLConnection {
   public interface AsyncHttpEvents {
     void onHttpError(String errorMessage);
     void onHttpComplete(String response);
+    void onHttpComplete(Bitmap response);
   }
 
   public AsyncHttpURLConnection(String method, String url, String message, AsyncHttpEvents events) {
@@ -92,6 +102,15 @@ public class AsyncHttpURLConnection {
   }
 
   private void sendHttpMessage() {
+    if (mIsBitmap) {
+      Bitmap bitmap = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+      if (bitmap != null) {
+        events.onHttpComplete(bitmap);
+        return;
+      }
+    }
+
     HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier());
 // Create a trust manager that does not validate certificate chains
     TrustManager[] trustAllCerts = new TrustManager[] {
@@ -109,15 +128,22 @@ public class AsyncHttpURLConnection {
     };
 
 // Install the all-trusting trust manager
+    SSLSocketFactory noSSLv3Factory = null;
     try {
-      SSLContext sc = SSLContext.getInstance("SSL");
+      SSLContext sc = SSLContext.getInstance("TLSv1");
       sc.init(null, trustAllCerts, new java.security.SecureRandom());
-      HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+      if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+        noSSLv3Factory = new TLSSocketFactory();
+      } else {
+        noSSLv3Factory = sc.getSocketFactory();
+      }
+      HttpsURLConnection.setDefaultSSLSocketFactory(noSSLv3Factory);
     } catch (GeneralSecurityException e) {
     }
 
     try {
       HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
+      connection.setSSLSocketFactory(noSSLv3Factory);
       byte[] postData = new byte[0];
       if (message != null) {
         postData = message.getBytes("UTF-8");
@@ -169,10 +195,21 @@ public class AsyncHttpURLConnection {
       else {
         responseStream = connection.getInputStream();
       }
-      String response = drainStream(responseStream);
+
+      String responseType = connection.getContentType();
+      if (responseType.startsWith("image/")) {
+        Bitmap bitmap = BitmapFactory.decodeStream(responseStream);
+        if (mIsBitmap) {
+          ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
+        }
+        events.onHttpComplete(bitmap);
+      }
+      else {
+        String response = drainStream(responseStream);
+        events.onHttpComplete(response);
+      }
       responseStream.close();
       connection.disconnect();
-      events.onHttpComplete(response);
     } catch (SocketTimeoutException e) {
       events.onHttpError("HTTP " + method + " to " + url + " timeout");
     } catch (IOException e) {

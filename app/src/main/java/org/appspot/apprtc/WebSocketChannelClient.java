@@ -13,6 +13,7 @@ package org.appspot.apprtc;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
+import android.graphics.Bitmap;
 import android.net.SSLCertificateSocketFactory;
 import android.os.Handler;
 import android.util.Log;
@@ -223,6 +224,11 @@ public class WebSocketChannelClient {
 
           @Override
           public void onHttpComplete(String response) {}
+
+          @Override
+          public void onHttpComplete(Bitmap response) {
+
+          }
         });
     httpConnection.send();
   }

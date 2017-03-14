@@ -43,11 +43,22 @@ android {
     }
 }
 
+repositories {
+    jcenter()
+    maven { url "https://jitpack.io" }
+
+    flatDir {
+        dirs 'libs'
+    }
+}
+
 dependencies {
     compile files('libs/autobanh.jar')
     compile files('libs/base_java.jar')
     compile files('libs/libjingle_peerconnection.jar')
+    compile project(':sharedresourceslib')
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.android.support:recyclerview-v7:24.2.1'
     compile 'com.android.support:design:24.2.1'
+    compile 'com.jakewharton:disklrucache:2.0.2'
 }

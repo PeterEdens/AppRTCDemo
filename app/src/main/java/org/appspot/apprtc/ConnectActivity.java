@@ -55,12 +55,13 @@ import org.json.JSONObject;
 /**
  * Handles the initial setup where the user selects which room to join.
  */
-public class ConnectActivity extends AppCompatActivity {
+public class ConnectActivity extends DrawerActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
   public static final String EXTRA_SERVERURL = "org.appspot.apprtc.EXTRA_SERVERURL";
   public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
+  public static final String EXTRA_AVATAR = "org.appspot.apprtc.EXTRA_AVATAR";
   private static boolean commandLineRun = false;
 
   WebsocketService mService;
@@ -123,6 +124,8 @@ public class ConnectActivity extends AppCompatActivity {
   private Button mLoginButton;
   private boolean mWaitingToEnterRoom;
   private boolean mStatusSent = false;
+  private String mCurrentRoom;
+  private String mAvatar;
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -163,12 +166,18 @@ public class ConnectActivity extends AppCompatActivity {
     mRoomListLayout.setVisibility(View.VISIBLE);
 
     if (!mStatusSent) {
-      Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
-      byte[] byteArrayImage = baos.toByteArray();
+      String encodedImage = "";
+      if (mAvatar == null) {
+        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+        byte[] byteArrayImage = baos.toByteArray();
 
-      String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+        encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+      }
+      else {
+        encodedImage = mAvatar;
+      }
       mService.sendStatus(mDisplayName, encodedImage);
       mStatusSent = true;
     }
@@ -234,7 +243,7 @@ public class ConnectActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
 
     // Get setting keys.
-    PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+    PreferenceManager.setDefaultValues(this, R.xml.webrtc_preferences, false);
     sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
     keyprefVideoCallEnabled = getString(R.string.pref_videocall_key);
     keyprefScreencapture = getString(R.string.pref_screencapture_key);
@@ -272,6 +281,12 @@ public class ConnectActivity extends AppCompatActivity {
     keyprefDataId = getString(R.string.pref_data_id_key);
 
     setContentView(R.layout.activity_connect);
+
+    if (getSupportActionBar() != null) {
+      getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+      getSupportActionBar().setHomeButtonEnabled(true);
+      setupDrawer();
+    }
 
     serverNameEditText = (EditText) findViewById(R.id.room_edittext);
     serverNameEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -320,6 +335,10 @@ public class ConnectActivity extends AppCompatActivity {
         mServerName = mServerName.substring(8);
       }
       serverNameEditText.setText(mServerName);
+    }
+
+    if (intent.hasExtra(EXTRA_AVATAR)) {
+      mAvatar = intent.getStringExtra(EXTRA_AVATAR);
     }
 
     if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
@@ -393,16 +412,20 @@ public class ConnectActivity extends AppCompatActivity {
   }
 
   @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    // Handle presses on the action bar items.
-    if (item.getItemId() == R.id.action_settings) {
-      Intent intent = new Intent(this, SettingsActivity.class);
-      startActivity(intent);
+  public boolean onOptionsItemSelected(final MenuItem item) {
+    if (item.getItemId() == android.R.id.home) {
+
+      if (isDrawerOpen()) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+
       return true;
-    } else {
-      return super.onOptionsItemSelected(item);
     }
+    return super.onOptionsItemSelected(item);
   }
+
 
   @Override
   public void onPause() {
@@ -432,7 +455,8 @@ public class ConnectActivity extends AppCompatActivity {
         Log.e(TAG, "Failed to load room list: " + e.toString());
       }
     }
-    adapter = new RoomAdapter(this, android.R.layout.simple_list_item_1, roomList);
+    adapter = new RoomAdapter(this, R.id.text_id, R.layout.rooms_list, roomList);
+    adapter.setCurrentRoom(mCurrentRoom);
     roomListView.setAdapter(adapter);
     if (adapter.getCount() > 0) {
       roomListView.requestFocus();
@@ -789,6 +813,9 @@ public class ConnectActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = roomList.get(i);
+          mCurrentRoom = roomId;
+          adapter.setCurrentRoom(roomId);
+          adapter.notifyDataSetChanged();
           connectToRoom(roomId, false, false, false, 0);
         }
       };
@@ -821,6 +848,9 @@ public class ConnectActivity extends AppCompatActivity {
         mAddRoom.setImageResource(R.drawable.ic_input_white_24dp);
       }
       else {
+        mCurrentRoom = mAddRoomEditText.getText().toString();
+        adapter.setCurrentRoom(mCurrentRoom);
+        adapter.notifyDataSetChanged();
         mService.connectToRoom(mAddRoomEditText.getText().toString());
         mAddRoomEditText.setVisibility(View.GONE);
         mAddRoom.setImageResource(R.drawable.ic_add_white_24dp);
@@ -847,4 +877,17 @@ public class ConnectActivity extends AppCompatActivity {
 
     }
   };
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putString("currentRoom", adapter.mCurrentRoom);
+  }
+
+  @Override
+  public void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    String currentRoom = savedInstanceState.getString("currentRoom");
+    mCurrentRoom = currentRoom;
+  }
 }

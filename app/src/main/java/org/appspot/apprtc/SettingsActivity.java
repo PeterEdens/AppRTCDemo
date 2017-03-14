@@ -256,8 +256,10 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
 
   private void updateSummary(SharedPreferences sharedPreferences, String key) {
     Preference updatedPref = settingsFragment.findPreference(key);
-    // Set summary to be the user-description for the selected value
-    updatedPref.setSummary(sharedPreferences.getString(key, ""));
+    if (updatedPref != null) {
+      // Set summary to be the user-description for the selected value
+      updatedPref.setSummary(sharedPreferences.getString(key, ""));
+    }
   }
 
   private void updateSummaryBitrate(SharedPreferences sharedPreferences, String key) {
@@ -267,9 +269,11 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
 
   private void updateSummaryB(SharedPreferences sharedPreferences, String key) {
     Preference updatedPref = settingsFragment.findPreference(key);
-    updatedPref.setSummary(sharedPreferences.getBoolean(key, true)
-            ? getString(R.string.pref_value_enabled)
-            : getString(R.string.pref_value_disabled));
+    if (updatedPref != null) {
+      updatedPref.setSummary(sharedPreferences.getBoolean(key, true)
+              ? getString(R.string.pref_value_enabled)
+              : getString(R.string.pref_value_disabled));
+    }
   }
 
   private void updateSummaryList(SharedPreferences sharedPreferences, String key) {

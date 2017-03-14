@@ -128,6 +128,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   }
 
+  @Override
+  public void sendChatMessage(String message, String to) {
+
+  }
+
   /**
    * Connects to the room.
    *
@@ -292,7 +297,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       } else if (type.equals("answer")) {
         SerializableSessionDescription sdp = new SerializableSessionDescription(
                 SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"), "");
-        events.onRemoteDescription(sdp);
+        events.onRemoteDescription(sdp, "", "");
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(
             SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));

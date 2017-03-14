@@ -17,6 +17,7 @@ import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Base64;
@@ -29,7 +30,9 @@ import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -166,6 +169,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               public void onHttpComplete(String response) {
                 events.onPostResponse(response);
               }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
+              }
             });
 
     httpConnection.setContentType("application/x-www-form-urlencoded");
@@ -194,6 +202,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               @Override
               public void onHttpComplete(String response) {
                 events.onConfigResponse(response);
+              }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
               }
             });
 
@@ -425,6 +438,42 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+  // Send Ice candidate to the other participant.
+  @Override
+  public void sendChatMessage(final String message, final String to) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        SecureRandom random = new SecureRandom();
+        byte mid[] = new byte[20];
+        random.nextBytes(mid);
+
+        JSONObject jsonChatWrap = new JSONObject();
+        jsonPut(jsonChatWrap, "Type", "Chat");
+
+        JSONObject json = new JSONObject();
+
+        jsonPut(json, "Message", message);
+        jsonPut(json, "NoEcho", true);
+
+        JSONObject jsonChat = new JSONObject();
+        if (to.length() != 0) {
+          jsonPut(jsonChat, "To", to);
+        }
+        jsonPut(jsonChat, "Type", "Chat");
+        jsonPut(jsonChat, "Chat", json);
+
+        jsonPut(jsonChatWrap, "Chat", jsonChat);
+
+
+        // Call  sends ice candidates to websocket server.
+        wsClient.send(jsonChatWrap.toString());
+
+      }
+    });
+  }
+
   // Send removed Ice candidates to the other participant.
   @Override
   public void sendLocalIceCandidateRemovals(final SerializableIceCandidate[] candidates, String to) {
@@ -587,7 +636,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           JSONObject answerJson = new JSONObject(answerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
                     SerializableSessionDescription.Type.fromCanonicalForm(type), answerJson.getString("sdp"), mIdFrom);
-            events.onRemoteDescription(sdp);
+            events.onRemoteDescription(sdp, mIdFrom, mRoomName);
 
         } else if (type.equals("Offer")) {
           if (!initiator) {
@@ -595,14 +644,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             JSONObject offerJson = new JSONObject(offerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
                     SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"), mIdFrom);
-            events.onRemoteDescription(sdp);
+            events.onRemoteDescription(sdp, mIdFrom, mRoomName);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
         } else if (type.equals("Bye")) {
           String byeTxt = json.optString("Bye");
           JSONObject byeJson = new JSONObject(byeTxt);
-          events.onBye(byeJson.optString("Reason"));
+          events.onBye(byeJson.optString("Reason"), mIdFrom, mRoomName);
         } else if (type.equals("Chat")) {
           String chatTxt = json.optString("Chat");
           JSONObject chatJson = new JSONObject(chatTxt);
@@ -693,6 +742,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               }
             }
           }
+
+          @Override
+          public void onHttpComplete(Bitmap response) {
+
+          }
         });
     httpConnection.send();
   }
@@ -734,6 +788,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               @Override
               public void onHttpComplete(String response) {
                 events.onPatchResponse(response);
+              }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
               }
             });
     httpConnection.setContentType("application/json");
