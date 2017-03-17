@@ -41,5 +41,5 @@
         android:layout_height="48dp"
         android:layout_alignParentRight="true"
         android:layout_margin="25dp"
-        android:background="@drawable/ic_chat_bubble_black_24dp"/>
+        android:background="@drawable/ic_chat"/>
 </RelativeLayout>

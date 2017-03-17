@@ -48,6 +48,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
     private String mServer = "";
 
+    public void disconnectFromServer() {
+        if (appRtcClient != null) {
+            appRtcClient.disconnectFromRoom();
+        }
+    }
+
     enum ConnectionState {
         DISCONNECTED,
         CONNECTED,
@@ -169,21 +175,24 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         if (!found) {
             users.add(user);
             mUsers.put(room, users);
-        }
 
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_USER_ENTERED);
-        broadcastIntent.putExtra(EXTRA_USER, user);
-        broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
-        sendBroadcast(broadcastIntent);
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_USER_ENTERED);
+            broadcastIntent.putExtra(EXTRA_USER, user);
+            broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
+            sendBroadcast(broadcastIntent);
+        }
     }
 
     @Override
     public void onUserLeftRoom(User user, String room) {
         ArrayList<User> users = mUsers.get(room);
-        if (users.contains(user)) {
-            users.remove(user);
-            mUsers.put(room, users);
+        for (User u : users) {
+            if (u.Id.equals(user.Id)) {
+                users.remove(u);
+                mUsers.put(room, users);
+                break;
+            }
         }
 
         Intent broadcastIntent = new Intent();
@@ -236,7 +245,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             JSONObject json = new JSONObject(response);
             String username = json.getString("TurnUsername");
             String password = json.getString("TurnPassword");
-            JSONArray stunUris = json.getJSONArray("TurnURIs");
+            JSONArray stunUris = json.getJSONArray("StunURIs");
             for (int count = 0; count < stunUris.length(); count++) {
                 String stunUri = stunUris.getString(count);
                 PeerConnection.IceServer iceServer = new PeerConnection.IceServer(stunUri, "", "");

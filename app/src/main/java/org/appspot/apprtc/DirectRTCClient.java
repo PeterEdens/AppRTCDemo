@@ -104,6 +104,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void sendLeave() {
+
+  }
+
+  @Override
   public void sendBye(String to) {
 
   }

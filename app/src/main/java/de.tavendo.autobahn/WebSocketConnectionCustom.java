@@ -387,7 +387,7 @@ public class WebSocketConnectionCustom  extends WebSocketConnection implements W
                     //factory = sslTrustManager.GetSocketFactory();
 
                     // Create a trust manager that does not validate certificate chains
-                    TrustManager[] trustAllCerts = new TrustManager[] {
+                    X509TrustManager[] trustAllCerts = new X509TrustManager[] {
                             new X509TrustManager() {
                                 public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                                     return new X509Certificate[0];
@@ -406,7 +406,7 @@ public class WebSocketConnectionCustom  extends WebSocketConnection implements W
                         SSLContext sc = SSLContext.getInstance("TLSv1");
                         sc.init(null, trustAllCerts, new java.security.SecureRandom());
                         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-                            noSSLv3Factory = new TLSSocketFactory();
+                            noSSLv3Factory = new TLSSocketFactory(trustAllCerts, new java.security.SecureRandom());
                         } else {
                             noSSLv3Factory = sc.getSocketFactory();
                         }

@@ -10,6 +10,7 @@
 
 package org.appspot.apprtc;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
@@ -19,6 +20,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -26,6 +28,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -129,7 +133,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   // List of mandatory application permissions.
   private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
-      "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
+      "android.permission.RECORD_AUDIO", "android.permission.INTERNET", "android.permission.CAMERA"};
 
   // Peer connection statistics callback period in ms.
   private static final int STAT_CALLBACK_PERIOD = 1000;
@@ -148,6 +152,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
+  private static final int PERMISSIONS_REQUEST = 1;
   private PeerConnectionClient peerConnectionClient = null;
 
   //private AppRTCClient appRtcClient;
@@ -182,12 +187,48 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean screencaptureEnabled = false;
   private static Intent mediaProjectionPermissionResultData;
   private static int mediaProjectionPermissionResultCode;
+  private boolean disconnected = false;
+
+  private String keyprefVideoCallEnabled;
+  private String keyprefScreencapture;
+  private String keyprefCamera2;
+  private String keyprefResolution;
+  private String keyprefFps;
+  private String keyprefCaptureQualitySlider;
+  private String keyprefVideoBitrateType;
+  private String keyprefVideoBitrateValue;
+  private String keyprefVideoCodec;
+  private String keyprefAudioBitrateType;
+  private String keyprefAudioBitrateValue;
+  private String keyprefAudioCodec;
+  private String keyprefHwCodecAcceleration;
+  private String keyprefCaptureToTexture;
+  private String keyprefFlexfec;
+  private String keyprefNoAudioProcessingPipeline;
+  private String keyprefAecDump;
+  private String keyprefOpenSLES;
+  private String keyprefDisableBuiltInAec;
+  private String keyprefDisableBuiltInAgc;
+  private String keyprefDisableBuiltInNs;
+  private String keyprefEnableLevelControl;
+  private String keyprefDisplayHud;
+  private String keyprefTracing;
+  private String keyprefRoomServerUrl;
+  private String keyprefEnableDataChannel;
+  private String keyprefOrdered;
+  private String keyprefMaxRetransmitTimeMs;
+  private String keyprefMaxRetransmits;
+  private String keyprefDataProtocol;
+  private String keyprefNegotiated;
+  private String keyprefDataId;
 
   // Controls
   private InitiateCallFragment initiateCallFragment;
   private CallFragment callFragment;
   private HudFragment hudFragment;
   private CpuMonitor cpuMonitor;
+
+  private SharedPreferences sharedPref;
 
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
@@ -211,7 +252,37 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean mWaitingToStartCall;
   private boolean mCaptureToTexture;
   private SoundPlayer mSoundPlayer;
-
+  private boolean mVideoCallEnabled;
+  private boolean mUseCamera2;
+  private String mProtocol;
+  private int mVideoWidth = 0;
+  private int mVideoHeight = 0;
+  private boolean mLoopback = false;
+  private String mVideoCodec;
+  private boolean mHwCodecEnabled = false;
+  private boolean mFlexfecEnabled;
+  private boolean mDisableBuiltInAGC;
+  private boolean mEnableLevelControl;
+  private boolean mAecDump;
+  private String mAudioCodec;
+  private int mId = -1;
+  private boolean mDisableBuiltInNS;
+  private boolean mNoAudioProcessing;
+  private boolean mUseOpenSLES;
+  private int mMaxRetr;
+  private boolean mDisableBuiltInAEC;
+  private int mCameraFps;
+  private boolean mCaptureQualitySlider;
+  private int mVideoStartBitrate;
+  private int mAudioStartBitrate;
+  private boolean mDisplayHud;
+  private boolean mTracing;
+  private boolean mDataChannelEnabled;
+  private boolean mOrdered;
+  private boolean mNegotiated;
+  private int mMaxRetrMs = -1;
+  private SerializableIceCandidate mRemoteIceCandidate;
+  private boolean mFinishCalled;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -227,6 +298,45 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
         | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     setContentView(R.layout.activity_call);
+
+    // Get setting keys.
+    PreferenceManager.setDefaultValues(this, R.xml.webrtc_preferences, false);
+    sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+
+    keyprefVideoCallEnabled = getString(R.string.pref_videocall_key);
+    keyprefScreencapture = getString(R.string.pref_screencapture_key);
+    keyprefCamera2 = getString(R.string.pref_camera2_key);
+    keyprefResolution = getString(R.string.pref_resolution_key);
+    keyprefFps = getString(R.string.pref_fps_key);
+    keyprefCaptureQualitySlider = getString(R.string.pref_capturequalityslider_key);
+    keyprefVideoBitrateType = getString(R.string.pref_maxvideobitrate_key);
+    keyprefVideoBitrateValue = getString(R.string.pref_maxvideobitratevalue_key);
+    keyprefVideoCodec = getString(R.string.pref_videocodec_key);
+    keyprefHwCodecAcceleration = getString(R.string.pref_hwcodec_key);
+    keyprefCaptureToTexture = getString(R.string.pref_capturetotexture_key);
+    keyprefFlexfec = getString(R.string.pref_flexfec_key);
+    keyprefAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
+    keyprefAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
+    keyprefAudioCodec = getString(R.string.pref_audiocodec_key);
+    keyprefNoAudioProcessingPipeline = getString(R.string.pref_noaudioprocessing_key);
+    keyprefAecDump = getString(R.string.pref_aecdump_key);
+    keyprefOpenSLES = getString(R.string.pref_opensles_key);
+    keyprefDisableBuiltInAec = getString(R.string.pref_disable_built_in_aec_key);
+    keyprefDisableBuiltInAgc = getString(R.string.pref_disable_built_in_agc_key);
+    keyprefDisableBuiltInNs = getString(R.string.pref_disable_built_in_ns_key);
+    keyprefEnableLevelControl = getString(R.string.pref_enable_level_control_key);
+    keyprefDisplayHud = getString(R.string.pref_displayhud_key);
+    keyprefTracing = getString(R.string.pref_tracing_key);
+    keyprefRoomServerUrl = getString(R.string.pref_room_server_url_key);
+    keyprefEnableDataChannel = getString(R.string.pref_enable_datachannel_key);
+    keyprefOrdered = getString(R.string.pref_ordered_key);
+    keyprefMaxRetransmitTimeMs = getString(R.string.pref_max_retransmit_time_ms_key);
+    keyprefMaxRetransmits = getString(R.string.pref_max_retransmits_key);
+    keyprefDataProtocol = getString(R.string.pref_data_protocol_key);
+    keyprefNegotiated = getString(R.string.pref_negotiated_key);
+    keyprefDataId = getString(R.string.pref_data_id_key);
+
+    readPrefs();
 
     iceConnected = false;
     signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
@@ -283,72 +393,43 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Check for mandatory permissions.
     for (String permission : MANDATORY_PERMISSIONS) {
       if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-        logAndToast("Permission " + permission + " is not granted");
-        setResult(RESULT_CANCELED);
-        finish();
-        return;
+        requestPermission(permission);
       }
     }
 
-   /* Uri roomUri = intent.getData();
-    if (roomUri == null) {
-      logAndToast(getString(R.string.missing_url));
-      Log.e(TAG, "Didn't get any URL in intent!");
-      setResult(RESULT_CANCELED);
-      finish();
-      return;
-    }
 
-    // Get Intent parameters.
-    String roomId = intent.getStringExtra(EXTRA_ROOMID);
-    Log.d(TAG, "Room ID: " + roomId);
-    if (roomId == null || roomId.length() == 0) {
-      logAndToast(getString(R.string.missing_url));
-      Log.e(TAG, "Incorrect room ID in intent!");
-      setResult(RESULT_CANCELED);
-      finish();
-      return;
-    }*/
-
-    boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
-    boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, true);
-
-    int videoWidth = intent.getIntExtra(EXTRA_VIDEO_WIDTH, 0);
-    int videoHeight = intent.getIntExtra(EXTRA_VIDEO_HEIGHT, 0);
-
-    screencaptureEnabled = intent.getBooleanExtra(EXTRA_SCREENCAPTURE, false);
     // If capturing format is not specified for screencapture, use screen resolution.
-    if (screencaptureEnabled && videoWidth == 0 && videoHeight == 0) {
+    if (screencaptureEnabled && mVideoWidth == 0 && mVideoHeight == 0) {
       DisplayMetrics displayMetrics = new DisplayMetrics();
       WindowManager windowManager =
           (WindowManager) getApplication().getSystemService(Context.WINDOW_SERVICE);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
         windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
       }
-      videoWidth = displayMetrics.widthPixels;
-      videoHeight = displayMetrics.heightPixels;
+      mVideoWidth = displayMetrics.widthPixels;
+      mVideoHeight = displayMetrics.heightPixels;
     }
     DataChannelParameters dataChannelParameters = null;
-    if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, false)) {
-      dataChannelParameters = new DataChannelParameters(intent.getBooleanExtra(EXTRA_ORDERED, true),
-          intent.getIntExtra(EXTRA_MAX_RETRANSMITS_MS, -1),
-          intent.getIntExtra(EXTRA_MAX_RETRANSMITS, -1), intent.getStringExtra(EXTRA_PROTOCOL),
-          intent.getBooleanExtra(EXTRA_NEGOTIATED, false), intent.getIntExtra(EXTRA_ID, -1));
+    if (mDataChannelEnabled) {
+      dataChannelParameters = new DataChannelParameters(mOrdered,
+              mMaxRetrMs,
+              mMaxRetr, mProtocol,
+              mNegotiated, mId);
     }
     peerConnectionParameters =
-        new PeerConnectionParameters(intent.getBooleanExtra(EXTRA_VIDEO_CALL, true), loopback,
-            tracing, videoWidth, videoHeight, intent.getIntExtra(EXTRA_VIDEO_FPS, 0),
-            intent.getIntExtra(EXTRA_VIDEO_BITRATE, 0), intent.getStringExtra(EXTRA_VIDEOCODEC),
-            intent.getBooleanExtra(EXTRA_HWCODEC_ENABLED, true),
-            intent.getBooleanExtra(EXTRA_FLEXFEC_ENABLED, false),
-            intent.getIntExtra(EXTRA_AUDIO_BITRATE, 0), intent.getStringExtra(EXTRA_AUDIOCODEC),
-            intent.getBooleanExtra(EXTRA_NOAUDIOPROCESSING_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_AECDUMP_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_OPENSLES_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AEC, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AGC, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_NS, false),
-            intent.getBooleanExtra(EXTRA_ENABLE_LEVEL_CONTROL, false), dataChannelParameters);
+        new PeerConnectionParameters(mVideoCallEnabled, false,
+            false, mVideoWidth, mVideoHeight, mCameraFps,
+                mVideoStartBitrate, mVideoCodec,
+            mHwCodecEnabled,
+                mFlexfecEnabled,
+                mAudioStartBitrate, mAudioCodec,
+                mNoAudioProcessing,
+                mAecDump,
+                mUseOpenSLES,
+                mDisableBuiltInAEC,
+                mDisableBuiltInAGC,
+                mDisableBuiltInNS,
+                mEnableLevelControl, dataChannelParameters);
     commandLineRun = intent.getBooleanExtra(EXTRA_CMDLINE, false);
     runTimeMs = intent.getIntExtra(EXTRA_RUNTIME, 0);
 
@@ -391,7 +472,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
 
     peerConnectionClient = PeerConnectionClient.getInstance();
-    if (loopback) {
+    if (mLoopback) {
       PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
       options.networkIgnoreMask = 0;
       peerConnectionClient.setPeerConnectionFactoryOptions(options);
@@ -414,6 +495,51 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
   }
 
+  private void requestPermission(String permission) {
+
+      // Should we show an explanation?
+      if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+              permission)) {
+
+        // Show an explanation to the user *asynchronously* -- don't block
+        // this thread waiting for the user's response! After the user
+        // sees the explanation, try again to request the permission.
+
+      } else {
+
+        // No explanation needed, we can request the permission.
+
+        ActivityCompat.requestPermissions(this,
+                new String[]{permission},
+                PERMISSIONS_REQUEST);
+      }
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode,
+                                         String permissions[], int[] grantResults) {
+    switch (requestCode) {
+      case PERMISSIONS_REQUEST: {
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+          // permission was granted, yay! Do the
+          // contacts-related task you need to do.
+
+        } else {
+
+          // permission denied, boo! Disable the
+          // functionality that depends on this permission.
+        }
+        return;
+      }
+
+      // other 'case' lines to check for other
+      // permissions this app might request
+    }
+  }
+
   @Override
   protected void onNewIntent(Intent intent) {
     handleIntent(intent);
@@ -431,7 +557,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
-     // onIceCandidate((SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE));
+     SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
+      onRemoteIceCandidate(candidate);
+
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
       SerializableSessionDescription sdp = (SerializableSessionDescription) intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
@@ -450,15 +578,24 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
       if (reason.equals("ringertimeout")) {
-        finish();
+        if (!mFinishCalled) {
+          mFinishCalled = true;
+          finish();
+        }
       }
       else if (reason.equals("pickuptimeout")) {
         initiateCallFragment.showPickupTimeout(user);
-        finish();
+        if (!mFinishCalled) {
+          mFinishCalled = true;
+          finish();
+        }
       }
       else {
         // normal call clearing
-        finish();
+        if (!mFinishCalled) {
+          mFinishCalled = true;
+          finish();
+        }
       }
     }
   }
@@ -491,7 +628,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   private boolean useCamera2() {
-    return Camera2Enumerator.isSupported(this) && getIntent().getBooleanExtra(EXTRA_CAMERA2, true);
+    return Camera2Enumerator.isSupported(this) && mUseCamera2;
   }
 
   private boolean captureToTexture() {
@@ -693,37 +830,44 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   // Disconnect from remote resources, dispose of local resources, and exit.
   private void disconnect() {
-    activityRunning = false;
-    if (mService != null) {
-      mService.sendBye(mPeerId);
-    }
+    if (!disconnected) {
+      disconnected = true; // only call disconnect once per activity
+      activityRunning = false;
+      if (mService != null) {
+        mService.sendBye(mPeerId);
+      }
 
-    if (peerConnectionClient != null) {
-      peerConnectionClient.close();
-      peerConnectionClient = null;
+      if (peerConnectionClient != null) {
+        peerConnectionClient.close();
+        peerConnectionClient = null;
+      }
+      if (localRender != null) {
+        localRender.release();
+        localRender = null;
+      }
+      if (videoFileRenderer != null) {
+        videoFileRenderer.release();
+        videoFileRenderer = null;
+      }
+      if (remoteRenderScreen != null) {
+        remoteRenderScreen.release();
+        remoteRenderScreen = null;
+      }
+      if (audioManager != null) {
+        audioManager.stop();
+        audioManager = null;
+      }
+      if (iceConnected && !isError) {
+        setResult(RESULT_OK);
+      } else {
+        setResult(RESULT_CANCELED);
+      }
+
+      if (!mFinishCalled) {
+        mFinishCalled = true;
+        finish();
+      }
     }
-    if (localRender != null) {
-      localRender.release();
-      localRender = null;
-    }
-    if (videoFileRenderer != null) {
-      videoFileRenderer.release();
-      videoFileRenderer = null;
-    }
-    if (remoteRenderScreen != null) {
-      remoteRenderScreen.release();
-      remoteRenderScreen = null;
-    }
-    if (audioManager != null) {
-      audioManager.stop();
-      audioManager = null;
-    }
-    if (iceConnected && !isError) {
-      setResult(RESULT_OK);
-    } else {
-      setResult(RESULT_CANCELED);
-    }
-    finish();
   }
 
   private void disconnectWithErrorMessage(final String errorMessage) {
@@ -1138,7 +1282,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   public void onRejectCall() {
     mService.sendBye(mPeerId);
-    finish();
+    if (!mFinishCalled) {
+      mFinishCalled = true;
+      finish();
+    }
   }
 
   @Override
@@ -1152,5 +1299,196 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   @Override
   public void onStartCall() {
     mWaitingToStartCall = true;
+  }
+
+
+  /**
+   * Get a value from the shared preference or from the intent, if it does not
+   * exist the default is used.
+   */
+  private boolean sharedPrefGetBoolean(
+          int attributeId, String intentName, int defaultId) {
+    boolean defaultValue = Boolean.valueOf(getString(defaultId));
+
+    String attributeName = getString(attributeId);
+    return sharedPref.getBoolean(attributeName, defaultValue);
+  
+  }
+
+  /**
+   * Get a value from the shared preference or from the intent, if it does not
+   * exist the default is used.
+   */
+  private String sharedPrefGetString(
+          int attributeId, String intentName, int defaultId) {
+    String defaultValue = getString(defaultId);
+    String attributeName = getString(attributeId);
+    return sharedPref.getString(attributeName, defaultValue);
+
+  }
+
+  /**
+   * Get a value from the shared preference or from the intent, if it does not
+   * exist the default is used.
+   */
+  private int sharedPrefGetInteger(
+          int attributeId, String intentName, int defaultId) {
+    String defaultString = getString(defaultId);
+    int defaultValue = Integer.parseInt(defaultString);
+
+    String attributeName = getString(attributeId);
+    String value = sharedPref.getString(attributeName, defaultString);
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      Log.e(TAG, "Wrong setting for: " + attributeName + ":" + value);
+      return defaultValue;
+    }
+
+  }
+
+  private void readPrefs() {
+
+    // Video call enabled flag.
+    mVideoCallEnabled = sharedPrefGetBoolean(R.string.pref_videocall_key,
+            CallActivity.EXTRA_VIDEO_CALL, R.string.pref_videocall_default);
+
+    // Use screencapture option.
+    screencaptureEnabled = sharedPrefGetBoolean(R.string.pref_screencapture_key,
+            CallActivity.EXTRA_SCREENCAPTURE, R.string.pref_screencapture_default);
+
+    // Use Camera2 option.
+    mUseCamera2 = sharedPrefGetBoolean(R.string.pref_camera2_key, CallActivity.EXTRA_CAMERA2,
+            R.string.pref_camera2_default);
+
+    // Get default codecs.
+    mVideoCodec = sharedPrefGetString(R.string.pref_videocodec_key,
+            CallActivity.EXTRA_VIDEOCODEC, R.string.pref_videocodec_default);
+    mAudioCodec = sharedPrefGetString(R.string.pref_audiocodec_key,
+            CallActivity.EXTRA_AUDIOCODEC, R.string.pref_audiocodec_default);
+
+    // Check HW codec flag.
+    mHwCodecEnabled = sharedPrefGetBoolean(R.string.pref_hwcodec_key,
+            CallActivity.EXTRA_HWCODEC_ENABLED, R.string.pref_hwcodec_default);
+
+    // Check Capture to texture.
+    mCaptureToTexture = sharedPrefGetBoolean(R.string.pref_capturetotexture_key,
+            CallActivity.EXTRA_CAPTURETOTEXTURE_ENABLED, R.string.pref_capturetotexture_default);
+
+    // Check FlexFEC.
+    mFlexfecEnabled = sharedPrefGetBoolean(R.string.pref_flexfec_key,
+            CallActivity.EXTRA_FLEXFEC_ENABLED, R.string.pref_flexfec_default);
+
+    // Check Disable Audio Processing flag.
+    mNoAudioProcessing = sharedPrefGetBoolean(R.string.pref_noaudioprocessing_key,
+            CallActivity.EXTRA_NOAUDIOPROCESSING_ENABLED, R.string.pref_noaudioprocessing_default);
+
+    // Check Disable Audio Processing flag.
+    mAecDump = sharedPrefGetBoolean(R.string.pref_aecdump_key,
+            CallActivity.EXTRA_AECDUMP_ENABLED, R.string.pref_aecdump_default);
+
+    // Check OpenSL ES enabled flag.
+    mUseOpenSLES = sharedPrefGetBoolean(R.string.pref_opensles_key,
+            CallActivity.EXTRA_OPENSLES_ENABLED, R.string.pref_opensles_default);
+
+    // Check Disable built-in AEC flag.
+    mDisableBuiltInAEC = sharedPrefGetBoolean(R.string.pref_disable_built_in_aec_key,
+            CallActivity.EXTRA_DISABLE_BUILT_IN_AEC, R.string.pref_disable_built_in_aec_default);
+
+    // Check Disable built-in AGC flag.
+    mDisableBuiltInAGC = sharedPrefGetBoolean(R.string.pref_disable_built_in_agc_key,
+            CallActivity.EXTRA_DISABLE_BUILT_IN_AGC, R.string.pref_disable_built_in_agc_default);
+
+    // Check Disable built-in NS flag.
+    mDisableBuiltInNS = sharedPrefGetBoolean(R.string.pref_disable_built_in_ns_key,
+            CallActivity.EXTRA_DISABLE_BUILT_IN_NS, R.string.pref_disable_built_in_ns_default);
+
+    // Check Enable level control.
+    mEnableLevelControl = sharedPrefGetBoolean(R.string.pref_enable_level_control_key,
+            CallActivity.EXTRA_ENABLE_LEVEL_CONTROL, R.string.pref_enable_level_control_key);
+
+    // Get video resolution from settings.
+    if (mVideoWidth == 0 && mVideoHeight == 0) {
+      String resolution =
+              sharedPref.getString(keyprefResolution, getString(R.string.pref_resolution_default));
+      String[] dimensions = resolution.split("[ x]+");
+      if (dimensions.length == 2) {
+        try {
+          mVideoWidth = Integer.parseInt(dimensions[0]);
+          mVideoHeight = Integer.parseInt(dimensions[1]);
+        } catch (NumberFormatException e) {
+          mVideoWidth = 0;
+          mVideoHeight = 0;
+          Log.e(TAG, "Wrong video resolution setting: " + resolution);
+        }
+      }
+    }
+
+    // Get camera fps from settings.
+    if (mCameraFps == 0) {
+      String fps = sharedPref.getString(keyprefFps, getString(R.string.pref_fps_default));
+      String[] fpsValues = fps.split("[ x]+");
+      if (fpsValues.length == 2) {
+        try {
+          mCameraFps = Integer.parseInt(fpsValues[0]);
+        } catch (NumberFormatException e) {
+          mCameraFps = 0;
+          Log.e(TAG, "Wrong camera fps setting: " + fps);
+        }
+      }
+    }
+
+    // Check capture quality slider flag.
+    mCaptureQualitySlider = sharedPrefGetBoolean(R.string.pref_capturequalityslider_key,
+            CallActivity.EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED,
+            R.string.pref_capturequalityslider_default);
+
+    // Get video and audio start bitrate.
+
+    if (mVideoStartBitrate == 0) {
+      String bitrateTypeDefault = getString(R.string.pref_maxvideobitrate_default);
+      String bitrateType = sharedPref.getString(keyprefVideoBitrateType, bitrateTypeDefault);
+      if (!bitrateType.equals(bitrateTypeDefault)) {
+        String bitrateValue = sharedPref.getString(
+                keyprefVideoBitrateValue, getString(R.string.pref_maxvideobitratevalue_default));
+        mVideoStartBitrate = Integer.parseInt(bitrateValue);
+      }
+    }
+
+
+    if (mAudioStartBitrate == 0) {
+      String bitrateTypeDefault = getString(R.string.pref_startaudiobitrate_default);
+      String bitrateType = sharedPref.getString(keyprefAudioBitrateType, bitrateTypeDefault);
+      if (!bitrateType.equals(bitrateTypeDefault)) {
+        String bitrateValue = sharedPref.getString(
+                keyprefAudioBitrateValue, getString(R.string.pref_startaudiobitratevalue_default));
+        mAudioStartBitrate = Integer.parseInt(bitrateValue);
+      }
+    }
+
+    // Check statistics display option.
+    mDisplayHud = sharedPrefGetBoolean(R.string.pref_displayhud_key,
+            CallActivity.EXTRA_DISPLAY_HUD, R.string.pref_displayhud_default);
+
+    mTracing = sharedPrefGetBoolean(R.string.pref_tracing_key, CallActivity.EXTRA_TRACING,
+            R.string.pref_tracing_default);
+
+    // Get datachannel options
+    mDataChannelEnabled = sharedPrefGetBoolean(R.string.pref_enable_datachannel_key,
+            CallActivity.EXTRA_DATA_CHANNEL_ENABLED, R.string.pref_enable_datachannel_default);
+    mOrdered = sharedPrefGetBoolean(R.string.pref_ordered_key, CallActivity.EXTRA_ORDERED,
+            R.string.pref_ordered_default);
+    mNegotiated = sharedPrefGetBoolean(R.string.pref_negotiated_key,
+            CallActivity.EXTRA_NEGOTIATED, R.string.pref_negotiated_default);
+    mMaxRetrMs = sharedPrefGetInteger(R.string.pref_max_retransmit_time_ms_key,
+            CallActivity.EXTRA_MAX_RETRANSMITS_MS, R.string.pref_max_retransmit_time_ms_default);
+    mMaxRetr =
+            sharedPrefGetInteger(R.string.pref_max_retransmits_key, CallActivity.EXTRA_MAX_RETRANSMITS,
+                    R.string.pref_max_retransmits_default);
+    mId = sharedPrefGetInteger(R.string.pref_data_id_key, CallActivity.EXTRA_ID,
+            R.string.pref_data_id_default);
+    mProtocol = sharedPrefGetString(R.string.pref_data_protocol_key,
+            CallActivity.EXTRA_PROTOCOL, R.string.pref_data_protocol_default);
+
   }
 }

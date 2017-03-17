@@ -7,10 +7,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * @author fkrauthan
@@ -19,9 +21,9 @@ public class TLSSocketFactory extends SSLSocketFactory {
 
     private SSLSocketFactory internalSSLSocketFactory;
 
-    public TLSSocketFactory() throws KeyManagementException, NoSuchAlgorithmException {
+    public TLSSocketFactory(X509TrustManager[] trustManager, SecureRandom random) throws KeyManagementException, NoSuchAlgorithmException {
         SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, null, null);
+        context.init(null, trustManager, random);
         internalSSLSocketFactory = context.getSocketFactory();
     }
 

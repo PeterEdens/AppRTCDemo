@@ -48,9 +48,13 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
 import org.appspot.apprtc.service.WebsocketService;
+import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import javax.net.ssl.HttpsURLConnection;
+
 
 /**
  * Handles the initial setup where the user selects which room to join.
@@ -85,42 +89,10 @@ public class ConnectActivity extends DrawerActivity {
   private EditText serverNameEditText;
   private ListView roomListView;
   private SharedPreferences sharedPref;
-  private String keyprefVideoCallEnabled;
-  private String keyprefScreencapture;
-  private String keyprefCamera2;
-  private String keyprefResolution;
-  private String keyprefFps;
-  private String keyprefCaptureQualitySlider;
-  private String keyprefVideoBitrateType;
-  private String keyprefVideoBitrateValue;
-  private String keyprefVideoCodec;
-  private String keyprefAudioBitrateType;
-  private String keyprefAudioBitrateValue;
-  private String keyprefAudioCodec;
-  private String keyprefHwCodecAcceleration;
-  private String keyprefCaptureToTexture;
-  private String keyprefFlexfec;
-  private String keyprefNoAudioProcessingPipeline;
-  private String keyprefAecDump;
-  private String keyprefOpenSLES;
-  private String keyprefDisableBuiltInAec;
-  private String keyprefDisableBuiltInAgc;
-  private String keyprefDisableBuiltInNs;
-  private String keyprefEnableLevelControl;
-  private String keyprefDisplayHud;
-  private String keyprefTracing;
-  private String keyprefRoomServerUrl;
   private String keyprefRoom;
   private String keyprefRoomList;
   private ArrayList<String> roomList;
   private RoomAdapter adapter;
-  private String keyprefEnableDataChannel;
-  private String keyprefOrdered;
-  private String keyprefMaxRetransmitTimeMs;
-  private String keyprefMaxRetransmits;
-  private String keyprefDataProtocol;
-  private String keyprefNegotiated;
-  private String keyprefDataId;
   private Button mLoginButton;
   private boolean mWaitingToEnterRoom;
   private boolean mStatusSent = false;
@@ -142,6 +114,10 @@ public class ConnectActivity extends DrawerActivity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+
+      if (mService.getIsConnected() && !mServerName.equals(mService.getServerAddress())) {
+          mService.disconnectFromServer();
+      }
 
       if (!mService.getIsConnected()) {
         mService.connectToServer(mServerName);
@@ -245,40 +221,9 @@ public class ConnectActivity extends DrawerActivity {
     // Get setting keys.
     PreferenceManager.setDefaultValues(this, R.xml.webrtc_preferences, false);
     sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-    keyprefVideoCallEnabled = getString(R.string.pref_videocall_key);
-    keyprefScreencapture = getString(R.string.pref_screencapture_key);
-    keyprefCamera2 = getString(R.string.pref_camera2_key);
-    keyprefResolution = getString(R.string.pref_resolution_key);
-    keyprefFps = getString(R.string.pref_fps_key);
-    keyprefCaptureQualitySlider = getString(R.string.pref_capturequalityslider_key);
-    keyprefVideoBitrateType = getString(R.string.pref_maxvideobitrate_key);
-    keyprefVideoBitrateValue = getString(R.string.pref_maxvideobitratevalue_key);
-    keyprefVideoCodec = getString(R.string.pref_videocodec_key);
-    keyprefHwCodecAcceleration = getString(R.string.pref_hwcodec_key);
-    keyprefCaptureToTexture = getString(R.string.pref_capturetotexture_key);
-    keyprefFlexfec = getString(R.string.pref_flexfec_key);
-    keyprefAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
-    keyprefAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
-    keyprefAudioCodec = getString(R.string.pref_audiocodec_key);
-    keyprefNoAudioProcessingPipeline = getString(R.string.pref_noaudioprocessing_key);
-    keyprefAecDump = getString(R.string.pref_aecdump_key);
-    keyprefOpenSLES = getString(R.string.pref_opensles_key);
-    keyprefDisableBuiltInAec = getString(R.string.pref_disable_built_in_aec_key);
-    keyprefDisableBuiltInAgc = getString(R.string.pref_disable_built_in_agc_key);
-    keyprefDisableBuiltInNs = getString(R.string.pref_disable_built_in_ns_key);
-    keyprefEnableLevelControl = getString(R.string.pref_enable_level_control_key);
-    keyprefDisplayHud = getString(R.string.pref_displayhud_key);
-    keyprefTracing = getString(R.string.pref_tracing_key);
-    keyprefRoomServerUrl = getString(R.string.pref_room_server_url_key);
+
     keyprefRoom = getString(R.string.pref_room_key);
     keyprefRoomList = getString(R.string.pref_room_list_key);
-    keyprefEnableDataChannel = getString(R.string.pref_enable_datachannel_key);
-    keyprefOrdered = getString(R.string.pref_ordered_key);
-    keyprefMaxRetransmitTimeMs = getString(R.string.pref_max_retransmit_time_ms_key);
-    keyprefMaxRetransmits = getString(R.string.pref_max_retransmits_key);
-    keyprefDataProtocol = getString(R.string.pref_data_protocol_key);
-    keyprefNegotiated = getString(R.string.pref_negotiated_key);
-    keyprefDataId = getString(R.string.pref_data_id_key);
 
     setContentView(R.layout.activity_connect);
 
@@ -344,6 +289,7 @@ public class ConnectActivity extends DrawerActivity {
     if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
       mDisplayName = intent.getStringExtra(EXTRA_DISPLAYNAME);
     }
+
 
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
       boolean loopback = intent.getBooleanExtra(CallActivity.EXTRA_LOOPBACK, false);

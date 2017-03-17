@@ -64,6 +64,9 @@ public class RoomFragment extends Fragment {
         if (args != null) {
             if (args.containsKey(RoomActivity.EXTRA_ROOM_NAME)) {
                 mRoomName = args.getString(RoomActivity.EXTRA_ROOM_NAME);
+                if (mRoomName.equals("")) {
+                    mRoomName = getString(R.string.default_room);
+                }
             }
 
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
@@ -103,19 +106,37 @@ public class RoomFragment extends Fragment {
     }
 
     public void addUser(User userEntered) {
-        if (userEntered != null && !userList.contains(userEntered)) {
-            userList.add(userEntered);
-        }
-        adapter.notifyDataSetChanged();
+        if (userEntered != null) {
+            boolean found = false;
+            for (User u : userList) {
+                if (u.Id.equals(userEntered.Id)) {
+                    found = true;
+                    break;
+                }
+            }
 
-        if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
-            emptyRoom.setVisibility(View.GONE);
+            if (!found) {
+                userList.add(userEntered);
+                if (adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
+
+                if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
+                    emptyRoom.setVisibility(View.GONE);
+                }
+            }
         }
+
     }
 
     public void removeUser(User userLeft) {
-        if (userLeft != null && userList.contains(userLeft)) {
-            userList.remove(userLeft);
+        if (userLeft != null) {
+            for (User u : userList) {
+                if (u.Id.equals(userLeft.Id)) {
+                    userList.remove(u);
+                    break;
+                }
+            }
         }
         adapter.notifyDataSetChanged();
 

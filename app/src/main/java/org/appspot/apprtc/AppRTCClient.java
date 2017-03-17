@@ -71,6 +71,8 @@ public interface AppRTCClient {
    */
   void disconnectFromRoom();
 
+  void sendLeave();
+
   void sendBye(String to);
 
   void sendPostMessage(String username, String password, final String url);
