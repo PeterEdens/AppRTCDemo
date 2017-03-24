@@ -16,6 +16,13 @@
         android:layout_height="wrap_content"
         android:text="Room Name"/>
 
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ECEFF1"
+        android:layout_below="@+id/roomName"/>
+
     <TextView
         android:id="@+id/emptyRoom"
         android:layout_width="match_parent"
@@ -24,12 +31,5 @@
         android:text="@string/emptyRoom"
         android:gravity="center"
         android:textSize="20sp"/>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#ECEFF1"
-        android:layout_below="@+id/roomName"/>
 
 </RelativeLayout>

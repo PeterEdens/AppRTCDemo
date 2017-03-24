@@ -3,6 +3,7 @@ package org.appspot.apprtc.fragment;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 import org.appspot.apprtc.CallFragment;
 import org.appspot.apprtc.ChatAdapter;
 import org.appspot.apprtc.ChatItem;
+import org.appspot.apprtc.FileInfo;
 import org.appspot.apprtc.R;
 import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.User;
@@ -43,9 +45,40 @@ public class ChatFragment extends Fragment {
     private EditText editChat;
     private OnChatEvents chatEvents;
     private User mUser;
+    Handler uiUpdateHandler;
 
     public void setUser(User user) {
         mUser = user;
+    }
+
+    public void setDownloadedBytes(final int index, final long downloaded) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                ChatItem item = chatList.get(index);
+                long filesize = item.getFilesize();
+                item.setPercentDownloaded((int) ((float)((float)downloaded / (float)filesize) * 100.0f));
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    public void setDownloadPath(int index, String path) {
+        ChatItem item = chatList.get(index);
+        item.setDownloadPath(path);
+    }
+
+    public void setDownloadComplete(final int index) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                ChatItem item = chatList.get(index);
+                item.setDownloadComplete();
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 
 
@@ -54,6 +87,7 @@ public class ChatFragment extends Fragment {
      */
     public interface OnChatEvents {
         void onSendChatMessage(String message, String to);
+        void onSendFile(String message, String to);
     }
 
     public ChatFragment() {
@@ -94,6 +128,9 @@ public class ChatFragment extends Fragment {
                 addMessage(item);
             }
         });
+
+        uiUpdateHandler = new Handler();
+
         return controlView;
     }
 

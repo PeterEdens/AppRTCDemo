@@ -244,4 +244,7 @@
     <string name="action_accounts">Accounts</string>
     <string name="emptyRoom">No one else in this room\n\nShare this room with your friends to meet them here</string>
     <string name="emptyChat">You have not received any messages or missed calls.</string>
+    <string name="download">Download</string>
+    <string name="cancel">Cancel</string>
+    <string name="open">Open</string>
 </resources>

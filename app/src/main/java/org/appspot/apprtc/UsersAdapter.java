@@ -72,6 +72,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
 
         ImageButton callButton;
         ImageButton chatButton;
+        ImageButton shareFileButton;
         protected ImageView image;
         protected TextView text;
         public User user;
@@ -83,6 +84,19 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
             text= (TextView) itemView.findViewById(R.id.text_id);
             callButton = (ImageButton) itemView.findViewById(R.id.call_button);
             chatButton = (ImageButton) itemView.findViewById(R.id.chat_button);
+            shareFileButton = (ImageButton) itemView.findViewById(R.id.file_button);
+
+            shareFileButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (v.getId() == shareFileButton.getId()){
+                        Intent intent = new Intent(v.getContext(), RoomActivity.class);
+                        intent.setAction(RoomActivity.ACTION_SHARE_FILE);
+                        intent.putExtra(CallActivity.EXTRA_USER, user);
+                        v.getContext().startActivity(intent);
+                    }
+                }
+            });
 
             callButton.setOnClickListener(new View.OnClickListener() {
                 @Override

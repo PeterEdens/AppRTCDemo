@@ -6,6 +6,7 @@ import android.os.Binder;
 import android.os.IBinder;
 
 import org.appspot.apprtc.AppRTCClient;
+import org.appspot.apprtc.FileInfo;
 import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
@@ -46,6 +47,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
     public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
+    public static final String ACTION_FILE_MESSAGE = "org.appspot.apprtc.service.ACTION_FILE_MESSAGE";
+    public static final String EXTRA_TOKEN = "org.appspot.apprtc.service.EXTRA_TOKEN";
+    public static final String EXTRA_ID = "org.appspot.apprtc.service.EXTRA_ID";
+    public static final String EXTRA_FILEINFO = "org.appspot.apprtc.service.EXTRA_FILEINFO";
+
     private String mServer = "";
 
     public void disconnectFromServer() {
@@ -53,6 +59,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             appRtcClient.disconnectFromRoom();
         }
     }
+
 
     enum ConnectionState {
         DISCONNECTED,
@@ -99,15 +106,27 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
+    public void sendTokenOfferSdp(SessionDescription sdp, String token, String id, String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendTokenOffer(sdp, token, id, to);
+        }
+    }
+
+    public void sendTokenAnswerSdp(SessionDescription sdp, String token, String id, String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendTokenAnswer(sdp, token, id, to);
+        }
+    }
+
     public void sendAnswerSdp(SessionDescription sdp, String to) {
         if (appRtcClient != null) {
             appRtcClient.sendAnswerSdp(sdp, to);
         }
     }
 
-    public void sendLocalIceCandidate(SerializableIceCandidate iceCandidate, String to) {
+    public void sendLocalIceCandidate(SerializableIceCandidate iceCandidate, String token, String id, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendLocalIceCandidate(iceCandidate, to);
+            appRtcClient.sendLocalIceCandidate(iceCandidate, token, id, to);
         }
     }
 
@@ -127,6 +146,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void sendChatMessage(String message, String to) {
         if (appRtcClient != null) {
             appRtcClient.sendChatMessage(message, to);
+        }
+    }
+
+    public void sendFileMessage(String message, String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendFileMessage(message, to);
         }
     }
 
@@ -281,10 +306,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp, String fromId, String roomName) {
+    public void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
-        broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+        broadcastIntent.setAction(ACTION_FILE_MESSAGE);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_TIME, time);
+        FileInfo fileInfo = new FileInfo(id, chunks, name, size, filetype);
+        broadcastIntent.putExtra(EXTRA_FILEINFO, fileInfo);
+
         ArrayList<User> users = mUsers.get(roomName);
         for (User user : users) {
             if (user.Id.equals(fromId)) {
@@ -295,10 +324,27 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteIceCandidate(SerializableIceCandidate candidate) {
+    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String fromId, String roomName) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
+        broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+        broadcastIntent.putExtra(EXTRA_TOKEN, token);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        ArrayList<User> users = mUsers.get(roomName);
+        for (User user : users) {
+            if (user.Id.equals(fromId)) {
+                broadcastIntent.putExtra(EXTRA_USER, user);
+            }
+        }
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
+    public void onRemoteIceCandidate(SerializableIceCandidate candidate, String id) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
         broadcastIntent.putExtra(EXTRA_CANDIDATE, candidate);
+        broadcastIntent.putExtra(EXTRA_ID, id);
         sendBroadcast(broadcastIntent);
     }
 

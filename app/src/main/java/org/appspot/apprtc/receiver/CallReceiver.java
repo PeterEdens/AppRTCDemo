@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import org.appspot.apprtc.CallActivity;
+import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
@@ -18,6 +19,13 @@ public class CallReceiver extends BroadcastReceiver {
             Intent activityIntent = new Intent(context, CallActivity.class);
             SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
             activityIntent.putExtra(WebsocketService.EXTRA_CANDIDATE, candidate);
+            String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
+            activityIntent.putExtra(WebsocketService.EXTRA_ID, id);
+
+            if (id.length() != 0) {
+                activityIntent.setClass(context, RoomActivity.class);
+            }
+
             activityIntent.setAction(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE);
             activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(activityIntent);
@@ -31,15 +39,18 @@ public class CallReceiver extends BroadcastReceiver {
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 activityIntent.putExtra(WebsocketService.EXTRA_USER, user);
             }
-            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(activityIntent);
-        }
-        else if (intent.getAction().equals(WebsocketService.ACTION_BYE)) {
-            Intent activityIntent = new Intent(intent);
-            activityIntent.setClass(context, CallActivity.class);
-            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(activityIntent);
-        }
+            String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
+            activityIntent.putExtra(WebsocketService.EXTRA_TOKEN, token);
 
+            if (token.length() != 0) {
+                activityIntent.setClass(context, RoomActivity.class);
+            }
+
+            String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
+            activityIntent.putExtra(WebsocketService.EXTRA_ID, id);
+
+            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(activityIntent);
+        }
     }
 }

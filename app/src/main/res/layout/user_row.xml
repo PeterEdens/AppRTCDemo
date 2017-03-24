@@ -39,7 +39,15 @@
         android:id="@+id/chat_button"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_alignParentRight="true"
+        android:layout_toLeftOf="@+id/file_button"
         android:layout_margin="25dp"
         android:background="@drawable/ic_chat"/>
+
+    <ImageButton
+        android:id="@+id/file_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentRight="true"
+        android:layout_margin="25dp"
+        android:background="@drawable/share_file"/>
 </RelativeLayout>

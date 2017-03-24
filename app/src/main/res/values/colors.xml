@@ -7,4 +7,5 @@
     <color name="white70">#b2ffffff</color>
     <color name="incoming">#ffcccccc</color>
     <color name="outgoing">#ffccffff</color>
+    <color name="disabled">#ff444444</color>
 </resources>
