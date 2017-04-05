@@ -12,16 +12,26 @@ public class SerializableIceCandidate implements Parcelable {
     public String sdpMid;
     public int sdpMLineIndex;
     public String sdp;
+    public String from;
+
     public SerializableIceCandidate() {
         this.sdpMid = "";
         this.sdpMLineIndex = 0;
         this.sdp = "";
+        this.from = "";
     }
 
     public SerializableIceCandidate(String sdpMid, int sdpMLineIndex, String sdp) {
         this.sdpMid = sdpMid;
         this.sdpMLineIndex = sdpMLineIndex;
         this.sdp = sdp;
+    }
+
+    public SerializableIceCandidate(String sdpMid, int sdpMLineIndex, String sdp, String from) {
+        this.sdpMid = sdpMid;
+        this.sdpMLineIndex = sdpMLineIndex;
+        this.sdp = sdp;
+        this.from = from;
     }
 
     public String toString() {
@@ -42,6 +52,7 @@ public class SerializableIceCandidate implements Parcelable {
         out.writeString(sdpMid);
         out.writeInt(sdpMLineIndex);
         out.writeString(sdp);
+        out.writeString(from);
     }
 
     // this is used to regenerate your object. All Parcelables must have a CREATOR that implements these two methods
@@ -60,5 +71,6 @@ public class SerializableIceCandidate implements Parcelable {
         sdpMid = in.readString();
         sdpMLineIndex = in.readInt();
         sdp = in.readString();
+        from = in.readString();
     }
 }

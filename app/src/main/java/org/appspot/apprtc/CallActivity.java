@@ -130,11 +130,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   public static final String EXTRA_USER = "org.appspot.apprtc.EXTRA_USER";
 
   private static final String TAG = "CallRTCClient";
-  private static final int CAPTURE_PERMISSION_REQUEST_CODE = 1;
-
-  // List of mandatory application permissions.
-  private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
-      "android.permission.RECORD_AUDIO", "android.permission.INTERNET", "android.permission.CAMERA"};
 
   // Peer connection statistics callback period in ms.
   private static final int STAT_CALLBACK_PERIOD = 1000;
@@ -153,7 +148,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
-  private static final int PERMISSIONS_REQUEST = 1;
   private PeerConnectionClient peerConnectionClient = null;
 
   //private AppRTCClient appRtcClient;
@@ -243,7 +237,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
-      signalingParameters = new SignalingParameters(mService.getIceServers(), initiator, "", "", "", null, null);
+      signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
     }
 
     @Override
@@ -321,6 +315,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   private String mToken;
   private String mSdpId = "";
+  private boolean mForceTurn;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -381,7 +376,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     readPrefs();
 
     iceConnected = false;
-    signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
+    signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
     scalingType = ScalingType.SCALE_ASPECT_FILL;
 
     // Create UI controls.
@@ -432,12 +427,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     remoteRenderScreen.setEnableHardwareScaler(true /* enabled */);
     updateVideoView();
 
-    // Check for mandatory permissions.
-    for (String permission : MANDATORY_PERMISSIONS) {
-      if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-        requestPermission(permission);
-      }
-    }
 
 
     // If capturing format is not specified for screencapture, use screen resolution.
@@ -519,68 +508,29 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       options.networkIgnoreMask = 0;
       peerConnectionClient.setPeerConnectionFactoryOptions(options);
     }
+
+    if (mForceTurn) {
+      peerConnectionParameters.forceTurn = true;
+    }
+
     peerConnectionClient.createPeerConnectionFactory(
         CallActivity.this, peerConnectionParameters, CallActivity.this);
 
     handleIntent(intent);
 
     if (screencaptureEnabled) {
-      MediaProjectionManager mediaProjectionManager =
+      /*MediaProjectionManager mediaProjectionManager =
           (MediaProjectionManager) getApplication().getSystemService(
               Context.MEDIA_PROJECTION_SERVICE);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         startActivityForResult(
             mediaProjectionManager.createScreenCaptureIntent(), CAPTURE_PERMISSION_REQUEST_CODE);
-      }
+      }*/
     } else {
       startCall();
     }
   }
 
-  private void requestPermission(String permission) {
-
-      // Should we show an explanation?
-      if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-              permission)) {
-
-        // Show an explanation to the user *asynchronously* -- don't block
-        // this thread waiting for the user's response! After the user
-        // sees the explanation, try again to request the permission.
-
-      } else {
-
-        // No explanation needed, we can request the permission.
-
-        ActivityCompat.requestPermissions(this,
-                new String[]{permission},
-                PERMISSIONS_REQUEST);
-      }
-  }
-
-  @Override
-  public void onRequestPermissionsResult(int requestCode,
-                                         String permissions[], int[] grantResults) {
-    switch (requestCode) {
-      case PERMISSIONS_REQUEST: {
-        // If request is cancelled, the result arrays are empty.
-        if (grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-          // permission was granted, yay! Do the
-          // contacts-related task you need to do.
-
-        } else {
-
-          // permission denied, boo! Disable the
-          // functionality that depends on this permission.
-        }
-        return;
-      }
-
-      // other 'case' lines to check for other
-      // permissions this app might request
-    }
-  }
 
   @Override
   protected void onNewIntent(Intent intent) {
@@ -596,14 +546,15 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       User user = (User) intent.getSerializableExtra(EXTRA_USER);
       mPeerId = user.Id;
       initiator = true;
-      signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
+      signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
+
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
      SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
 
       if (id.equals(mSdpId)) {
-        onRemoteIceCandidate(candidate, id);
+        onRemoteIceCandidate(candidate, id, candidate.from);
       }
 
     }
@@ -647,11 +598,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
-    if (requestCode != CAPTURE_PERMISSION_REQUEST_CODE)
+    /*if (requestCode != CAPTURE_PERMISSION_REQUEST_CODE)
       return;
     mediaProjectionPermissionResultCode = resultCode;
     mediaProjectionPermissionResultData = data;
-    startCall();
+    startCall();*/
   }
 
   private boolean useCamera2() {
@@ -1068,7 +1019,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id) {
+  public void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id, String from) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -1174,6 +1125,26 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   }
 
+  @Override
+  public void onAddTurnServer(String url, String username, String password) {
+
+  }
+
+  @Override
+  public void onAddStunServer(String url, String username, String password) {
+
+  }
+
+  @Override
+  public void onSelf() {
+
+  }
+
+  @Override
+  public void onTurnTtl(int ttl) {
+
+  }
+
   // -----Implementation of PeerConnectionClient.PeerConnectionEvents.---------
   // Send local peer connection SDP and ICE candidates to remote party.
   // All callbacks are invoked from peer connection client looper thread and
@@ -1194,6 +1165,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           }
         }
 
+        if (mWaitingToStartCall) {
+          mWaitingToStartCall = false;
+          StartCall(mPeerId);
+        }
+
+        if (initiateCallFragment != null) {
+          initiateCallFragment.enableCallButtons();
+        }
+
+
+
         if (peerConnectionParameters.videoMaxBitrate > 0) {
           Log.d(TAG, "Set video maximum bitrate: " + peerConnectionParameters.videoMaxBitrate);
           peerConnectionClient.setVideoMaxBitrate(peerConnectionParameters.videoMaxBitrate);
@@ -1207,9 +1189,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        //if (mService != null) {
-        //  mService.sendLocalIceCandidate(candidate, mPeerId);
-        //}
+        if (!mWaitingToStartCall && mService != null) {
+          mService.sendLocalIceCandidate(candidate, "", "", mPeerId);
+        }
         mIceCandidate = candidate;
         if (initiateCallFragment != null) {
           initiateCallFragment.enableCallButtons();
@@ -1314,14 +1296,18 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mLocalSdp != null) {
       if (mService != null) {
         mService.sendAnswerSdp(mLocalSdp, to);
-        mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+        if (mIceCandidate != null) {
+          mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+        }
       }
     }
   }
 
   void StartCall(String to) {
     mService.sendOfferSdp(mLocalSdp, to);
-    mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+    if (mIceCandidate != null) {
+      mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+    }
   }
 
   public String getPeerId() {
@@ -1396,6 +1382,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   private void readPrefs() {
+
+    // for testing
+    mForceTurn = sharedPrefGetBoolean(R.string.pref_force_relay_key, "", R.string.pref_force_relay_default);
 
     // Video call enabled flag.
     mVideoCallEnabled = sharedPrefGetBoolean(R.string.pref_videocall_key,

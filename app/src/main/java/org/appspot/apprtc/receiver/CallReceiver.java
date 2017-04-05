@@ -21,6 +21,8 @@ public class CallReceiver extends BroadcastReceiver {
             activityIntent.putExtra(WebsocketService.EXTRA_CANDIDATE, candidate);
             String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
             activityIntent.putExtra(WebsocketService.EXTRA_ID, id);
+            String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
+            activityIntent.putExtra(WebsocketService.EXTRA_TOKEN, token);
 
             if (id.length() != 0) {
                 activityIntent.setClass(context, RoomActivity.class);

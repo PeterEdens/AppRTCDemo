@@ -1,5 +1,6 @@
 package org.appspot.apprtc.fragment;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import org.appspot.apprtc.R;
@@ -31,6 +33,8 @@ public class RoomFragment extends Fragment {
     TextView mRoomNameTextView;
     private Context mContext;
     private TextView emptyRoom;
+    private Button roomsButton;
+    private Activity mParentActivity;
 
     public RoomFragment() {
         // Required empty public constructor
@@ -39,6 +43,15 @@ public class RoomFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            userList = (ArrayList<User>) savedInstanceState.getSerializable("userList");
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedState) {
+        savedState.putSerializable("userList", userList);
     }
 
     @Override
@@ -52,7 +65,14 @@ public class RoomFragment extends Fragment {
         mRoomNameTextView = (TextView) controlView.findViewById(R.id.roomName);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyRoom = (TextView) controlView.findViewById(R.id.emptyRoom);
+        roomsButton = (Button) controlView.findViewById(R.id.roomsButton);
 
+        roomsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mParentActivity.finish();
+            }
+        });
         return controlView;
     }
 
@@ -121,7 +141,7 @@ public class RoomFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 }
 
-                if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
+                if (userList.size() != 0 && emptyRoom != null && emptyRoom.getVisibility() == View.VISIBLE) {
                     emptyRoom.setVisibility(View.GONE);
                 }
             }
@@ -143,5 +163,12 @@ public class RoomFragment extends Fragment {
         if (userList.size() == 0 && emptyRoom.getVisibility() != View.VISIBLE) {
             emptyRoom.setVisibility(View.VISIBLE);
         }
+    }
+
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mParentActivity = activity;
     }
 }

@@ -3,6 +3,7 @@ package org.appspot.apprtc;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.v4.content.FileProvider;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -20,6 +21,8 @@ import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.ArrayList;
+
+import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
@@ -135,7 +138,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         downloadProgressText.setText(formatter.formatFileSize(v.getContext(), sizeBytes) + " / " + chatItem.fileinfo.percentDownloaded + "%");
                         chatItem.fileinfo.setDownloadState(FileInfo.DownloadState.DOWNLOADING);
                     }
-                    else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.DOWNLOADING){
+                    else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.DOWNLOADING ||
+                            chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.FAILED){
                         Intent intent = new Intent(v.getContext(), RoomActivity.class);
                         intent.setAction(RoomActivity.ACTION_CANCEL_DOWNLOAD);
                         intent.putExtra(WebsocketService.EXTRA_FILEINFO, chatItem.fileinfo);
@@ -152,7 +156,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         File file = new File(chatItem.getDownloadPath());
                         Intent intent = new Intent();
                         intent.setAction(android.content.Intent.ACTION_VIEW);
-                        intent.setDataAndType(Uri.fromFile(file), mime);
+                        Uri fileURI = FileProvider.getUriForFile(context, "spreedbox.me.app.files", file);
+                        intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
+                        intent.setDataAndType(fileURI, mime);
                         context.startActivity(intent);
                     }
                 }
@@ -183,6 +189,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     downloadButton.setText(R.string.open);
                     downloadLayout.setVisibility(View.GONE);
                     filesize.setVisibility(View.VISIBLE);
+                }
+                else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.FAILED) {
+                    downloadButton.setText(R.string.retry);
+                    downloadLayout.setVisibility(View.GONE);
+                    filesize.setVisibility(View.VISIBLE);
+                    filesize.setText(chatItem.fileinfo.errorMessage);
                 }
             }
         }

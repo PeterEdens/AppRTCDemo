@@ -55,4 +55,8 @@ public class ChatItem {
     public void setDownloadComplete() {
         fileinfo.setDownloadState(FileInfo.DownloadState.COMPLETED);
     }
+
+    public void setDownloadFailed(String description) {
+        fileinfo.setErrorMessage(description);
+    }
 }

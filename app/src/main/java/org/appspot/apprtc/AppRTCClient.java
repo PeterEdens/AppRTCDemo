@@ -22,7 +22,6 @@ import java.util.List;
  */
 public interface AppRTCClient {
 
-
   /**
    * Struct holding the connection parameters of an AppRTC room.
    */
@@ -36,6 +35,9 @@ public interface AppRTCClient {
       this.loopback = loopback;
     }
   }
+
+
+  void sendSelf();
 
   void connectToServer(final String address);
 
@@ -89,7 +91,7 @@ public interface AppRTCClient {
 
   void sendChatMessage(String message, String to);
 
-  void sendFileMessage(final String message, final String to);
+  void sendFileMessage(final String message, final long size, final String name, final String mime, final String to);
 
   /**
    * Struct holding the signaling parameters of an AppRTC room.
@@ -138,7 +140,7 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote Ice candidate is received.
      */
-    void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id);
+    void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id, String token);
 
     /**
      * Callback fired once remote Ice candidate removals are received.
@@ -178,5 +180,13 @@ public interface AppRTCClient {
     void onChatMessage(String message, String time, String status, String fromId, String roomName);
 
     void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String mIdFrom, String mRoomName);
+
+    void onAddTurnServer(String url, String username, String password);
+
+    void onAddStunServer(String url, String username, String password);
+
+    void onSelf();
+
+    void onTurnTtl(int ttl);
   }
 }

@@ -22,6 +22,7 @@ import org.appspot.apprtc.R;
 import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.UsersAdapter;
+import org.appspot.apprtc.sound.SoundPlayer;
 import org.webrtc.RendererCommon;
 
 import java.text.DateFormat;
@@ -46,6 +47,7 @@ public class ChatFragment extends Fragment {
     private OnChatEvents chatEvents;
     private User mUser;
     Handler uiUpdateHandler;
+    private SoundPlayer mSoundPlayer;
 
     public void setUser(User user) {
         mUser = user;
@@ -81,13 +83,28 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    public void onDownloadError(final String description, final int index) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                if (index < chatList.size()) {
+                    ChatItem item = chatList.get(index);
+                    item.setDownloadFailed(description);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
 
     /**
      * Call control interface for container activity.
      */
     public interface OnChatEvents {
         void onSendChatMessage(String message, String to);
-        void onSendFile(String message, String to);
+        void onMessageRead();
+        void onSendFile(String message, long size, String name, String mime, String to);
     }
 
     public ChatFragment() {
@@ -97,6 +114,15 @@ public class ChatFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            chatList = (ArrayList<ChatItem>)savedInstanceState.getSerializable("chatList");
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putSerializable("chatList", chatList);
     }
 
     @Override
@@ -117,6 +143,7 @@ public class ChatFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 String message = editChat.getText().toString();
+                editChat.setText("");
                 String to = "";
                 if (mUser != null) {
                     to = mUser.Id;
@@ -132,6 +159,12 @@ public class ChatFragment extends Fragment {
         uiUpdateHandler = new Handler();
 
         return controlView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        chatEvents.onMessageRead();
     }
 
     @Override
@@ -161,6 +194,9 @@ public class ChatFragment extends Fragment {
         chatList.add(chatItem);
         adapter.notifyDataSetChanged();
         emptyChat.setVisibility(View.GONE);
+        mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
+        mSoundPlayer.Play(false);
+        recyclerView.scrollToPosition(chatList.size() - 1);
     }
 
     @Override

@@ -38,6 +38,7 @@
             android:layout_margin="16dp"
             android:layout_width="match_parent"
             android:layout_height="96dp"
+            android:focusableInTouchMode="false"
             android:textColor="@android:color/white"
             android:text="@string/answer"/>
 
@@ -47,6 +48,7 @@
             android:layout_margin="16dp"
             android:layout_width="match_parent"
             android:layout_height="96dp"
+            android:focusableInTouchMode="false"
             android:textColor="@android:color/white"
             android:text="@string/reject_call" />
 

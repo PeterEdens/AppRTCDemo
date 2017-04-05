@@ -32,7 +32,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_toLeftOf="@+id/chat_button"
-        android:layout_margin="25dp"
+        android:layout_margin="10dp"
         android:background="@drawable/ic_call_black_24dp"/>
 
     <ImageButton
@@ -40,7 +40,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_toLeftOf="@+id/file_button"
-        android:layout_margin="25dp"
+        android:layout_margin="10dp"
         android:background="@drawable/ic_chat"/>
 
     <ImageButton
@@ -48,6 +48,6 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_alignParentRight="true"
-        android:layout_margin="25dp"
+        android:layout_margin="10dp"
         android:background="@drawable/share_file"/>
 </RelativeLayout>

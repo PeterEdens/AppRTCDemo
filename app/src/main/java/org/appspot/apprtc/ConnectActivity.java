@@ -19,11 +19,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
@@ -67,6 +69,13 @@ public class ConnectActivity extends DrawerActivity {
   public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
   public static final String EXTRA_AVATAR = "org.appspot.apprtc.EXTRA_AVATAR";
   private static boolean commandLineRun = false;
+
+  private static final int PERMISSIONS_REQUEST = 1;
+
+  // List of mandatory application permissions.
+  private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.RECORD_AUDIO", "android.permission.INTERNET", "android.permission.CAMERA",
+          "android.permission.WRITE_EXTERNAL_STORAGE"};
 
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
@@ -171,6 +180,8 @@ public class ConnectActivity extends DrawerActivity {
         mConnectionState = ConnectionState.DISCONNECTED;
         mConnectionLayout.setVisibility(View.VISIBLE);
         mLoginLayout.setVisibility(View.GONE);
+        // try to reconnect
+        mService.connectToServer(mServerName);
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
 
@@ -299,6 +310,14 @@ public class ConnectActivity extends DrawerActivity {
       String room = sharedPref.getString(keyprefRoom, "");
 
       connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
+    }
+
+
+    // Check for mandatory permissions.
+    for (String permission : MANDATORY_PERMISSIONS) {
+      if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+        requestPermission(permission);
+      }
     }
   }
 
@@ -835,5 +854,51 @@ public class ConnectActivity extends DrawerActivity {
     super.onRestoreInstanceState(savedInstanceState);
     String currentRoom = savedInstanceState.getString("currentRoom");
     mCurrentRoom = currentRoom;
+  }
+
+
+  private void requestPermission(String permission) {
+
+    // Should we show an explanation?
+    if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+            permission)) {
+
+      // Show an explanation to the user *asynchronously* -- don't block
+      // this thread waiting for the user's response! After the user
+      // sees the explanation, try again to request the permission.
+
+    } else {
+
+      // No explanation needed, we can request the permission.
+
+      ActivityCompat.requestPermissions(this,
+              MANDATORY_PERMISSIONS,
+              PERMISSIONS_REQUEST);
+    }
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode,
+                                         String permissions[], int[] grantResults) {
+    switch (requestCode) {
+      case PERMISSIONS_REQUEST: {
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+          // permission was granted, yay! Do the
+          // contacts-related task you need to do.
+
+        } else {
+
+          // permission denied, boo! Disable the
+          // functionality that depends on this permission.
+        }
+        return;
+      }
+
+      // other 'case' lines to check for other
+      // permissions this app might request
+    }
   }
 }
