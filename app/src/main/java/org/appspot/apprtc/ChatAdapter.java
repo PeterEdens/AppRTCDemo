@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 
 import org.appspot.apprtc.service.WebsocketService;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.w3c.dom.Text;
 
 import java.io.File;
@@ -69,6 +70,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         if (buddyPic.length() != 0) {
             String path = buddyPic.substring(4);
             String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
+            ThumbnailsCacheManager.LoadImage(url, holder.image);
         }
         else {
             holder.image.setImageResource(R.drawable.user_icon);

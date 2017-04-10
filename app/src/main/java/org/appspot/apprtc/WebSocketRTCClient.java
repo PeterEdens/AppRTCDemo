@@ -778,6 +778,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       JSONObject json = new JSONObject(msg);
       String msgText = json.getString("Data");
       mIdFrom = json.optString("From");
+      String to = json.optString("To");
       String errorText = json.optString("error");
       if (msgText.length() > 0) {
         json = new JSONObject(msgText);
@@ -925,7 +926,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             }
           }
           else {
-            events.onChatMessage(message, time, status, mIdFrom, mRoomName);
+            events.onChatMessage(message, time, status, to, mIdFrom, mRoomName);
           }
         }
       } else {

@@ -5,12 +5,13 @@ package org.appspot.apprtc;
  */
 public class ChatItem {
     String time;
-    String displayName;
+    public String displayName;
     String text;
-    String buddyPicture;
-    String Id;
+    public String buddyPicture;
+    public String Id;
     boolean outgoing;
     FileInfo fileinfo;
+    String to; // receipient of message
 
     public void setOutgoing() {
         outgoing = true;
@@ -28,12 +29,13 @@ public class ChatItem {
         }
     }
 
-    public ChatItem(String time, String displayName, String text, String buddyPicture, String Id) {
+    public ChatItem(String time, String displayName, String text, String buddyPicture, String Id, String to) {
         this.time = time;
         this.displayName = displayName;
         this.text = text;
         this.buddyPicture = buddyPicture;
         this.Id = Id;
+        this.to = to;
     }
 
     public ChatItem(String time, String displayName, FileInfo fileinfo, String buddyPicture, String Id) {
@@ -58,5 +60,9 @@ public class ChatItem {
 
     public void setDownloadFailed(String description) {
         fileinfo.setErrorMessage(description);
+    }
+
+    public String getRecipient() {
+        return to;
     }
 }

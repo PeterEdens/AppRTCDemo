@@ -6,17 +6,41 @@
     android:layout_height="match_parent"
     tools:context="org.appspot.apprtc.RoomActivity">
 
-    <TextView
-        android:id="@+id/roomName"
+
+    <RelativeLayout
+        android:id="@+id/recent_controls_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Room Name"/>
+        android:background="@color/primary"
+        android:layout_marginBottom="2dp">
+        <Button
+            android:id="@+id/recentButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/recent_button"
+            android:textColor="@color/white"
+            android:background="@color/primary"/>
+
+        <TextView
+            android:id="@+id/userName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_alignTop="@+id/recentButton"
+            android:layout_alignBottom="@+id/recentButton"
+            android:textColor="@color/white"
+            android:text="User Name"/>
+
+    </RelativeLayout>
+
 
     <TextView
         android:id="@+id/emptyChat"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/roomName"
+        android:layout_below="@+id/recent_controls_layout"
         android:layout_above="@+id/chatEdit"
         android:text="@string/emptyChat"
         android:gravity="center"
@@ -26,7 +50,7 @@
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/roomName"
+        android:layout_below="@+id/recent_controls_layout"
         android:layout_above="@+id/chatEdit"/>
 
     <EditText

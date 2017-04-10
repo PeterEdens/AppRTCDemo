@@ -72,6 +72,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String ACTION_CANCEL_DOWNLOAD = "org.appspot.apprtc.ACTION_CANCEL_DOWNLOAD";
     public static final String EXTRA_TO = "org.appspot.apprtc.EXTRA_TO";
     public static final String EXTRA_INDEX = "org.appspot.apprtc.EXTRA_INDEX";
+    public static final String ACTION_VIEW_CHAT = "org.appspot.apprtc.ACTION_VIEW_CHAT";
+    public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
 
     static final int CHAT_INDEX = 1;
 
@@ -133,13 +135,13 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
                 String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
-                
+
                 if (user != null && message.length() == 0) {
                     // status message
                     message = user.displayName + status;
                 }
                 else if (user != null) {
-                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, user.Id);
+                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, user.Id, user);
                 }
             } else if (intent.getAction().equals(WebsocketService.ACTION_FILE_MESSAGE)) {
                 FileInfo fileinfo = (FileInfo)intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
@@ -147,7 +149,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
                 if (user != null) {
-                    ShowMessage(user.displayName, time, fileinfo, user.buddyPicture, user.Id);
+                    ShowMessage(user.displayName, time, fileinfo, user.buddyPicture, user.Id, user);
                 }
             }
         }
@@ -176,13 +178,13 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private InputStream inputStream;
     private long totalSize;
 
-    private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id));
+    private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
+        mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
-    private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id));
+    private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user) {
+        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id, Id), user);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
@@ -218,6 +220,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
             setupDrawer();
+            getSupportActionBar().setTitle(R.string.spreed_talk);
         }
 
 
@@ -294,6 +297,10 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             viewPager.setCurrentItem(CHAT_INDEX);
             User user = (User) intent.getSerializableExtra(EXTRA_USER);
             mChatFragment.setUser(user);
+        }
+        else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
+            String key = intent.getStringExtra(EXTRA_CHAT_ID);
+            mChatFragment.viewChat(key);
         }
         else if (action != null && action.equals(ACTION_SHARE_FILE)) {
             User user = (User) intent.getSerializableExtra(EXTRA_USER);
@@ -680,13 +687,13 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     }
 
     @Override
-    public void onDownloadedBytes(int index, long bytes) {
-        mChatFragment.setDownloadedBytes(index, bytes);
+    public void onDownloadedBytes(int index, long bytes, String to) {
+        mChatFragment.setDownloadedBytes(index, bytes, to);
     }
 
     @Override
-    public void onDownloadComplete(int index) {
-        mChatFragment.setDownloadComplete(index);
+    public void onDownloadComplete(int index, String to) {
+        mChatFragment.setDownloadComplete(index, to);
     }
 
     @Override
@@ -705,13 +712,13 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     }
 
     @Override
-    public void onDownloadPath(int index, String path) {
-        mChatFragment.setDownloadPath(index, path);
+    public void onDownloadPath(int index, String path, String to) {
+        mChatFragment.setDownloadPath(index, path, to);
     }
 
     @Override
-    public void onError(String description, int index) {
-        mChatFragment.onDownloadError(description, index);
+    public void onError(String description, int index, String to) {
+        mChatFragment.onDownloadError(description, index, to);
     }
 
     class ViewPagerAdapter extends FragmentPagerAdapter {

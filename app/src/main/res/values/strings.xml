@@ -234,6 +234,7 @@
     <string name="reject_call">Reject Call</string>
     <string name="stop_calling">Stop Calling</string>
     <string name="recent">Recent</string>
+    <string name="recent_button">&lt; Recent</string>
     <string name="files">Files</string>
 
     <string name="chooser_class"></string>
@@ -254,4 +255,5 @@
     <string name="cancel">Cancel</string>
     <string name="open">Open</string>
     <string name="retry">Retry</string>
+    <string name="spreed_talk">SpreedTalk</string>
 </resources>

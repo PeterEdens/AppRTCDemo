@@ -70,6 +70,7 @@ import org.webrtc.VideoRenderer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -245,7 +246,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       mWebsocketServiceBound = false;
     }
   };
-  private SerializableIceCandidate mIceCandidate;
+  private HashMap<String, SerializableIceCandidate> mIceCandidates = new HashMap<String, SerializableIceCandidate>();
   private boolean mWaitingToStartCall;
   private boolean mCaptureToTexture;
   private SoundPlayer mSoundPlayer;
@@ -1116,7 +1117,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onChatMessage(String message, String time, String status, String fromId, String roomName) {
+  public void onChatMessage(String message, String time, String status, String to, String fromId, String roomName) {
 
   }
 
@@ -1186,13 +1187,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onIceCandidate(final SerializableIceCandidate candidate) {
+    mIceCandidates.put(candidate.sdp, candidate);
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
         if (!mWaitingToStartCall && mService != null) {
           mService.sendLocalIceCandidate(candidate, "", "", mPeerId);
         }
-        mIceCandidate = candidate;
         if (initiateCallFragment != null) {
           initiateCallFragment.enableCallButtons();
         }
@@ -1296,18 +1297,22 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mLocalSdp != null) {
       if (mService != null) {
         mService.sendAnswerSdp(mLocalSdp, to);
-        if (mIceCandidate != null) {
-          mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+        for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
+          SerializableIceCandidate candidate = entry.getValue();
+          mService.sendLocalIceCandidate(candidate, mToken, mSdpId, mPeerId);
         }
+        mIceCandidates.clear();
       }
     }
   }
 
   void StartCall(String to) {
     mService.sendOfferSdp(mLocalSdp, to);
-    if (mIceCandidate != null) {
-      mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
+    for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
+      SerializableIceCandidate candidate = entry.getValue();
+      mService.sendLocalIceCandidate(candidate, mToken, mSdpId, mPeerId);
     }
+    mIceCandidates.clear();
   }
 
   public String getPeerId() {

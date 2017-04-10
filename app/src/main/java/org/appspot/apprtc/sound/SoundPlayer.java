@@ -16,6 +16,12 @@ import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
 
 public class SoundPlayer implements MediaPlayer.OnCompletionListener {
 
+    enum State {
+        IDLE,
+        PLAYING,
+        STOPPED
+    }
+    private State mState = State.IDLE;
     MediaPlayer mPlayer = null;
     Context mContext;
     int mDelay = 2000;
@@ -91,7 +97,7 @@ public class SoundPlayer implements MediaPlayer.OnCompletionListener {
     @Override
     public void onCompletion(MediaPlayer mp) {
 
-        if (mLooping) {
+        if (mLooping && mState != State.STOPPED) {
             Message msg = new Message();
             mHandler.sendEmptyMessageDelayed(0, mDelay);
         }
@@ -102,10 +108,15 @@ public class SoundPlayer implements MediaPlayer.OnCompletionListener {
     public void Play(boolean loop) {
         mLooping = loop;
 
+        mState = State.PLAYING;
         startAudio();
     }
 
     void startAudio() {
+        if (mState == State.STOPPED) {
+            return;
+        }
+
         // Request audio focus for playback
         int result = am.requestAudioFocus(afChangeListener,
                 // Use the music stream.
@@ -122,6 +133,8 @@ public class SoundPlayer implements MediaPlayer.OnCompletionListener {
     public void Stop() {
         mPlayer.stop();
         mHandler.removeMessages(0);
+
+        mState = State.STOPPED;
 
         // Abandon audio focus when playback completes
         am.abandonAudioFocus(afChangeListener);

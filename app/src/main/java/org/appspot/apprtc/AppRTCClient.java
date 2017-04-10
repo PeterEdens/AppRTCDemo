@@ -177,7 +177,7 @@ public interface AppRTCClient {
 
     void onConfigResponse(String response);
 
-    void onChatMessage(String message, String time, String status, String fromId, String roomName);
+    void onChatMessage(String message, String time, String status, String to, String fromId, String roomName);
 
     void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String mIdFrom, String mRoomName);
 

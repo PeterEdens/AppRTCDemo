@@ -74,8 +74,8 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     }
 
     interface TokenPeerConnectionEvents {
-        void onDownloadedBytes(int index, long bytes);
-        void onDownloadComplete(int mDownloadIndex);
+        void onDownloadedBytes(int index, long bytes, String to);
+        void onDownloadComplete(int mDownloadIndex, String to);
 
         void TokenOfferSdp(SessionDescription localSdp, String token, String connectionId, String remoteId);
 
@@ -83,9 +83,9 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
 
         void sendLocalIceCandidate(SerializableIceCandidate candidate, String token, String connectionId, String remoteId);
 
-        void onDownloadPath(int index, String path);
+        void onDownloadPath(int index, String path, String to);
 
-        void onError(String description, int index);
+        void onError(String description, int index, String to);
     }
 
     TokenPeerConnectionEvents events;
@@ -168,7 +168,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         try {
             mDownloadStream.write(bytes);
             mDownloadedBytes += length;
-            events.onDownloadedBytes(mDownloadIndex, mDownloadedBytes);
+            events.onDownloadedBytes(mDownloadIndex, mDownloadedBytes, mRemoteId);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -188,7 +188,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
             try {
                 mDownloadStream.close();
 
-                events.onDownloadComplete(mDownloadIndex);
+                events.onDownloadComplete(mDownloadIndex, mRemoteId);
 
                 JSONObject json = new JSONObject();
                 try {
@@ -222,7 +222,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
                 File dir = new File(sdCard.getAbsolutePath() + "/Download");
                 dir.mkdirs();
                 File file = new File(dir, fileInfo.name);
-                events.onDownloadPath(mDownloadIndex, file.getAbsolutePath());
+                events.onDownloadPath(mDownloadIndex, file.getAbsolutePath(), mRemoteId);
 
                 try {
                     mDownloadStream = new FileOutputStream(file);
@@ -390,7 +390,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     @Override
     public void onPeerConnectionError(String description) {
         Log.d(TAG, "onPeerConnectionError(" + description + ")");
-        events.onError(description, mDownloadIndex);
+        events.onError(description, mDownloadIndex, mRemoteId);
         mConnectionState = ConnectionState.PEERDISCONNECTED;
     }
 

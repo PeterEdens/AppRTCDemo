@@ -105,7 +105,7 @@ public class ConnectActivity extends DrawerActivity {
   private Button mLoginButton;
   private boolean mWaitingToEnterRoom;
   private boolean mStatusSent = false;
-  private String mCurrentRoom;
+  private String mCurrentRoom = "";
   private String mAvatar;
 
   private enum ConnectionState {
@@ -242,6 +242,7 @@ public class ConnectActivity extends DrawerActivity {
       getSupportActionBar().setDisplayHomeAsUpEnabled(true);
       getSupportActionBar().setHomeButtonEnabled(true);
       setupDrawer();
+      getSupportActionBar().setTitle(R.string.spreed_talk);
     }
 
     serverNameEditText = (EditText) findViewById(R.id.room_edittext);

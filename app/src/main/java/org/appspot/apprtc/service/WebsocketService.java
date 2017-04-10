@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.appspot.apprtc.RoomActivity.EXTRA_TO;
+
 public class WebsocketService extends Service implements AppRTCClient.SignalingEvents{
     public static final String ACTION_CONNECT = "org.appspot.apprtc.service.ACTION_CONNECT";
     public static final String ACTION_DISCONNECT = "org.appspot.apprtc.service.ACTION_DISCONNECT";
@@ -70,6 +72,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         if (appRtcClient != null) {
             appRtcClient.disconnectFromRoom();
             mState = ConnectionState.DISCONNECTED;
+            mUsers.clear();
         }
     }
 
@@ -256,9 +259,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.setAction(ACTION_BYE);
         broadcastIntent.putExtra(EXTRA_REASON, reason);
         ArrayList<User> users = mUsers.get(roomName);
-        for (User user : users) {
-            if (user.Id.equals(fromId)) {
-                broadcastIntent.putExtra(EXTRA_USER, user);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(fromId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
             }
         }
         sendBroadcast(broadcastIntent);
@@ -311,17 +316,19 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onChatMessage(String message, String time, String status, String fromId, String roomName) {
+    public void onChatMessage(String message, String time, String status, String to, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_CHAT_MESSAGE);
         broadcastIntent.putExtra(EXTRA_MESSAGE, message);
         broadcastIntent.putExtra(EXTRA_TIME, time);
         broadcastIntent.putExtra(EXTRA_STATUS, status);
-
+        broadcastIntent.putExtra(EXTRA_TO, to);
         ArrayList<User> users = mUsers.get(roomName);
-        for (User user : users) {
-            if (user.Id.equals(fromId)) {
-                broadcastIntent.putExtra(EXTRA_USER, user);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(fromId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
             }
         }
         sendBroadcast(broadcastIntent);
@@ -337,9 +344,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.putExtra(EXTRA_FILEINFO, fileInfo);
 
         ArrayList<User> users = mUsers.get(roomName);
-        for (User user : users) {
-            if (user.Id.equals(fromId)) {
-                broadcastIntent.putExtra(EXTRA_USER, user);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(fromId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
             }
         }
         sendBroadcast(broadcastIntent);
@@ -387,9 +396,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.putExtra(EXTRA_TOKEN, token);
         broadcastIntent.putExtra(EXTRA_ID, id);
         ArrayList<User> users = mUsers.get(roomName);
-        for (User user : users) {
-            if (user.Id.equals(fromId)) {
-                broadcastIntent.putExtra(EXTRA_USER, user);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(fromId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
             }
         }
         sendBroadcast(broadcastIntent);
