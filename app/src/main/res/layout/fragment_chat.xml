@@ -4,6 +4,7 @@
     android:id="@+id/activity_chat"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/grey50"
     tools:context="org.appspot.apprtc.RoomActivity">
 
 
@@ -32,6 +33,15 @@
             android:layout_alignBottom="@+id/recentButton"
             android:textColor="@color/white"
             android:text="User Name"/>
+
+        <Button
+            android:id="@+id/roomChatButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/room_chat_button"
+            android:layout_alignParentRight="true"
+            android:textColor="@color/white"
+            android:background="@color/primary"/>
 
     </RelativeLayout>
 
@@ -66,5 +76,5 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
-        android:src="@drawable/ic_send_white_48dp"/>
+        android:src="@drawable/ic_send_white_24dp"/>
 </RelativeLayout>

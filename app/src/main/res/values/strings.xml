@@ -242,9 +242,9 @@
     <string name="mode_im"></string>
     <string name="mode_video_chat"></string>
     <string name="mode_share_files"></string>
-    <string name="drawer_chat">Instant Messaging</string>
-    <string name="drawer_video_chat">Audio/Video Chat</string>
-    <string name="drawer_share_files">Share Files</string>
+    <string name="drawer_chat">SecureIM</string>
+    <string name="drawer_video_chat">SecureTalk</string>
+    <string name="drawer_share_files">SecureFileShare</string>
     <string name="drawer_item_settings">Settings</string>
     <string name="drawer_close">Close</string>
     <string name="drawer_open">Open</string>
@@ -255,5 +255,10 @@
     <string name="cancel">Cancel</string>
     <string name="open">Open</string>
     <string name="retry">Retry</string>
-    <string name="spreed_talk">SpreedTalk</string>
+    <string name="spreed_talk">SecureTalk</string>
+    <string name="video_call">Video Call</string>
+    <string name="voice_call">Voice Call</string>
+    <string name="send_message">Send a message</string>
+    <string name="share_a_file">Share a file</string>
+    <string name="room_chat_button">Room Chat</string>
 </resources>

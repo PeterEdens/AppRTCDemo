@@ -84,7 +84,7 @@ public class PeerConnectionClient {
   private static final int HD_VIDEO_HEIGHT = 720;
   private static final int BPS_IN_KBPS = 1000;
 
-  private static final PeerConnectionClient instance = new PeerConnectionClient();
+  //private PeerConnectionClient instance = new PeerConnectionClient();
   private final PCObserver pcObserver = new PCObserver();
   private final SDPObserver sdpObserver = new SDPObserver();
   private final ScheduledExecutorService executor;
@@ -294,7 +294,7 @@ public class PeerConnectionClient {
   }
 
   public static PeerConnectionClient getInstance() {
-    return instance;
+    return new PeerConnectionClient();
   }
 
   public void setPeerConnectionFactoryOptions(PeerConnectionFactory.Options options) {

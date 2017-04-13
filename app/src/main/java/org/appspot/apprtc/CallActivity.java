@@ -81,7 +81,7 @@ import java.util.Set;
 public class CallActivity extends AppCompatActivity implements AppRTCClient.SignalingEvents,
                                                       PeerConnectionClient.PeerConnectionEvents,
                                                       CallFragment.OnCallEvents,
-                                                      InitiateCallFragment.OnInitiateCallEvents {
+                                                      InitiateCallFragment.OnInitiateCallEvents, AdditionalPeerConnection.AdditionalPeerConnectionEvents {
   public static final String ACTION_NEW_CALL = "org.appspot.apprtc.ACTION_NEW_CALL";
   public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
   public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
@@ -149,6 +149,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
+  private static final int REMOTE_HEIGHT2 = 50;
   private PeerConnectionClient peerConnectionClient = null;
 
   //private AppRTCClient appRtcClient;
@@ -281,6 +282,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private int mMaxRetrMs = -1;
   private SerializableIceCandidate mRemoteIceCandidate;
   private boolean mFinishCalled;
+  private HashMap<String, AdditionalPeerConnection> mAdditionalPeers = new HashMap<String, AdditionalPeerConnection>();
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -554,24 +556,37 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
      SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
 
-      if (id.equals(mSdpId)) {
+      if (mAdditionalPeers.containsKey(candidate.from)) {
+        IceCandidate ic = new IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
+        mAdditionalPeers.get(candidate.from).addRemoteIceCandidate(ic);
+      }
+      else if (id.equals(mSdpId)) {
         onRemoteIceCandidate(candidate, id, candidate.from);
       }
 
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
       SerializableSessionDescription sdp = (SerializableSessionDescription) intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
-      mPeerId = sdp.from;
       String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
 
-      if (mSdpId.length() == 0) {
+      if (mPeerId.length() == 0 || mPeerId.equals(sdp.from)) {
+
         mSdpId = id;
+        mPeerId = sdp.from;
         if (peerConnectionClient.isConnected()) {
           onRemoteDescription(sdp, token, id, "", "");
         } else {
           mRemoteSdp = sdp;
           mToken = token;
+        }
+      }
+      else  {
+        AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, false, sdp.from, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase, localRender);
+        additionalPeerConnection.setRemoteDescription(new SessionDescription(sdp.type, sdp.description));
+        mAdditionalPeers.put(sdp.from, additionalPeerConnection);
+        if (mAdditionalPeers.size() == 1) {
+          updateVideoView();
         }
       }
     }
@@ -740,7 +755,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   private void updateVideoView() {
-    remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
+    int remoteHeight = REMOTE_HEIGHT;
+    if (mAdditionalPeers.size() != 0) {
+      remoteHeight = REMOTE_HEIGHT2;
+    }
+    remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
     remoteRenderScreen.setScalingType(scalingType);
     remoteRenderScreen.setMirror(false);
 
@@ -814,6 +833,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       activityRunning = false;
       if (mService != null) {
         mService.sendBye(mPeerId);
+      }
+
+      for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
+        AdditionalPeerConnection additionalPeerConnection = entry.getValue();
+        additionalPeerConnection.close();
       }
 
       if (peerConnectionClient != null) {
@@ -893,7 +917,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     });
   }
 
-  private VideoCapturer createVideoCapturer() {
+  protected VideoCapturer createVideoCapturer() {
     VideoCapturer videoCapturer = null;
     String videoFileAsCamera = getIntent().getStringExtra(EXTRA_VIDEO_FILE_AS_CAMERA);
     if (videoFileAsCamera != null) {
@@ -1348,7 +1372,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean sharedPrefGetBoolean(
           int attributeId, String intentName, int defaultId) {
     boolean defaultValue = Boolean.valueOf(getString(defaultId));
-
+  Intent intent = getIntent();
+    if (intent != null && intent.hasExtra(intentName)) {
+      return intent.getBooleanExtra(intentName, defaultValue);
+    }
     String attributeName = getString(attributeId);
     return sharedPref.getBoolean(attributeName, defaultValue);
   
@@ -1531,6 +1558,32 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
             R.string.pref_data_id_default);
     mProtocol = sharedPrefGetString(R.string.pref_data_protocol_key,
             CallActivity.EXTRA_PROTOCOL, R.string.pref_data_protocol_default);
+
+  }
+
+  @Override
+  public void sendOfferSdp(SessionDescription localSdp, String remoteId) {
+    if (mService != null) {
+      mService.sendOfferSdp(localSdp, remoteId);
+    }
+  }
+
+  @Override
+  public void sendAnswerSdp(SessionDescription localSdp, String remoteId) {
+    if (mService != null) {
+      mService.sendAnswerSdp(localSdp, remoteId);
+    }
+  }
+
+  @Override
+  public void sendLocalIceCandidate(SerializableIceCandidate candidate, String remoteId) {
+    if (mService != null) {
+      mService.sendLocalIceCandidate(candidate, "", "", remoteId);
+    }
+  }
+
+  @Override
+  public void onError(String description, String to) {
 
   }
 }

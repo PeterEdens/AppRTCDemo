@@ -23,31 +23,8 @@
         android:layout_toRightOf="@+id/image_id"
         android:layout_toLeftOf="@+id/call_button"
         android:layout_centerVertical="true"
-        android:textStyle="bold"
         android:textSize="20sp"
         android:id="@+id/text_id"/>
 
-    <ImageButton
-        android:id="@+id/call_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_toLeftOf="@+id/chat_button"
-        android:layout_margin="10dp"
-        android:background="@drawable/ic_call_black_24dp"/>
 
-    <ImageButton
-        android:id="@+id/chat_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_toLeftOf="@+id/file_button"
-        android:layout_margin="10dp"
-        android:background="@drawable/ic_chat"/>
-
-    <ImageButton
-        android:id="@+id/file_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_alignParentRight="true"
-        android:layout_margin="10dp"
-        android:background="@drawable/share_file"/>
 </RelativeLayout>

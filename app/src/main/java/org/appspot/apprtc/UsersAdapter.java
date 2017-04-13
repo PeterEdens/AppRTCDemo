@@ -25,6 +25,8 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
+import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
+
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder> {
 
     String mServer = "";
@@ -70,9 +72,9 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
 
     public static class UsersViewHolder extends RecyclerView.ViewHolder {
 
-        ImageButton callButton;
+        /*ImageButton callButton;
         ImageButton chatButton;
-        ImageButton shareFileButton;
+        ImageButton shareFileButton;*/
         protected ImageView image;
         protected TextView text;
         public User user;
@@ -82,7 +84,16 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
             super(itemView);
             image= (ImageView) itemView.findViewById(R.id.image_id);
             text= (TextView) itemView.findViewById(R.id.text_id);
-            callButton = (ImageButton) itemView.findViewById(R.id.call_button);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(view.getContext(), UserActivity.class);
+                    intent.putExtra(EXTRA_SERVER_NAME, mServer);
+                    intent.putExtra(CallActivity.EXTRA_USER, user);
+                    view.getContext().startActivity(intent);
+                }
+            });
+            /*callButton = (ImageButton) itemView.findViewById(R.id.call_button);
             chatButton = (ImageButton) itemView.findViewById(R.id.chat_button);
             shareFileButton = (ImageButton) itemView.findViewById(R.id.file_button);
 
@@ -121,7 +132,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
                         v.getContext().startActivity(intent);
                     }
                 }
-            });
+            });*/
         }
 
     }

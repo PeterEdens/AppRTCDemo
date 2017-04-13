@@ -57,6 +57,7 @@ public class ChatFragment extends Fragment {
     private HashMap<String, User> userIdList = new HashMap<String, User>();
     private Button recentButton;
     private RelativeLayout recentControlsLayout;
+    private Button roomChatButton;
 
     public enum ChatMode {
         TOPLEVEL,
@@ -68,6 +69,9 @@ public class ChatFragment extends Fragment {
     public void viewChat(String key) {
         mode = ChatMode.CONTENTS;
         mCurrentId = key;
+        if (chatList.get(key) == null) {
+            chatList.put(key, new ArrayList<ChatItem>());
+        }
         adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName);
         recyclerView.setAdapter(adapter);
         User user = userIdList.get(key);
@@ -76,8 +80,24 @@ public class ChatFragment extends Fragment {
     }
 
     public void setUser(User user) {
+        if (user != null) {
+            if (!userIdList.containsKey(user.Id)) {
+                userIdList.put(user.Id, user);
+            }
+        }
+
+        if (chatList.get(user.Id) == null) {
+            chatList.put(user.Id, new ArrayList<ChatItem>());
+        }
+
+        viewChat(user.Id);
+
         mUser = user;
         mCurrentId = user.Id;
+
+        if (editChat != null) {
+            editChat.requestFocus();
+        }
     }
 
     public void setDownloadedBytes(final int index, final long downloaded, final String to) {
@@ -167,7 +187,14 @@ public class ChatFragment extends Fragment {
         emptyChat = (TextView) controlView.findViewById(R.id.emptyChat);
         sendButton = (ImageButton) controlView.findViewById(R.id.sendButton);
         editChat = (EditText) controlView.findViewById(R.id.chatEdit);
+        roomChatButton = (Button) controlView.findViewById(R.id.roomChatButton);
 
+        roomChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                viewChat("");
+            }
+        });
         recentButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -214,6 +241,7 @@ public class ChatFragment extends Fragment {
         if (args != null) {
             if (args.containsKey(RoomActivity.EXTRA_ROOM_NAME)) {
                 mRoomName = args.getString(RoomActivity.EXTRA_ROOM_NAME);
+                userIdList.put("", new User("", "", mRoomName, ""));
             }
 
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
