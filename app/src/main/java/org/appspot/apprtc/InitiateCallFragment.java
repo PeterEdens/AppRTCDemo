@@ -116,7 +116,7 @@ public class InitiateCallFragment extends Fragment {
                 if (buddyPic.length() != 0) {
                     String path = buddyPic.substring(4);
                     String url = "https://" + server + RoomActivity.BUDDY_IMG_PATH + path;
-                    ThumbnailsCacheManager.LoadImage(url, contactImageView);
+                    ThumbnailsCacheManager.LoadImage(url, contactImageView, user.displayName, true);
                 }
                 else {
                     contactImageView.setImageResource(R.drawable.user_icon);

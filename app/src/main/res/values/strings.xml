@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name" translatable="false">Spreedbox Webrtc</string>
     <string name="settings_name" translatable="false">AppRTC Settings</string>
+    <string name="manage_accounts_class" translatable="false">com.owncloud.android.ui.activity.ManageAccountsActivity</string>
     <string name="disconnect_call">Disconnect Call</string>
     <string name="room_description">
         Please enter a room name. Room names are shared with everyone, so think
@@ -243,7 +244,7 @@
     <string name="mode_video_chat"></string>
     <string name="mode_share_files"></string>
     <string name="drawer_chat">SecureIM</string>
-    <string name="drawer_video_chat">SecureTalk</string>
+    <string name="drawer_video_chat">SecureMeet</string>
     <string name="drawer_share_files">SecureFileShare</string>
     <string name="drawer_item_settings">Settings</string>
     <string name="drawer_close">Close</string>
@@ -251,14 +252,17 @@
     <string name="action_accounts">Accounts</string>
     <string name="emptyRoom">No one else in this room\n\nShare this room with your friends to meet them here</string>
     <string name="emptyChat">You have not received any messages or missed calls.</string>
+    <string name="emptyFiles">You have not received any files.</string>
     <string name="download">Download</string>
     <string name="cancel">Cancel</string>
     <string name="open">Open</string>
     <string name="retry">Retry</string>
-    <string name="spreed_talk">SecureTalk</string>
+    <string name="spreed_talk">SecureMeet</string>
     <string name="video_call">Video Call</string>
     <string name="voice_call">Voice Call</string>
     <string name="send_message">Send a message</string>
     <string name="share_a_file">Share a file</string>
     <string name="room_chat_button">Room Chat</string>
+    <string name="all">All</string>
+    <string name="no_activity">There is no application available to open the file.</string>
 </resources>

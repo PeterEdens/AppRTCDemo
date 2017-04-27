@@ -1,11 +1,17 @@
 package org.appspot.apprtc;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.support.v4.content.FileProvider;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.DateUtils;
 import android.text.format.Formatter;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import org.appspot.apprtc.service.WebsocketService;
@@ -21,23 +28,31 @@ import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.w3c.dom.Text;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
 
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     String mServer = "";
+    Bitmap self = null;
     ArrayList<ChatItem> chatList;
     Context mContext;
 
     private final int INCOMING = 0;
     private final int OUTGOING = 1;
 
-    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server) {
+    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatar) {
         this.chatList = chatList;
         mServer = server;
         mContext = context;
+        byte[] decodedString = Base64.decode(avatar, Base64.DEFAULT);
+        self = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
     }
 
     @Override
@@ -68,15 +83,34 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         ChatItem chatItem = chatList.get(position);
         String buddyPic = chatItem.buddyPicture;
         if (buddyPic.length() != 0) {
-            String path = buddyPic.substring(4);
-            String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-            ThumbnailsCacheManager.LoadImage(url, holder.image);
+            if (buddyPic.equals("self")) {
+                holder.image.setImageBitmap(self);
+            }
+            else {
+                String path = buddyPic.substring(4);
+                String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
+                ThumbnailsCacheManager.LoadImage(url, holder.image, chatItem.displayName, false);
+            }
         }
         else {
             holder.image.setImageResource(R.drawable.user_icon);
         }
-        holder.time.setText(chatItem.time);
-        holder.displayName.setText(chatItem.displayName);
+
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        format.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String dateString = "";
+        try {
+            Date date = format.parse(chatItem.time);
+            if (DateUtils.isToday(date.getTime())) {
+                dateString = DateFormat.getTimeInstance().format(date);
+            }
+            else {
+                dateString = DateFormat.getDateTimeInstance().format(date);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        holder.time.setText(dateString);
         holder.text.setText(chatItem.text);
         holder.chatItem = chatItem;
         holder.position = position;
@@ -97,7 +131,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         protected ImageView image;
         protected TextView text;
         protected TextView time;
-        protected TextView displayName;
         public ChatItem chatItem;
         protected RelativeLayout fileLayout;
         protected  RelativeLayout downloadLayout;
@@ -112,7 +145,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             image= (ImageView) itemView.findViewById(R.id.image_id);
             text= (TextView) itemView.findViewById(R.id.msgtext);
             time= (TextView) itemView.findViewById(R.id.msgtime);
-            displayName= (TextView) itemView.findViewById(R.id.displayName);
             fileLayout = (RelativeLayout) itemView.findViewById(R.id.fileLayout);
             filename = (TextView) itemView.findViewById(R.id.name);
             filesize = (TextView) itemView.findViewById(R.id.size);
@@ -161,7 +193,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         Uri fileURI = FileProvider.getUriForFile(context, "spreedbox.me.app.files", file);
                         intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
                         intent.setDataAndType(fileURI, mime);
-                        context.startActivity(intent);
+                        try {
+                            context.startActivity(intent);
+                        }
+                        catch (ActivityNotFoundException e) {
+                            e.printStackTrace();
+                            Toast.makeText(context, R.string.no_activity, Toast.LENGTH_LONG);
+                        }
                     }
                 }
             });

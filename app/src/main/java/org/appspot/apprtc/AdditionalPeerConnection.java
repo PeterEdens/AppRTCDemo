@@ -15,6 +15,7 @@ import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
+import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
@@ -49,6 +50,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     private final EglBase rootEglBase;
     private final CallActivity parent;
     private final SurfaceViewRenderer localRender;
+    private final MediaStream mediaStream;
     private String mRemoteId;
     private PeerConnectionClient peerConnectionClient = null;
     private PeerConnectionClient.PeerConnectionParameters peerConnectionParameters;
@@ -86,7 +88,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender) {
+    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, SurfaceViewRenderer remoteRender, MediaStream mediaStream) {
         mRemoteId = remoteId;
         mContext = context;
         mIceServers = iceServers;
@@ -95,6 +97,8 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         this.parent = parent;
         this.rootEglBase = rootEglBase;
         this.localRender = localRender;
+        this.remoteRenderers.add(remoteRender);
+        this.mediaStream = mediaStream;
         mLocalSdpSent = false;
 
         dataChannelParameters = new PeerConnectionClient.DataChannelParameters(true,
@@ -120,17 +124,14 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     }
 
+    public void setAudioEnabled(boolean micEnabled) {
+        peerConnectionClient.setAudioEnabled(micEnabled);
+    }
+
     public void close() {
         Log.d(TAG, "close()");
         if (peerConnectionClient != null) {
-            JSONObject json = new JSONObject();
-            try {
-                json.put("m", "bye");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            peerConnectionClient.sendDataChannelMessage(json.toString());
+            peerConnectionClient.removeStream(mediaStream);
             peerConnectionClient.close();
             peerConnectionClient = null;
         }
@@ -231,6 +232,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         }
 
         if (peerConnectionClient != null) {
+            peerConnectionClient.setMediaStream(mediaStream);
             peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
                     remoteRenderers, videoCapturer, signalingParameters);
 

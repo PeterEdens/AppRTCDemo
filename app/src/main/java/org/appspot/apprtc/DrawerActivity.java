@@ -246,6 +246,10 @@ public abstract class DrawerActivity extends AppCompatActivity {
                         else if (menuItem.getItemId() == R.id.action_settings) {
                             startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
                         }
+                        else if (menuItem.getItemId() == R.id.action_accounts) {
+                            Intent intent = new Intent(getApplicationContext(), getActivityClass(R.string.manage_accounts_class));
+                            startActivity(intent);
+                        }
 
 
                         return true;
@@ -256,6 +260,22 @@ public abstract class DrawerActivity extends AppCompatActivity {
     }
 
 
+    private Class<?> getActivityClass(int classStringId) {
+        String className = getString(classStringId);
+
+        if (className.length() != 0) {
+            Class<?> c = null;
+            try {
+                c = Class.forName(className);
+            }
+            catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            return c;
+        }
+        return null;
+    }
     /**
      * checks if the drawer exists and is opened.
      *

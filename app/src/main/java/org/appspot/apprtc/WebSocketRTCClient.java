@@ -362,6 +362,37 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send local offer SDP to the other participant.
   @Override
+  public void sendConferenceOffer(final SessionDescription sdp, final String to, final String conferenceId) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject jsonOfferWrap = new JSONObject();
+        jsonPut(jsonOfferWrap, "Type", "Offer");
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "sdp", sdp.description);
+        jsonPut(json, "type", "offer");
+        jsonPut(json, "_conference", conferenceId);
+
+        JSONObject jsonOffer = new JSONObject();
+        jsonPut(jsonOffer, "To", to);
+        jsonPut(jsonOffer, "Type", "Offer");
+        jsonPut(jsonOffer, "Offer", json);
+
+        jsonPut(jsonOfferWrap, "Offer", jsonOffer);
+        jsonPut(jsonOffer, "Type", "Offer");
+
+        wsClient.send(jsonOfferWrap.toString());
+
+
+
+      }
+    });
+  }
+
+  // Send local offer SDP to the other participant.
+  @Override
   public void sendTokenOffer(final SessionDescription sdp, final String token, final String id, final String to) {
     handler.post(new Runnable() {
       @Override
@@ -501,6 +532,37 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+    // Send Status.
+    @Override
+    public void sendConference(final String conferenceId, final ArrayList<String> userIds) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+
+              JSONObject json = new JSONObject();
+              JSONArray array = new JSONArray();
+
+              jsonPut(json, "Type", "Conference");
+              jsonPut(json, "Id", conferenceId);
+
+              // add our own Id too
+              array.put(mId);
+
+              for (String id: userIds) {
+                array.put(id);
+              }
+
+              try {
+                json.put("Conference", array);
+              } catch (JSONException e) {
+                e.printStackTrace();
+              }
+
+              wsClient.send(json.toString());
+            }
+        });
+    }
+
   // Send Ice candidate to the other participant.
   @Override
   public void sendLocalIceCandidate(final SerializableIceCandidate candidate, final String token, final String id, final String to) {
@@ -559,7 +621,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(json, "NoEcho", true);
 
         JSONObject jsonChat = new JSONObject();
-        if (to.length() != 0) {
+        if (to != null && to.length() != 0) {
           jsonPut(jsonChat, "To", to);
         }
         jsonPut(jsonChat, "Type", "Chat");
@@ -839,7 +901,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 buddyPicture = statusJson.optString("buddyPicture");
                 displayName = statusJson.optString("displayName");
 
-                if (!mId.equals(Id)) {
+                if (!mId.equals(Id) && !displayName.equals("null")) {
                     User user = new User(userId, buddyPicture, displayName, Id);
                     events.onUserEnteredRoom(user, mRoomName);
                 }
@@ -848,6 +910,29 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               sendUsers();
             }
 
+          }
+        }
+        else if (type.equals("Status")) {
+
+          JSONObject usersJson = new JSONObject(msgText);
+          String usersType = usersJson.optString("Type");
+          if (usersType.equals("Status")) {
+            String Id = usersJson.optString("Id");
+            String userId = usersJson.optString("Userid");
+            String status = usersJson.optString("Status");
+            String buddyPicture = "";
+            String displayName = "";
+
+            if (status.length() != 0) {
+              JSONObject statusJson = new JSONObject(status);
+              buddyPicture = statusJson.optString("buddyPicture");
+              displayName = statusJson.optString("displayName");
+
+              if (!mId.equals(Id) && !displayName.equals("null")) {
+                User user = new User(userId, buddyPicture, displayName, Id);
+                events.onUserEnteredRoom(user, mRoomName);
+              }
+            }
           }
         }
         else if (type.equals("Left")) {
@@ -861,6 +946,16 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             if (!mId.equals(Id)) {
               User user = new User("", "", "", Id);
               events.onUserLeftRoom(user, mRoomName);
+            }
+          }
+        }
+        else if (type.equals("Conference")) {
+          String conferenceId = json.optString("Id");
+          JSONArray conferenceJson = json.getJSONArray("Conference");
+          for (int i = 0; i < conferenceJson.length(); i++) {
+            String id = conferenceJson.getString(i);
+            if (!id.equals(mId)) {
+              events.onConferenceUser(mRoomName, conferenceId, id);
             }
           }
         }
@@ -884,7 +979,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                     SerializableSessionDescription.Type.fromCanonicalForm(type), answerJson.getString("sdp"), mIdFrom);
           String token = answerJson.optString("_token");
           String id = answerJson.optString("_id");
-            events.onRemoteDescription(sdp, token, id, mIdFrom, mRoomName);
+          String conferenceId = answerJson.optString("_conference");
+            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName);
 
         } else if (type.equals("Offer")) {
           if (!initiator) {
@@ -894,7 +990,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                     SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"), mIdFrom);
             String token = offerJson.optString("_token");
             String id = offerJson.optString("_id");
-            events.onRemoteDescription(sdp, token, id, mIdFrom, mRoomName);
+            String conferenceId = offerJson.optString("_conference");
+            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
@@ -1074,5 +1171,15 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   SerializableIceCandidate toJavaCandidate(JSONObject json, String from) throws JSONException {
     return new SerializableIceCandidate(
         json.getString("sdpMid"), json.getInt("sdpMLineIndex"), json.getString("candidate"), from);
+  }
+
+  @Override
+  public String getRoomName() {
+    return mRoomName;
+  }
+
+  @Override
+  public String getId() {
+    return mId;
   }
 }

@@ -63,7 +63,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
             if (buddyPic.length() != 0) {
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-                ThumbnailsCacheManager.LoadImage(url, holder.image);
+                ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true);
             } else {
                 holder.image.setImageResource(R.drawable.user_icon);
             }/*

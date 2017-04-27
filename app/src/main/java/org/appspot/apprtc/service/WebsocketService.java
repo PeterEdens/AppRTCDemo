@@ -54,6 +54,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_TOKEN = "org.appspot.apprtc.service.EXTRA_TOKEN";
     public static final String EXTRA_ID = "org.appspot.apprtc.service.EXTRA_ID";
     public static final String EXTRA_FILEINFO = "org.appspot.apprtc.service.EXTRA_FILEINFO";
+    public static final String ACTION_ADD_CONFERENCE_USER = "org.appspot.apprtc.service.ACTION_ADD_CONFERENCE_USER";
+    public static final String EXTRA_CONFERENCE_ID = "org.appspot.apprtc.service.EXTRA_CONFERENCE_ID";
+    public static final String ACTION_ADD_ALL_CONFERENCE = "org.appspot.apprtc.service.ACTION_ADD_ALL_CONFERENCE";
 
     private String mServer = "";
 
@@ -68,6 +71,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     };
 
+    public String getCurrentRoomName() {
+        if (appRtcClient != null) {
+            return appRtcClient.getRoomName();
+        }
+        return null;
+    }
     public void disconnectFromServer() {
         if (appRtcClient != null) {
             appRtcClient.disconnectFromRoom();
@@ -75,6 +84,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             mUsers.clear();
         }
     }
+
+
 
 
     enum ConnectionState {
@@ -108,6 +119,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         return mServer;
     }
 
+    public String getId() {
+        if (appRtcClient != null) {
+            return appRtcClient.getId();
+        }
+        return "";
+    }
+
     public void connectToRoom(String roomName) {
         if (appRtcClient != null) {
             appRtcClient.connectToRoom(roomName);
@@ -123,6 +141,18 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void sendOfferSdp(SessionDescription sdp, String to) {
         if (appRtcClient != null) {
             appRtcClient.sendOfferSdp(sdp, to);
+        }
+    }
+
+    public void sendConferenceOfferSdp(SessionDescription sdp, String to, String conferenceId) {
+        if (appRtcClient != null) {
+            appRtcClient.sendConferenceOffer(sdp, to, conferenceId);
+        }
+    }
+
+    public void sendConference(String conferenceId, ArrayList<String> userIds) {
+        if (appRtcClient != null) {
+            appRtcClient.sendConference(conferenceId, userIds);
         }
     }
 
@@ -389,12 +419,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String fromId, String roomName) {
+    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
         broadcastIntent.putExtra(EXTRA_TOKEN, token);
         broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
             for (User user : users) {
@@ -431,6 +463,23 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         long interval = (long)(ttl - (ttl * 0.1f)) * 1000; // ms
 
         selfHandler.postDelayed(selfRenew, interval);
+    }
+
+    @Override
+    public void onConferenceUser(String roomName, String conferenceId, String id) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_ADD_CONFERENCE_USER);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+        ArrayList<User> users = mUsers.get(roomName);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(id)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
+            }
+        }
+        sendBroadcast(broadcastIntent);
     }
 
     @Override

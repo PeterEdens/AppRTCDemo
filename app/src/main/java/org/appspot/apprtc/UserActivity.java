@@ -44,7 +44,7 @@ public class UserActivity extends AppCompatActivity {
             if (buddyPic.length() != 0) {
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-                ThumbnailsCacheManager.LoadImage(url, image);
+                ThumbnailsCacheManager.LoadImage(url, image, user.displayName, true);
             }
             else {
                 image.setImageResource(R.drawable.user_icon);

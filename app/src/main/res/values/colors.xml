@@ -5,7 +5,7 @@
     <color name="accent">#ff0091ea</color>
     <color name="white">#ffffffff</color>
     <color name="white70">#b2ffffff</color>
-    <color name="incoming">#ffffffff</color>
+    <color name="incoming">#ff259b24</color>
     <color name="outgoing">#ffffffff</color>
     <color name="disabled">#ff444444</color>
     <color name="grey50">#fffafafa</color>

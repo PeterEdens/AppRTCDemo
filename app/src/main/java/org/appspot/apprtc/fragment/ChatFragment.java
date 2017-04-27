@@ -10,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -29,10 +30,14 @@ import org.appspot.apprtc.sound.SoundPlayer;
 import org.webrtc.RendererCommon;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
+
+import static org.appspot.apprtc.ConnectActivity.EXTRA_AVATAR;
 
 
 public class ChatFragment extends Fragment {
@@ -58,6 +63,7 @@ public class ChatFragment extends Fragment {
     private Button recentButton;
     private RelativeLayout recentControlsLayout;
     private Button roomChatButton;
+    private String mAvatar;
 
     public enum ChatMode {
         TOPLEVEL,
@@ -72,7 +78,7 @@ public class ChatFragment extends Fragment {
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
-        adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName);
+        adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatar);
         recyclerView.setAdapter(adapter);
         User user = userIdList.get(key);
         mUserNameTextView.setText(user.displayName);
@@ -96,7 +102,14 @@ public class ChatFragment extends Fragment {
         mCurrentId = user.Id;
 
         if (editChat != null) {
-            editChat.requestFocus();
+            editChat.requestFocus(); editChat.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    InputMethodManager keyboard = (InputMethodManager)
+                            mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    keyboard.showSoftInput(editChat, 0);
+                }
+            },200);
         }
     }
 
@@ -215,8 +228,10 @@ public class ChatFragment extends Fragment {
                 String to = mCurrentId;
 
                 chatEvents.onSendChatMessage(message, to);
-                String time = DateFormat.getDateTimeInstance().format(new Date());
-                ChatItem item = new ChatItem(time, "Me", message, "", "", to);
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = fmt.format(new Date());
+                ChatItem item = new ChatItem(time, "Me", message, "self", "", to);
                 item.setOutgoing();
                 addMessage(item, mUser);
             }
@@ -244,6 +259,9 @@ public class ChatFragment extends Fragment {
                 userIdList.put("", new User("", "", mRoomName, ""));
             }
 
+            if (args.containsKey(EXTRA_AVATAR)) {
+                mAvatar = args.getString(EXTRA_AVATAR);
+            }
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
                 mServerName = args.getString(RoomActivity.EXTRA_SERVER_NAME);
             }
@@ -259,7 +277,7 @@ public class ChatFragment extends Fragment {
         }
         else {
             recentControlsLayout.setVisibility(View.VISIBLE);
-            adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName);
+            adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatar);
             mUserNameTextView.setText(userIdList.get(mCurrentId).displayName);
         }
         recyclerView.setAdapter(adapter);

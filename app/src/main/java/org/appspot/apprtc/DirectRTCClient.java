@@ -19,6 +19,7 @@ import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,6 +67,16 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
     executor = Executors.newSingleThreadExecutor();
     roomState = ConnectionState.NEW;
+  }
+
+  @Override
+  public String getRoomName() {
+    return null;
+  }
+
+  @Override
+  public String getId() {
+    return null;
   }
 
   @Override
@@ -220,6 +231,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void sendConferenceOffer(SessionDescription sdp, String to, String conferenceId) {
+
+  }
+
+  @Override
   public void sendAnswerSdp(final SessionDescription sdp, String to) {
     executor.execute(new Runnable() {
       @Override
@@ -234,6 +250,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   @Override
   public void sendTokenAnswer(SessionDescription sdp, String token, String id, String to) {
+
+  }
+
+  @Override
+  public void sendConference(String conferenceId, ArrayList<String> userIds) {
 
   }
 
@@ -322,7 +343,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       } else if (type.equals("answer")) {
         SerializableSessionDescription sdp = new SerializableSessionDescription(
                 SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"), "");
-        events.onRemoteDescription(sdp, "", "", "", "");
+        events.onRemoteDescription(sdp, "", "", "", "", "");
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(
             SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));

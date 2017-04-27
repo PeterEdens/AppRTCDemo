@@ -38,7 +38,8 @@ public class UnhandledExceptionHandler implements Thread.UncaughtExceptionHandle
   }
 
   public void uncaughtException(Thread unusedThread, final Throwable e) {
-    activity.runOnUiThread(new Runnable() {
+    e.printStackTrace();
+    /*activity.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         String title = "Fatal error: " + getTopLevelCauseMessage(e);
@@ -53,16 +54,16 @@ public class UnhandledExceptionHandler implements Thread.UncaughtExceptionHandle
           @Override
           public void onClick(DialogInterface dialog, int which) {
             dialog.dismiss();
-            System.exit(1);
+            //activity.finish();
           }
         };
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle(title)
             .setView(scrollingContainer)
-            .setPositiveButton("Exit", listener)
+            .setPositiveButton("Close", listener)
             .show();
       }
-    });
+    });*/
   }
 
   // Returns the Message attached to the original Cause of |t|.
