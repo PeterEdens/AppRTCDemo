@@ -601,7 +601,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
       for (User user: users) {
         boolean added = false;
-        if (!mAdditionalPeers.containsKey(user.Id) /*&& user.Id.compareTo(mOwnId) == -1*/) {
+        if (!mAdditionalPeers.containsKey(user.Id) && user.Id.compareTo(mOwnId) == -1) {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
                   localRender, getRemoteRenderScreen(), peerConnectionClient.getMediaStream());
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
@@ -619,17 +619,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         userIds.add(id);
       }
 
-      /*if (mConferenceId == null) {
+      if (mConferenceId == null) {
         SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
-        mConferenceId = gen.nextSessionId();
+        mConferenceId = mOwnId + "_" + gen.nextSessionId();
       }
 
-      mService.sendConference(mConferenceId, userIds);*/
+      mService.sendConference(mConferenceId, userIds);
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_ADD_CONFERENCE_USER)) {
       User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
       boolean added = false;
-      if (!mAdditionalPeers.containsKey(user.Id) /*&& user.Id.compareTo(mOwnId) == -1*/) {
+      if (!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (user.Id.compareTo(mOwnId) < 0 || intent.hasExtra(WebsocketService.EXTRA_USERACTION))) {
         AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
                 localRender, getRemoteRenderScreen(), peerConnectionClient.getMediaStream());
         mAdditionalPeers.put(user.Id, additionalPeerConnection);
@@ -637,24 +637,26 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         added = true;
       }
 
-      // send the conference invites
-      ArrayList<String> userIds = new ArrayList<String>();
-      userIds.add(mPeerId);
-      for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
-        String id = entry.getKey();
-        userIds.add(id);
-      }
+      if (intent.hasExtra(WebsocketService.EXTRA_USERACTION)) {
+        // send the conference invites
+        ArrayList<String> userIds = new ArrayList<String>();
+        userIds.add(mPeerId);
+        for (HashMap.Entry<String, AdditionalPeerConnection> entry : mAdditionalPeers.entrySet()) {
+          String id = entry.getKey();
+          userIds.add(id);
+        }
 
-      if (!added) {
-        userIds.add(user.Id);
-      }
+        if (!added) {
+          userIds.add(user.Id);
+        }
 
-      /*if (mConferenceId == null) {
-        SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
-        mConferenceId = gen.nextSessionId();
-      }
+        if (mConferenceId == null) {
+          SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
+          mConferenceId = mOwnId + "_" + gen.nextSessionId();
+        }
 
-      mService.sendConference(mConferenceId, userIds);*/
+        mService.sendConference(mConferenceId, userIds);
+      }
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
      SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
@@ -1279,6 +1281,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
+  public void clearRoomUsers(String room) {
+
+  }
+
+  @Override
   public void onUserEnteredRoom(User user, String room) {
 
   }
@@ -1749,12 +1756,12 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   @Override
   public void sendOfferSdp(SessionDescription localSdp, String remoteId) {
     if (mService != null) {
-      /*if (mConferenceId != null) {
+      if (mConferenceId != null) {
         mService.sendConferenceOfferSdp(localSdp, remoteId, mConferenceId);
       }
-      else {*/
+      else {
         mService.sendOfferSdp(localSdp, remoteId);
-     // }
+      }
     }
   }
 

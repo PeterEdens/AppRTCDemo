@@ -605,44 +605,41 @@ public class PeerConnectionClient {
       init.id = peerConnectionParameters.dataChannelParameters.id;
       init.protocol = peerConnectionParameters.dataChannelParameters.protocol;
       dataChannel = peerConnection.createDataChannel("default", init);
-      /*dataChannel.registerObserver(new DataChannel.Observer() {
-        @Override
+      dataChannel.registerObserver(new DataChannel.Observer() {
         public void onBufferedAmountChange(long previousAmount) {
-          if (dataChannel != null) {
-            Log.d(TAG, "Data channel buffered amount changed: " + dataChannel.label() + ": " + dataChannel.state());
-          }
+          Log.d(TAG, "Data channel buffered amount changed: " + dataChannel.label() + ": " + dataChannel.state());
         }
 
         @Override
         public void onStateChange() {
-          if (dataChannel != null) {
-            Log.d(TAG, "Data channel state changed: " + dataChannel.label() + ": " + dataChannel.state());
+          if (dataChannel == null) {
+            return;
+          }
+          Log.d(TAG, "Data channel state changed: " + dataChannel.label() + ": " + dataChannel.state());
+          if (dataChannelCallback != null) {
+            dataChannelCallback.onStateChange(dataChannel.state());
           }
         }
 
         @Override
         public void onMessage(final DataChannel.Buffer buffer) {
-          if (dataChannel != null) {
-            if (buffer.binary) {
-              Log.d(TAG, "Received binary msg over " + dataChannel);
-              if (dataChannelCallback != null) {
-                dataChannelCallback.onBinaryMessage(buffer);
-              }
-            } else {
-              Log.d(TAG, "Received text msg over " + dataChannel);
-              if (dataChannelCallback != null) {
-                ByteBuffer data = buffer.data;
-                final byte[] bytes = new byte[data.capacity()];
-                data.get(bytes);
-                String strData = new String(bytes);
-                Log.d(TAG, "Got msg: " + strData + " over " + dataChannel);
-
-                dataChannelCallback.onTextMessage(strData);
-              }
+          if (buffer.binary) {
+            Log.d(TAG, "Received binary msg over " + dataChannel);
+            if (dataChannelCallback != null) {
+              dataChannelCallback.onBinaryMessage(buffer);
             }
+            return;
+          }
+          ByteBuffer data = buffer.data;
+          final byte[] bytes = new byte[data.capacity()];
+          data.get(bytes);
+          String strData = new String(bytes);
+          Log.d(TAG, "Got msg: " + strData + " over " + dataChannel);
+          if (dataChannelCallback != null) {
+            dataChannelCallback.onTextMessage(strData);
           }
         }
-      });*/
+      });
     }
     isInitiator = false;
 
@@ -1304,12 +1301,16 @@ public class PeerConnectionClient {
 
   public void sendDataChannelMessage(String data) {
     ByteBuffer buffer = ByteBuffer.wrap(data.getBytes());
-    dataChannel.send(new DataChannel.Buffer(buffer, false));
+    if (dataChannel != null) {
+      dataChannel.send(new DataChannel.Buffer(buffer, false));
+    }
   }
 
   public void sendDataChannelBinary(byte[] data) {
     ByteBuffer buffer = ByteBuffer.wrap(data);
-    dataChannel.send(new DataChannel.Buffer(buffer, true));
+    if (dataChannel != null) {
+      dataChannel.send(new DataChannel.Buffer(buffer, true));
+    }
   }
 
   // Implementation detail: handle offer creation/signaling and answer setting,

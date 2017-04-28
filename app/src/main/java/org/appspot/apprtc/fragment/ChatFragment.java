@@ -65,6 +65,11 @@ public class ChatFragment extends Fragment {
     private Button roomChatButton;
     private String mAvatar;
 
+    public void clearMessages() {
+        chatList.clear();
+    }
+
+
     public enum ChatMode {
         TOPLEVEL,
         CONTENTS
@@ -162,9 +167,9 @@ public class ChatFragment extends Fragment {
      * Call control interface for container activity.
      */
     public interface OnChatEvents {
-        void onSendChatMessage(String message, String to);
+        void onSendChatMessage(String time, String displayName, String buddyPicture, String message, String to);
         void onMessageRead();
-        void onSendFile(String message, long size, String name, String mime, String to);
+        void onSendFile(String time, String displayName, String buddyPicture, String message, long size, String name, String mime, String to);
     }
 
     public ChatFragment() {
@@ -227,13 +232,13 @@ public class ChatFragment extends Fragment {
                 editChat.setText("");
                 String to = mCurrentId;
 
-                chatEvents.onSendChatMessage(message, to);
                 SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
                 String time = fmt.format(new Date());
+                chatEvents.onSendChatMessage(time, "Me", "self", message, to);
                 ChatItem item = new ChatItem(time, "Me", message, "self", "", to);
                 item.setOutgoing();
-                addMessage(item, mUser);
+                addOutgoingMessage(item);
             }
         });
 
@@ -246,6 +251,9 @@ public class ChatFragment extends Fragment {
     public void onResume() {
         super.onResume();
         chatEvents.onMessageRead();
+        if (chatList.size() != 0) {
+            emptyChat.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -256,6 +264,9 @@ public class ChatFragment extends Fragment {
         if (args != null) {
             if (args.containsKey(RoomActivity.EXTRA_ROOM_NAME)) {
                 mRoomName = args.getString(RoomActivity.EXTRA_ROOM_NAME);
+                if (mRoomName.length() == 0) {
+                    mRoomName = getString(R.string.default_room);
+                }
                 userIdList.put("", new User("", "", mRoomName, ""));
             }
 
@@ -284,6 +295,10 @@ public class ChatFragment extends Fragment {
 
     }
 
+    public void addOutgoingMessage(ChatItem item) {
+        addMessage(item, mUser);
+    }
+
     public void addMessage(ChatItem chatItem, User user) {
         if (user != null) {
             if (!userIdList.containsKey(user.Id)) {
@@ -296,11 +311,13 @@ public class ChatFragment extends Fragment {
         }
 
         chatList.get(chatItem.getRecipient()).add(chatItem);
-        adapter.notifyDataSetChanged();
-        emptyChat.setVisibility(View.GONE);
-        mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
-        mSoundPlayer.Play(false);
-        recyclerView.scrollToPosition(chatList.size() - 1);
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+            emptyChat.setVisibility(View.GONE);
+            mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
+            mSoundPlayer.Play(false);
+            recyclerView.scrollToPosition(chatList.size() - 1);
+        }
     }
 
     @Override

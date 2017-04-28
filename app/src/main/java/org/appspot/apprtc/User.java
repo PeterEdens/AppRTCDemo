@@ -5,7 +5,7 @@ import java.io.Serializable;
 
 public class User implements Serializable{
     String userId;
-    String buddyPicture;
+    public String buddyPicture;
     public String displayName;
     public String Id;
 

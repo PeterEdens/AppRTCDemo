@@ -51,8 +51,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         this.chatList = chatList;
         mServer = server;
         mContext = context;
-        byte[] decodedString = Base64.decode(avatar, Base64.DEFAULT);
-        self = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        if (avatar != null) {
+            byte[] decodedString = Base64.decode(avatar, Base64.DEFAULT);
+            self = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        }
     }
 
     @Override
@@ -156,7 +158,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             downloadButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
+                    if (chatItem.outgoing) {
+                        downloadButton.setVisibility(View.GONE);
+                    }
+                    else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
                         Intent intent = new Intent(v.getContext(), RoomActivity.class);
                         intent.setAction(RoomActivity.ACTION_DOWNLOAD);
                         intent.putExtra(WebsocketService.EXTRA_FILEINFO, chatItem.fileinfo);
@@ -213,13 +218,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             else {
                 text.setVisibility(View.GONE);
                 filename.setText(chatItem.fileinfo.name);
-                filesize.setText(chatItem.fileinfo.size);
                 Formatter formatter = new Formatter();
                 long sizeBytes = Long.valueOf(chatItem.fileinfo.size);
-                downloadProgressText.setText(formatter.formatFileSize(context, sizeBytes) + " / " + chatItem.fileinfo.percentDownloaded + "%");
+                String formattedSize = formatter.formatFileSize(context, sizeBytes);
+                downloadProgressText.setText(formattedSize + " / " + chatItem.fileinfo.percentDownloaded + "%");
+                filesize.setText(formattedSize);
                 downloadProgress.setProgress(chatItem.fileinfo.percentDownloaded);
 
-                if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
+                if (chatItem.outgoing) {
+                    downloadButton.setText(R.string.unshare);
+                }
+                else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
                     downloadButton.setText(R.string.download);
                 }
                 else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.DOWNLOADING) {

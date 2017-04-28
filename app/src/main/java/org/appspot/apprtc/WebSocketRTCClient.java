@@ -539,6 +539,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             @Override
             public void run() {
 
+              JSONObject jsonWrap = new JSONObject();
               JSONObject json = new JSONObject();
               JSONArray array = new JSONArray();
 
@@ -558,7 +559,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 e.printStackTrace();
               }
 
-              wsClient.send(json.toString());
+              jsonPut(jsonWrap, "Conference", json);
+              jsonPut(jsonWrap, "Type", "Conference");
+              wsClient.send(jsonWrap.toString());
             }
         });
     }
@@ -857,6 +860,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             events.onConnectedToRoom(roomName);
           }
 
+          events.clearRoomUsers(mRoomName);
           String usersText = json.getString("Users");
           JSONArray array = new JSONArray(usersText);
           for (int i = 0; i < array.length(); i++) {
@@ -883,6 +887,32 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         }
         else if (type.equals("Self")) {
           handleSelf(json);
+        }
+        else if (type.equals("Users")) {
+          events.clearRoomUsers(mRoomName);
+          String usersText = json.getString("Users");
+          JSONArray array = new JSONArray(usersText);
+          for (int i = 0; i < array.length(); i++) {
+            JSONObject usersJson = array.getJSONObject(i);
+            String usersType = usersJson.optString("Type");
+            if (usersType.equals("Online")) {
+              Iterator<String> it = usersJson.keys();
+              String Id = usersJson.optString("Id");
+              String userId = usersJson.optString("Userid");
+              String status = usersJson.optString("Status");
+              if (status.length() != 0) {
+                JSONObject statusJson = new JSONObject(status);
+                String buddyPicture = statusJson.optString("buddyPicture");
+                String displayName = statusJson.optString("displayName");
+
+                if (!mId.equals(Id)) {
+                  User user = new User(userId, buddyPicture, displayName, Id);
+                  events.onUserEnteredRoom(user, mRoomName);
+                }
+              }
+
+            }
+          }
         }
         else if (type.equals("Joined")) {
           //{"Type":"Joined","Id":"bktktUup1ReVkLdrrN7cw4iev1ewPKbD4XTZNh5MEFN8PT1nRER5UTFQZ3RtR3FSLUpxZHVFSTU4dXJDbFlsbzBfZGU2ajhBSmdwR2k4d0lRSGQ2SE11QUkxY0c3MmhjZHp2SGJlRWYxfDQ1MDAyNzc4NDE=","Userid":"admin","Ua":"Chrome 56","Prio":100,"Status":{"buddyPicture":"img:NfDqvZdFAyD9EhgwL6vq\/sZjrk6Kw3NIU\/picture.png","displayName":"admin","message":null}}

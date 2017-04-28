@@ -88,6 +88,7 @@ public class CallFragment extends Fragment {
             intent.setAction(WebsocketService.ACTION_ADD_CONFERENCE_USER);
             intent.putExtra(WebsocketService.EXTRA_USER, user);
             intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+            intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
             addToCallButton.close(true);

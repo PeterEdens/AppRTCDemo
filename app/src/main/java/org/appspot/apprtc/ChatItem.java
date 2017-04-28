@@ -62,7 +62,9 @@ public class ChatItem implements Serializable{
     }
 
     public void setDownloadFailed(String description) {
-        fileinfo.setErrorMessage(description);
+        if (fileinfo != null) {
+            fileinfo.setErrorMessage(description);
+        }
     }
 
     public String getRecipient() {

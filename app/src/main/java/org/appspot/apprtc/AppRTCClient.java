@@ -170,6 +170,8 @@ public interface AppRTCClient {
      */
     void onChannelError(final String description);
 
+    void clearRoomUsers(String room);
+
     void onUserEnteredRoom(User user, String room);
 
     void onUserLeftRoom(User user, String room);

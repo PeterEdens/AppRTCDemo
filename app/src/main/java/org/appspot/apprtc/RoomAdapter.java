@@ -9,14 +9,35 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class RoomAdapter extends ArrayAdapter<String> {
     Context mContext;
     String mCurrentRoom = "";
+    HashMap<String,Integer> mMessages = new HashMap<>();
+    HashMap<String,Integer> mFiles = new HashMap<>();
 
     public RoomAdapter(Context context, int textViewId, int layout_id, ArrayList<String> items){
         super(context, textViewId, layout_id, items);
         mContext = context;
+    }
+
+    public void addNewMessage(String roomName) {
+        if (!mMessages.containsKey(roomName)) {
+            mMessages.put(roomName, 0);
+        }
+
+        int val = mMessages.get(roomName) + 1;
+        mMessages.put(roomName, val);
+    }
+
+    public void addNewFileMessage(String roomName) {
+        if (!mFiles.containsKey(roomName)) {
+            mFiles.put(roomName, 0);
+        }
+
+        int val = mFiles.get(roomName) + 1;
+        mFiles.put(roomName, val);
     }
 
     public void setCurrentRoom(String roomName) {
@@ -35,6 +56,24 @@ public class RoomAdapter extends ArrayAdapter<String> {
         // Lookup view for data population
         TextView text1 = (TextView) convertView.findViewById(R.id.text_id);
         ImageView joinedStatus = (ImageView) convertView.findViewById(R.id.joined_status);
+        TextView messageStatus = (TextView) convertView.findViewById(R.id.message_status);
+        TextView fileStatus = (TextView) convertView.findViewById(R.id.file_status);
+
+        if (mMessages.containsKey(name) && mMessages.get(name) != 0) {
+            messageStatus.setText(String.valueOf(mMessages.get(name)));
+            messageStatus.setVisibility(View.VISIBLE);
+        }
+        else {
+            messageStatus.setVisibility(View.GONE);
+        }
+
+        if (mFiles.containsKey(name) && mFiles.get(name) != 0) {
+            fileStatus.setText(String.valueOf(mFiles.get(name)));
+            fileStatus.setVisibility(View.VISIBLE);
+        }
+        else {
+            fileStatus.setVisibility(View.GONE);
+        }
 
         if (name.equals(mCurrentRoom)) {
             joinedStatus.setVisibility(View.VISIBLE);
@@ -49,5 +88,15 @@ public class RoomAdapter extends ArrayAdapter<String> {
         text1.setText(name);
 
         return convertView;
+    }
+
+    public void clearFlags(String roomId) {
+        if (mMessages.containsKey(roomId)) {
+            mMessages.remove(roomId);
+        }
+
+        if (mFiles.containsKey(roomId)) {
+            mFiles.remove(roomId);
+        }
     }
 }

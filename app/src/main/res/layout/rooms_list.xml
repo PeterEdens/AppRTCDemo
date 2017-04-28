@@ -22,6 +22,25 @@
         android:layout_alignBottom="@+id/image_id"
         android:id="@+id/text_id"/>
 
+    <TextView
+        android:id="@+id/file_status"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_toLeftOf="@+id/message_status"
+        android:layout_margin="5dp"
+        android:gravity="center"
+        android:background="@drawable/share_file"/>
+
+    <TextView
+        android:id="@+id/message_status"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_toLeftOf="@+id/joined_status"
+        android:gravity="center"
+        android:layout_margin="5dp"
+        android:textColor="@color/white"
+        android:background="@drawable/ic_chat_bubble_black_24dp"/>
+
     <ImageView
         android:id="@+id/joined_status"
         android:layout_width="48dp"

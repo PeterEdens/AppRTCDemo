@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.IBinder;
 
 import org.appspot.apprtc.AppRTCClient;
+import org.appspot.apprtc.ChatItem;
 import org.appspot.apprtc.FileInfo;
 import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
@@ -57,6 +58,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_ADD_CONFERENCE_USER = "org.appspot.apprtc.service.ACTION_ADD_CONFERENCE_USER";
     public static final String EXTRA_CONFERENCE_ID = "org.appspot.apprtc.service.EXTRA_CONFERENCE_ID";
     public static final String ACTION_ADD_ALL_CONFERENCE = "org.appspot.apprtc.service.ACTION_ADD_ALL_CONFERENCE";
+    public static final String EXTRA_USERACTION = "org.appspot.apprtc.service.EXTRA_USERACTION";
 
     private String mServer = "";
 
@@ -101,6 +103,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     private AppRTCClient appRtcClient;
     private HashMap<String, ArrayList<User>> mUsers = new HashMap<String, ArrayList<User>>();
+    private HashMap<String, ArrayList<ChatItem>> mMessages = new HashMap<>();
+
     static private List<PeerConnection.IceServer> mIceServers = new ArrayList<PeerConnection.IceServer>();
 
     public ArrayList<User> getUsersInRoom(String roomName) {
@@ -117,6 +121,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     public String getServerAddress() {
         return mServer;
+    }
+
+    public ArrayList<ChatItem> getMessages(String roomName) {
+        return mMessages.get(roomName);
     }
 
     public String getId() {
@@ -199,15 +207,28 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendChatMessage(String message, String to) {
+    public void sendChatMessage(String time, String displayName, String buddyPicture, String message, String to, String roomName) {
         if (appRtcClient != null) {
             appRtcClient.sendChatMessage(message, to);
+            if (!mMessages.containsKey(roomName)) {
+                mMessages.put(roomName, new ArrayList<ChatItem>());
+            }
+
+            ChatItem item = new ChatItem(time, displayName, message, buddyPicture, getId(), to);
+            item.setOutgoing();
+            mMessages.get(roomName).add(item);
         }
     }
 
-    public void sendFileMessage(String message, long size, String name, String mime, String to) {
+    public void sendFileMessage(String time, String displayName, String buddyPicture, FileInfo fileInfo, String message, long size, String name, String mime, String to, String roomName) {
         if (appRtcClient != null) {
             appRtcClient.sendFileMessage(message, size, name, mime, to);
+            if (!mMessages.containsKey(roomName)) {
+                mMessages.put(roomName, new ArrayList<ChatItem>());
+            }
+
+            ChatItem item = new ChatItem(time, displayName, fileInfo, buddyPicture, to);
+            mMessages.get(roomName).add(item);
         }
     }
 
@@ -235,6 +256,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.setAction(ACTION_CONNECTED_TO_ROOM);
         broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
         sendBroadcast(broadcastIntent);
+    }
+
+    @Override
+    public void clearRoomUsers(String room) {
+        mUsers.remove(room);
     }
 
     @Override
@@ -347,16 +373,21 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void onChatMessage(String message, String time, String status, String to, String fromId, String roomName) {
+        if (!mMessages.containsKey(roomName)) {
+            mMessages.put(roomName, new ArrayList<ChatItem>());
+        }
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_CHAT_MESSAGE);
         broadcastIntent.putExtra(EXTRA_MESSAGE, message);
         broadcastIntent.putExtra(EXTRA_TIME, time);
         broadcastIntent.putExtra(EXTRA_STATUS, status);
         broadcastIntent.putExtra(EXTRA_TO, to);
+        broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
             for (User user : users) {
                 if (user.Id.equals(fromId)) {
+                    mMessages.get(roomName).add(new ChatItem(time, user.displayName, message, user.buddyPicture, fromId, fromId));
                     broadcastIntent.putExtra(EXTRA_USER, user);
                 }
             }
@@ -366,17 +397,22 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String fromId, String roomName) {
+        if (!mMessages.containsKey(roomName)) {
+            mMessages.put(roomName, new ArrayList<ChatItem>());
+        }
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_FILE_MESSAGE);
         broadcastIntent.putExtra(EXTRA_ID, id);
         broadcastIntent.putExtra(EXTRA_TIME, time);
         FileInfo fileInfo = new FileInfo(id, chunks, name, size, filetype);
         broadcastIntent.putExtra(EXTRA_FILEINFO, fileInfo);
+        broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
 
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
             for (User user : users) {
                 if (user.Id.equals(fromId)) {
+                    mMessages.get(roomName).add(new ChatItem(time, user.displayName, fileInfo, user.buddyPicture, fromId));
                     broadcastIntent.putExtra(EXTRA_USER, user);
                 }
             }
