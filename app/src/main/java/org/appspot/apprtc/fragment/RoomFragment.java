@@ -11,12 +11,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.appspot.apprtc.R;
 import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.UsersAdapter;
+import org.appspot.apprtc.service.WebsocketService;
 
 import java.util.ArrayList;
 
@@ -33,8 +35,9 @@ public class RoomFragment extends Fragment {
     TextView mRoomNameTextView;
     private Context mContext;
     private TextView emptyRoom;
-    private Button roomsButton;
+    private RelativeLayout roomsButton;
     private Activity mParentActivity;
+    private String mOwnId;
 
     public RoomFragment() {
         // Required empty public constructor
@@ -65,7 +68,7 @@ public class RoomFragment extends Fragment {
         mRoomNameTextView = (TextView) controlView.findViewById(R.id.roomName);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyRoom = (TextView) controlView.findViewById(R.id.emptyRoom);
-        roomsButton = (Button) controlView.findViewById(R.id.roomsButton);
+        roomsButton = (RelativeLayout) controlView.findViewById(R.id.rooms_back_layout);
 
         roomsButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,6 +92,10 @@ public class RoomFragment extends Fragment {
                 }
             }
 
+            if (args.containsKey(WebsocketService.EXTRA_OWN_ID)) {
+                mOwnId = args.getString(WebsocketService.EXTRA_OWN_ID);
+            }
+            
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
                 mServerName = args.getString(RoomActivity.EXTRA_SERVER_NAME);
             }
@@ -97,7 +104,7 @@ public class RoomFragment extends Fragment {
         layoutManager=new LinearLayoutManager(mContext);
         recyclerView.setLayoutManager(layoutManager);
 
-        adapter=new UsersAdapter(userList,mContext, mServerName);
+        adapter=new UsersAdapter(userList,mContext, mServerName, mOwnId);
         recyclerView.setAdapter(adapter);
 
 

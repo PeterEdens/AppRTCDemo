@@ -54,6 +54,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_FILE_MESSAGE = "org.appspot.apprtc.service.ACTION_FILE_MESSAGE";
     public static final String EXTRA_TOKEN = "org.appspot.apprtc.service.EXTRA_TOKEN";
     public static final String EXTRA_ID = "org.appspot.apprtc.service.EXTRA_ID";
+    public static final String EXTRA_OWN_ID = "org.appspot.apprtc.service.EXTRA_OWN_ID";
     public static final String EXTRA_FILEINFO = "org.appspot.apprtc.service.EXTRA_FILEINFO";
     public static final String ACTION_ADD_CONFERENCE_USER = "org.appspot.apprtc.service.ACTION_ADD_CONFERENCE_USER";
     public static final String EXTRA_CONFERENCE_ID = "org.appspot.apprtc.service.EXTRA_CONFERENCE_ID";
@@ -244,9 +245,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendStatus(String displayName, String buddyPicture) {
+    public void sendStatus(String displayName, String buddyPicture, String message) {
         if (appRtcClient != null) {
-            appRtcClient.sendStatus(displayName, buddyPicture);
+            appRtcClient.sendStatus(displayName, buddyPicture, message);
         }
     }
 
@@ -461,7 +462,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
         broadcastIntent.putExtra(EXTRA_TOKEN, token);
         broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
         broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+        broadcastIntent.putExtra(EXTRA_ADDRESS, mServer);
 
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
@@ -506,6 +509,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_ADD_CONFERENCE_USER);
         broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
         broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {

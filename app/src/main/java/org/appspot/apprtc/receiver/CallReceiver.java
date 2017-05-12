@@ -48,6 +48,12 @@ public class CallReceiver extends BroadcastReceiver {
                 activityIntent.setClass(context, RoomActivity.class);
             }
 
+            String ownId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
+            activityIntent.putExtra(WebsocketService.EXTRA_OWN_ID, ownId);
+
+            String serverAddress = intent.getStringExtra(WebsocketService.EXTRA_ADDRESS);
+            activityIntent.putExtra(WebsocketService.EXTRA_ADDRESS, serverAddress);
+
             String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
             activityIntent.putExtra(WebsocketService.EXTRA_CONFERENCE_ID, conferenceId);
 
@@ -65,8 +71,14 @@ public class CallReceiver extends BroadcastReceiver {
                 activityIntent.putExtra(WebsocketService.EXTRA_USER, user);
             }
 
+            String ownId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
+            activityIntent.putExtra(WebsocketService.EXTRA_OWN_ID, ownId);
+
             String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
             activityIntent.putExtra(WebsocketService.EXTRA_ID, id);
+
+            String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
+            activityIntent.putExtra(WebsocketService.EXTRA_CONFERENCE_ID, conferenceId);
 
             activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(activityIntent);

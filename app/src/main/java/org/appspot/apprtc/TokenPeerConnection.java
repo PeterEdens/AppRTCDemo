@@ -431,6 +431,16 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         }
     }
 
+    @Override
+    public void onVideoEnabled() {
+
+    }
+
+    @Override
+    public void onVideoDisabled() {
+
+    }
+
     public void addRemoteIceCandidate(IceCandidate ic) {
         Log.d(TAG, "addRemoteIceCandidate()");
         if (peerConnectionClient != null) {

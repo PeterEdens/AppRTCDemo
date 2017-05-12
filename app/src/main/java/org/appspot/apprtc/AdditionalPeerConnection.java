@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,6 +49,8 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     private static final String TAG = "AdditPeerConnection";
     private final Context mContext;
+    private CallActivity.RemoteConnectionViews mRemoteConnectionViews = null;
+    private ImageView remoteUserImage;
     private final EglBase rootEglBase;
     private final CallActivity parent;
     private final SurfaceViewRenderer localRender;
@@ -65,6 +69,11 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     private SessionDescription mRemoteSdp;
     private final List<VideoRenderer.Callbacks> remoteRenderers =
             new ArrayList<VideoRenderer.Callbacks>();
+    private String mConferenceId;
+
+    public CallActivity.RemoteConnectionViews getRemoteViews() {
+        return mRemoteConnectionViews;
+    }
 
     enum ConnectionState {
         IDLE,
@@ -76,7 +85,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     interface AdditionalPeerConnectionEvents {
 
-        void sendOfferSdp(SessionDescription localSdp, String remoteId);
+        void sendOfferSdp(SessionDescription localSdp, String remoteId, String conferenceId);
 
         void sendAnswerSdp(SessionDescription localSdp, String remoteId);
 
@@ -88,7 +97,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, SurfaceViewRenderer remoteRender, MediaStream mediaStream) {
+    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId) {
         mRemoteId = remoteId;
         mContext = context;
         mIceServers = iceServers;
@@ -97,8 +106,15 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         this.parent = parent;
         this.rootEglBase = rootEglBase;
         this.localRender = localRender;
-        this.remoteRenderers.add(remoteRender);
+
+        if (remoteConnectionViews != null) {
+            mRemoteConnectionViews = remoteConnectionViews;
+            this.remoteUserImage = remoteConnectionViews.getImageView();
+            this.remoteRenderers.add(remoteConnectionViews.getSurfaceViewRenderer());
+        }
+        
         this.mediaStream = mediaStream;
+        this.mConferenceId = conferenceId;
         mLocalSdpSent = false;
 
         dataChannelParameters = new PeerConnectionClient.DataChannelParameters(true,
@@ -146,7 +162,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             mLocalSdpSent = true;
             if (initiator) {
 
-                events.sendOfferSdp(mLocalSdp, mRemoteId);
+                events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId);
                 Log.d(TAG, "TokenOfferSdp()");
             }
             else {
@@ -165,7 +181,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             mLocalSdpSent = true;
             if (initiator) {
 
-                events.sendOfferSdp(mLocalSdp, mRemoteId);
+                events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId);
                 Log.d(TAG, "TokenOfferSdp()");
             }
             else {
@@ -228,7 +244,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         signalingParameters.dataonly = false;
         VideoCapturer videoCapturer = null;
         if (peerConnectionParameters.videoCallEnabled) {
-            videoCapturer = parent.createVideoCapturer();
+            //videoCapturer = parent.createVideoCapturer();
         }
 
         if (peerConnectionClient != null) {
@@ -262,6 +278,20 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
         if (!initiator) {
             peerConnectionClient.createAnswer();
+        }
+    }
+
+    @Override
+    public void onVideoEnabled() {
+        if (remoteUserImage != null) {
+            remoteUserImage.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public void onVideoDisabled() {
+        if (remoteUserImage != null) {
+            remoteUserImage.setVisibility(View.VISIBLE);
         }
     }
 

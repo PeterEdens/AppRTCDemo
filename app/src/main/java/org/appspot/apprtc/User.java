@@ -8,6 +8,7 @@ public class User implements Serializable{
     public String buddyPicture;
     public String displayName;
     public String Id;
+    public String message;
 
     public User(String userid, String pic, String name, String id) {
         this.userId = userid;

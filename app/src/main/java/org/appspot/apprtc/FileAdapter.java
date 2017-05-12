@@ -1,5 +1,6 @@
 package org.appspot.apprtc;
 
+import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import org.appspot.apprtc.service.WebsocketService;
@@ -85,7 +87,13 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.FileViewHolder
                     Uri fileURI = FileProvider.getUriForFile(context, "spreedbox.me.app.files", file);
                     intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
                     intent.setDataAndType(fileURI, mime);
-                    context.startActivity(intent);
+                    try {
+                        context.startActivity(intent);
+                    }
+                    catch (ActivityNotFoundException e) {
+                        e.printStackTrace();
+                        Toast.makeText(view.getContext(), view.getContext().getString(R.string.no_activity), Toast.LENGTH_LONG);
+                    }
                 }
             });
 

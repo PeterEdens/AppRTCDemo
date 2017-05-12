@@ -14,14 +14,32 @@
         android:layout_height="wrap_content"
         android:background="@color/primary"
         android:layout_marginBottom="2dp">
-        <Button
-            android:id="@+id/recentButton"
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/recent_button"
-            android:textColor="@color/white"
-            android:background="@color/primary"/>
+            android:layout_margin="5dp"
+            android:id="@+id/recent_back_layout">
 
+            <ImageView
+                android:id="@+id/back_arrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_arrow_back_white_24dp"/>
+            <TextView
+                android:id="@+id/recentButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/recent_button"
+                android:gravity="left|center_vertical"
+                android:layout_alignTop="@+id/back_arrow"
+                android:layout_alignBottom="@+id/back_arrow"
+                android:textSize="16sp"
+                android:layout_toRightOf="@+id/back_arrow"
+                android:textColor="@color/white"
+                android:background="@color/primary"/>
+        
+        </RelativeLayout>
+        
         <TextView
             android:id="@+id/userName"
             android:layout_width="wrap_content"
@@ -29,17 +47,21 @@
             android:layout_centerHorizontal="true"
             android:gravity="center"
             android:textSize="16sp"
-            android:layout_alignTop="@+id/recentButton"
-            android:layout_alignBottom="@+id/recentButton"
+            android:layout_alignTop="@+id/recent_back_layout"
+            android:layout_alignBottom="@+id/recent_back_layout"
             android:textColor="@color/white"
             android:text="User Name"/>
 
-        <Button
+        <TextView
             android:id="@+id/roomChatButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/room_chat_button"
             android:layout_alignParentRight="true"
+            android:layout_marginRight="5dp"
+            android:textSize="16sp"
+            android:layout_alignTop="@+id/recent_back_layout"
+            android:layout_alignBottom="@+id/recent_back_layout"
             android:textColor="@color/white"
             android:background="@color/primary"/>
 

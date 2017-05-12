@@ -31,14 +31,13 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:padding="@dimen/standard_padding"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <FrameLayout
             android:id="@+id/drawer_user_avatars"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:layout_marginBottom="@dimen/standard_half_margin">
+            android:layout_gravity="top">
 
             <ImageView
                 android:id="@+id/drawer_current_account"
@@ -67,6 +66,7 @@
         </FrameLayout>
 
         <LinearLayout
+            android:id="@+id/username_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/drawer_user_avatars"

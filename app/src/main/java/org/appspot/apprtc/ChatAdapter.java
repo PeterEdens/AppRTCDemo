@@ -40,21 +40,18 @@ import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     String mServer = "";
-    Bitmap self = null;
+    String mAvatarUrl;
     ArrayList<ChatItem> chatList;
     Context mContext;
 
     private final int INCOMING = 0;
     private final int OUTGOING = 1;
 
-    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatar) {
+    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatarUrl) {
         this.chatList = chatList;
         mServer = server;
         mContext = context;
-        if (avatar != null) {
-            byte[] decodedString = Base64.decode(avatar, Base64.DEFAULT);
-            self = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-        }
+        mAvatarUrl = avatarUrl;
     }
 
     @Override
@@ -86,12 +83,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         String buddyPic = chatItem.buddyPicture;
         if (buddyPic.length() != 0) {
             if (buddyPic.equals("self")) {
-                holder.image.setImageBitmap(self);
+                ThumbnailsCacheManager.LoadImage(mAvatarUrl, holder.image, chatItem.displayName, false, true);
             }
             else {
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-                ThumbnailsCacheManager.LoadImage(url, holder.image, chatItem.displayName, false);
+                ThumbnailsCacheManager.LoadImage(url, holder.image, chatItem.displayName, false, true);
             }
         }
         else {

@@ -38,6 +38,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.appspot.apprtc.AppRTCAudioManager.AudioDevice;
@@ -49,6 +51,7 @@ import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
 import org.appspot.apprtc.util.SessionIdentifierGenerator;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.Camera1Enumerator;
@@ -129,7 +132,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   public static final String EXTRA_PROTOCOL = "org.appspot.apprtc.PROTOCOL";
   public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
   public static final String EXTRA_ID = "org.appspot.apprtc.ID";
-  public static final String EXTRA_USER = "org.appspot.apprtc.EXTRA_USER";
 
   private static final String TAG = "CallRTCClient";
 
@@ -157,6 +159,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   //private AppRTCClient appRtcClient;
   private String mPeerId = "";
+  private String mPeerName = "";
   private String mOwnId = "";
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
@@ -171,6 +174,16 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private SurfaceViewRenderer remoteRenderScreen2;
   private SurfaceViewRenderer remoteRenderScreen3;
   private SurfaceViewRenderer remoteRenderScreen4;
+  private TextView remoteVideoLabel;
+  private TextView remoteVideoLabel2;
+  private TextView remoteVideoLabel3;
+  private TextView remoteVideoLabel4;
+  private ImageView remoteUserImage;
+  private ImageView remoteUserImage2;
+  private ImageView remoteUserImage3;
+  private ImageView remoteUserImage4;
+  private ArrayList<RemoteConnectionViews> remoteViewsList = new ArrayList<RemoteConnectionViews>();
+  private ArrayList<RemoteConnectionViews> remoteViewsInUseList = new ArrayList<RemoteConnectionViews>();
   private VideoFileRenderer videoFileRenderer;
   private final List<VideoRenderer.Callbacks> remoteRenderers =
       new ArrayList<VideoRenderer.Callbacks>();
@@ -191,6 +204,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean callControlFragmentVisible = true;
   private long callStartedTimeMs = 0;
   private boolean micEnabled = true;
+  private boolean videoEnabled = true;
   private boolean screencaptureEnabled = false;
   private static Intent mediaProjectionPermissionResultData;
   private static int mediaProjectionPermissionResultCode;
@@ -241,6 +255,35 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   String mConferenceId = null;
 
+  public class RemoteConnectionViews {
+    PercentFrameLayout frameLayout;
+    SurfaceViewRenderer surfaceViewRenderer;
+    ImageView imageView;
+    TextView textView;
+
+    public RemoteConnectionViews(PercentFrameLayout frameLayout, SurfaceViewRenderer surfaceViewRenderer, ImageView imageView, TextView textView) {
+      this.frameLayout = frameLayout;
+      this.surfaceViewRenderer = surfaceViewRenderer;
+      this.imageView = imageView;
+      this.textView = textView;
+    }
+
+    public PercentFrameLayout getFrameLayout() {
+      return frameLayout;
+    }
+
+    public SurfaceViewRenderer getSurfaceViewRenderer() {
+      return this.surfaceViewRenderer;
+    }
+
+    public ImageView getImageView() {
+      return imageView;
+    }
+
+    public TextView getTextView() {
+      return textView;
+    }
+  }
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -305,6 +348,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
         if (mAdditionalPeers.containsKey(user.Id)) {
+          updateRemoteViewList(mAdditionalPeers.get(user.Id).getRemoteViews());
           mAdditionalPeers.get(user.Id).close();
           mAdditionalPeers.remove(user.Id);
           updateVideoView();
@@ -322,7 +366,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
             finish();
           }
         }
-        else {
+        else if (user.Id.equals(mPeerId)) {
           // normal call clearing
           if (!mFinishCalled) {
             mFinishCalled = true;
@@ -330,13 +374,32 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           }
         }
       }
+      else if (intent.getAction().equals(WebsocketService.ACTION_USER_ENTERED)) {
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+          if (callFragment != null) {
+              callFragment.onUserEntered(user);
+          }
+      }
+      else if (intent.getAction().equals(WebsocketService.ACTION_USER_LEFT)) {
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+          if (callFragment != null) {
+              callFragment.onUserLeft(user);
+          }
+      }
 
     }
   };
 
+  private void updateRemoteViewList(RemoteConnectionViews remoteViews) {
+    remoteViewsInUseList.remove(remoteViews);
+    remoteViewsList.add(remoteViews);
+  }
+
   private String mToken;
   private String mSdpId = "";
   private boolean mForceTurn;
+  private ArrayList<User> mQueuedPeers = new ArrayList<User>();
+  private String mServer;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -356,6 +419,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     mIntentFilter = new IntentFilter();
     mIntentFilter.addAction(WebsocketService.ACTION_BYE);
+    mIntentFilter.addAction(WebsocketService.ACTION_USER_ENTERED);
+    mIntentFilter.addAction(WebsocketService.ACTION_USER_LEFT);
 
     // Get setting keys.
     PreferenceManager.setDefaultValues(this, R.xml.webrtc_preferences, false);
@@ -406,6 +471,14 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     remoteRenderScreen2 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view2);
     remoteRenderScreen3 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view3);
     remoteRenderScreen4 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view4);
+    remoteVideoLabel = (TextView) findViewById(R.id.remote_video_label);
+    remoteVideoLabel2 = (TextView) findViewById(R.id.remote_video_label2);
+    remoteVideoLabel3 = (TextView) findViewById(R.id.remote_video_label3);
+    remoteVideoLabel4 = (TextView) findViewById(R.id.remote_video_label4);
+    remoteUserImage = (ImageView) findViewById(R.id.remote_user_image1);
+    remoteUserImage2 = (ImageView) findViewById(R.id.remote_user_image2);
+    remoteUserImage3 = (ImageView) findViewById(R.id.remote_user_image3);
+    remoteUserImage4 = (ImageView) findViewById(R.id.remote_user_image4);
     localRenderLayout = (PercentFrameLayout) findViewById(R.id.local_video_layout);
     remoteRenderLayout = (PercentFrameLayout) findViewById(R.id.remote_video_layout);
     remoteRenderLayout2 = (PercentFrameLayout) findViewById(R.id.remote_video_layout2);
@@ -414,6 +487,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     initiateCallFragment = new InitiateCallFragment();
     callFragment = new CallFragment();
     hudFragment = new HudFragment();
+
+    remoteViewsInUseList.add(new RemoteConnectionViews(remoteRenderLayout, remoteRenderScreen, remoteUserImage, remoteVideoLabel)); // first one is always in use
+    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout2, remoteRenderScreen2, remoteUserImage2, remoteVideoLabel2));
+    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout3, remoteRenderScreen3, remoteUserImage3, remoteVideoLabel3));
+    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout4, remoteRenderScreen4, remoteUserImage4, remoteVideoLabel4));
 
     // Show/hide call control fragment on view click.
     View.OnClickListener listener = new View.OnClickListener() {
@@ -564,19 +642,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
   }
 
-  SurfaceViewRenderer getRemoteRenderScreen() {
-    if (mAdditionalPeers.size() == 0) {
-      return remoteRenderScreen2;
+  RemoteConnectionViews getRemoteRenderScreen(String name, String url) {
+    if (remoteViewsList.size() != 0) {
+      RemoteConnectionViews remoteConnectionViews = remoteViewsList.get(0);
+      remoteViewsList.remove(0);
+      remoteViewsInUseList.add(remoteConnectionViews);
+
+      remoteConnectionViews.getTextView().setText(name);
+      ThumbnailsCacheManager.LoadImage(url, remoteConnectionViews.getImageView(), name, true, true);
+      return remoteConnectionViews;
     }
-    else if (mAdditionalPeers.size() == 1) {
-      return remoteRenderScreen3;
-    }
-    else if (mAdditionalPeers.size() == 2) {
-      return remoteRenderScreen4;
-    }
-    else {
-      return remoteRenderScreen2;
-    }
+    return null;
   }
 
   @Override
@@ -589,34 +665,36 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       return;
     }
 
+
+    if (intent.hasExtra(WebsocketService.EXTRA_ADDRESS)) {
+      mServer = intent.getStringExtra(WebsocketService.EXTRA_ADDRESS);
+    }
+
     if (intent.getAction().equals(ACTION_NEW_CALL)) {
-      User user = (User) intent.getSerializableExtra(EXTRA_USER);
+      User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
       mPeerId = user.Id;
+      mPeerName = user.displayName;
+
+      ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
       initiator = true;
       signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
 
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_ADD_ALL_CONFERENCE)) {
       ArrayList<User> users = getUsers();
+      ArrayList<String> userIds = new ArrayList<String>();
 
       for (User user: users) {
         boolean added = false;
-        if (!mAdditionalPeers.containsKey(user.Id) && user.Id.compareTo(mOwnId) == -1) {
+        userIds.add(user.Id);
+        if (!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (mOwnId.compareTo(user.Id) < 0)) {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(), peerConnectionClient.getMediaStream());
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
           updateVideoView();
           added = true;
         }
 
-      }
-
-      // send the conference invites
-      ArrayList<String> userIds = new ArrayList<String>();
-      userIds.add(mPeerId);
-      for (HashMap.Entry<String, AdditionalPeerConnection> entry : mAdditionalPeers.entrySet()) {
-        String id = entry.getKey();
-        userIds.add(id);
       }
 
       if (mConferenceId == null) {
@@ -628,13 +706,33 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_ADD_CONFERENCE_USER)) {
       User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+      String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
+      mOwnId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
+
+      if (mConferenceId == null) {
+        mConferenceId = conferenceId;
+      }
       boolean added = false;
-      if (!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (user.Id.compareTo(mOwnId) < 0 || intent.hasExtra(WebsocketService.EXTRA_USERACTION))) {
-        AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                localRender, getRemoteRenderScreen(), peerConnectionClient.getMediaStream());
-        mAdditionalPeers.put(user.Id, additionalPeerConnection);
-        updateVideoView();
-        added = true;
+      if ((!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (mOwnId.compareTo(user.Id) < 0))) {
+        if (peerConnectionClient.getMediaStream() != null) {
+
+          AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+          mAdditionalPeers.put(user.Id, additionalPeerConnection);
+          updateVideoView();
+          added = true;
+        }
+        else if (mPeerId.length() == 0) {
+            // initiate the call
+            mPeerId = user.Id;
+            mPeerName = user.displayName;
+          ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
+            initiator = true;
+            signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
+        }
+        else {
+          mQueuedPeers.add(user);
+        }
       }
 
       if (intent.hasExtra(WebsocketService.EXTRA_USERACTION)) {
@@ -649,6 +747,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         if (!added) {
           userIds.add(user.Id);
         }
+
+        userIds.add(mOwnId);
 
         if (mConferenceId == null) {
           SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
@@ -676,19 +776,21 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
       String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
-
+      User user = (User)intent.getSerializableExtra(WebsocketService.EXTRA_USER);
       if (mConferenceId == null && conferenceId.length() != 0) {
         mConferenceId = conferenceId;
       }
-      else if (conferenceId != null && mConferenceId != null && !mConferenceId.equals(conferenceId)) {
+      /*else if (conferenceId != null && mConferenceId != null && !mConferenceId.equals(conferenceId)) {
         // already in a conference, reject the invite
         return;
-      }
+      }*/
 
       if (mPeerId.length() == 0 || mPeerId.equals(sdp.from)) {
 
         mSdpId = id;
         mPeerId = sdp.from;
+        mPeerName = user.displayName;
+        ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
         if (peerConnectionClient.isConnected()) {
           onRemoteDescription(sdp, token, id, conferenceId, "", "");
         } else {
@@ -702,13 +804,23 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         }
         else {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, false, sdp.from, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(), peerConnectionClient.getMediaStream());
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
           additionalPeerConnection.setRemoteDescription(new SessionDescription(sdp.type, sdp.description));
           mAdditionalPeers.put(sdp.from, additionalPeerConnection);
           updateVideoView();
         }
       }
     }
+  }
+
+  String getUrl(String buddyPic) {
+
+    if (buddyPic.length() != 0) {
+      String path = buddyPic.substring(4);
+      String url = "https://" + getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
+      return url;
+    }
+    return "";
   }
 
   @Override
@@ -859,6 +971,20 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return micEnabled;
   }
 
+  @Override
+  public boolean onToggleVideo() {
+    if (peerConnectionClient != null) {
+      videoEnabled = !videoEnabled;
+      peerConnectionClient.setVideoEnabled(videoEnabled);
+      // mute additionals
+      for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
+        AdditionalPeerConnection peer = entry.getValue();
+        peer.setAudioEnabled(videoEnabled);
+      }
+    }
+    return videoEnabled;
+  }
+
   // Helper functions.
   private void toggleCallControlFragmentVisibility() {
     if (!iceConnected || !callFragment.isAdded()) {
@@ -880,49 +1006,55 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   private void updateVideoView() {
     int remoteHeight = REMOTE_HEIGHT;
-    if (mAdditionalPeers.size() == 1) {
+    if (remoteViewsInUseList.size() == 2) {
       remoteHeight = REMOTE_HEIGHT2;
-      remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
-      remoteRenderLayout2.setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH, remoteHeight);
-      remoteRenderLayout2.setVisibility(View.VISIBLE);
-      remoteRenderLayout3.setVisibility(View.GONE);
-      remoteRenderLayout4.setVisibility(View.GONE);
+      remoteViewsInUseList.get(0).getFrameLayout().setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
+      remoteViewsInUseList.get(1).getFrameLayout().setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH, remoteHeight);
+
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
+      }
+
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+      }
     }
-    else if (mAdditionalPeers.size() == 2) {
+    else if (remoteViewsInUseList.size() == 3) {
       remoteHeight = REMOTE_HEIGHT2;
-      remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
-      remoteRenderLayout2.setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout3.setPosition(REMOTE_X2, remoteHeight, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout2.setVisibility(View.VISIBLE);
-      remoteRenderLayout3.setVisibility(View.VISIBLE);
-      remoteRenderLayout4.setVisibility(View.GONE);
+      remoteViewsInUseList.get(0).getFrameLayout().setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
+      remoteViewsInUseList.get(1).getFrameLayout().setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH2, remoteHeight);
+      remoteViewsInUseList.get(2).getFrameLayout().setPosition(REMOTE_X2, remoteHeight, REMOTE_WIDTH2, remoteHeight);
+
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
+      }
+
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+      }
     }
-    else if (mAdditionalPeers.size() == 2) {
+    else if (remoteViewsInUseList.size() == 4) {
       remoteHeight = REMOTE_HEIGHT2;
-      remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout2.setPosition(REMOTE_X2, REMOTE_Y, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout3.setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout4.setPosition(REMOTE_X2, remoteHeight, REMOTE_WIDTH2, remoteHeight);
-      remoteRenderLayout2.setVisibility(View.VISIBLE);
-      remoteRenderLayout3.setVisibility(View.VISIBLE);
-      remoteRenderLayout4.setVisibility(View.VISIBLE);
+      remoteViewsInUseList.get(0).getFrameLayout().setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH2, remoteHeight);
+      remoteViewsInUseList.get(1).getFrameLayout().setPosition(REMOTE_X2, REMOTE_Y, REMOTE_WIDTH2, remoteHeight);
+      remoteViewsInUseList.get(2).getFrameLayout().setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH2, remoteHeight);
+      remoteViewsInUseList.get(3).getFrameLayout().setPosition(REMOTE_X2, remoteHeight, REMOTE_WIDTH2, remoteHeight);
+
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
+      }
     }
     else {
       remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
-      remoteRenderLayout2.setVisibility(View.GONE);
-      remoteRenderLayout3.setVisibility(View.GONE);
-      remoteRenderLayout4.setVisibility(View.GONE);
+      for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
+        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+      }
     }
-    remoteRenderScreen.setScalingType(scalingType);
-    remoteRenderScreen.setMirror(false);
 
-    remoteRenderScreen2.setScalingType(scalingType);
-    remoteRenderScreen2.setMirror(false);
-
-    remoteRenderScreen3.setScalingType(scalingType);
-    remoteRenderScreen3.setMirror(false);
-    remoteRenderScreen4.setScalingType(scalingType);
-    remoteRenderScreen4.setMirror(false);
+    for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
+      remoteConnectionViews.getSurfaceViewRenderer().setScalingType(scalingType);
+      remoteConnectionViews.getSurfaceViewRenderer().setMirror(false);
+    }
 
     if (iceConnected) {
       localRenderLayout.setPosition(
@@ -936,16 +1068,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     localRender.setMirror(true);
 
     localRender.requestLayout();
-    remoteRenderScreen.requestLayout();
-    if (remoteRenderLayout2.getVisibility() == View.VISIBLE) {
-      remoteRenderScreen2.requestLayout();
+
+    for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
+      remoteConnectionViews.getSurfaceViewRenderer().requestLayout();
     }
-    if (remoteRenderLayout3.getVisibility() == View.VISIBLE) {
-      remoteRenderScreen3.requestLayout();
-    }
-    if (remoteRenderLayout4.getVisibility() == View.VISIBLE) {
-      remoteRenderScreen4.requestLayout();
-    }
+
   }
 
   private void startCall() {
@@ -1008,6 +1135,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
         AdditionalPeerConnection additionalPeerConnection = entry.getValue();
         additionalPeerConnection.close();
+        if (mService != null) {
+          mService.sendBye(entry.getKey());
+        }
       }
 
       if (peerConnectionClient != null) {
@@ -1069,7 +1199,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
                 @Override
                 public void onClick(DialogInterface dialog, int id) {
                   dialog.cancel();
-                  disconnect();
+                  //disconnect();
                 }
               })
           .create()
@@ -1154,6 +1284,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (peerConnectionClient != null) {
       peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
               remoteRenderers, videoCapturer, signalingParameters);
+
+      remoteVideoLabel.setText(mPeerName);
 
       if (signalingParameters.initiator) {
         // logAndToast("Creating OFFER...");
@@ -1435,6 +1567,16 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
+  public void onVideoEnabled() {
+    remoteUserImage.setVisibility(View.GONE);
+  }
+
+  @Override
+  public void onVideoDisabled() {
+    remoteUserImage.setVisibility(View.GONE);
+  }
+
+  @Override
   public void onIceConnected() {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
@@ -1445,6 +1587,19 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         callConnected();
       }
     });
+
+    for (User user: mQueuedPeers) {
+      addToCall(user);
+    }
+    mQueuedPeers.clear();
+  }
+
+  private void addToCall(User user) {
+
+    AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
+            localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+    mAdditionalPeers.put(user.Id, additionalPeerConnection);
+    updateVideoView();
   }
 
   @Override
@@ -1672,15 +1827,22 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mVideoWidth == 0 && mVideoHeight == 0) {
       String resolution =
               sharedPref.getString(keyprefResolution, getString(R.string.pref_resolution_default));
-      String[] dimensions = resolution.split("[ x]+");
-      if (dimensions.length == 2) {
-        try {
-          mVideoWidth = Integer.parseInt(dimensions[0]);
-          mVideoHeight = Integer.parseInt(dimensions[1]);
-        } catch (NumberFormatException e) {
-          mVideoWidth = 0;
-          mVideoHeight = 0;
-          Log.e(TAG, "Wrong video resolution setting: " + resolution);
+      if (resolution.equals("Default")) {
+
+        mVideoWidth = 320;
+        mVideoHeight = 240;
+      }
+      else {
+        String[] dimensions = resolution.split("[ x]+");
+        if (dimensions.length == 2) {
+          try {
+            mVideoWidth = Integer.parseInt(dimensions[0]);
+            mVideoHeight = Integer.parseInt(dimensions[1]);
+          } catch (NumberFormatException e) {
+            mVideoWidth = 0;
+            mVideoHeight = 0;
+            Log.e(TAG, "Wrong video resolution setting: " + resolution);
+          }
         }
       }
     }
@@ -1754,10 +1916,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void sendOfferSdp(SessionDescription localSdp, String remoteId) {
+  public void sendOfferSdp(SessionDescription localSdp, String remoteId, String conferenceId) {
     if (mService != null) {
-      if (mConferenceId != null) {
-        mService.sendConferenceOfferSdp(localSdp, remoteId, mConferenceId);
+      if (conferenceId != null) {
+        mService.sendConferenceOfferSdp(localSdp, remoteId, conferenceId);
+
       }
       else {
         mService.sendOfferSdp(localSdp, remoteId);
@@ -1797,11 +1960,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   public String getServerAddress() {
-    String serverAddress = null;
-    if (mService != null) {
-      serverAddress = mService.getServerAddress();
-    }
-    return serverAddress;
+    return mServer;
   }
 
   public boolean callHasId(String id) {

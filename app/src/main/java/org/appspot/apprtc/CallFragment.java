@@ -43,8 +43,7 @@ public class CallFragment extends Fragment {
   private FloatingActionButton cameraSwitchButton;
   private FloatingActionButton videoScalingButton;
   private FloatingActionButton toggleMuteButton;
-  private TextView captureFormatText;
-  private SeekBar captureFormatSlider;
+
   private OnCallEvents callEvents;
   private ScalingType scalingType;
   private boolean videoCallEnabled = true;
@@ -53,8 +52,10 @@ public class CallFragment extends Fragment {
   private FloatingActionMenu addToCallButton;
   private CallActivity parentActivity;
   private FloatingActionButton addAllButton;
+    private String mOwnId;
+    private FloatingActionButton toggleVideoButton;
 
-  /**
+    /**
    * Call control interface for container activity.
    */
   public interface OnCallEvents {
@@ -63,43 +64,63 @@ public class CallFragment extends Fragment {
     void onVideoScalingSwitch(ScalingType scalingType);
     void onCaptureFormatChange(int width, int height, int framerate);
     boolean onToggleMic();
+    boolean onToggleVideo();
+  }
+
+  public void onUserEntered(User user) {
+      addCallButtonForUser(user);
+  }
+
+  public void onUserLeft(User user) {
+      View view = addToCallButton.findViewWithTag(user.Id);
+      if (view != null) {
+          addToCallButton.removeMenuButton((FloatingActionButton) view);
+      }
   }
 
   void addUsers() {
-    final ContextThemeWrapper context = new ContextThemeWrapper(getActivity(), R.style.MenuButtonsStyle);
     ArrayList<User> users = parentActivity.getUsers();
     for (final User user: users) {
-      if (!parentActivity.callHasId(user.Id)) {
-        com.github.clans.fab.FloatingActionButton programFab2 = new com.github.clans.fab.FloatingActionButton(context);
-        programFab2.setLabelText(user.displayName);
-
-        if (user.buddyPicture.length() != 0) {
-          String path = user.buddyPicture.substring(4);
-          String url = "https://" + parentActivity.getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
-          ThumbnailsCacheManager.LoadImage(url, programFab2, user.displayName, true);
-        } else {
-          programFab2.setImageResource(R.drawable.user_icon_round);
-        }
-
-        programFab2.setOnClickListener(new View.OnClickListener() {
-          @Override
-          public void onClick(View view) {
-            Intent intent = new Intent(mContext, CallActivity.class);
-            intent.setAction(WebsocketService.ACTION_ADD_CONFERENCE_USER);
-            intent.putExtra(WebsocketService.EXTRA_USER, user);
-            intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-            intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
-            addToCallButton.close(true);
-          }
-        });
-        addToCallButton.addMenuButton(programFab2);
-      }
+      addCallButtonForUser(user);
     }
   }
 
-  @Override
+    private void addCallButtonForUser(final User user) {
+        final ContextThemeWrapper context = new ContextThemeWrapper(getActivity(), R.style.MenuButtonsStyle);
+        if (!parentActivity.callHasId(user.Id)) {
+            com.github.clans.fab.FloatingActionButton programFab2 = new com.github.clans.fab.FloatingActionButton(context);
+            programFab2.setLabelText(user.displayName);
+
+            if (user.buddyPicture.length() != 0) {
+                String path = user.buddyPicture.substring(4);
+                String url = "https://" + parentActivity.getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
+                ThumbnailsCacheManager.LoadImage(url, programFab2, user.displayName, true, true);
+            } else {
+                programFab2.setImageResource(R.drawable.user_icon_round);
+            }
+
+            programFab2.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(mContext, CallActivity.class);
+                    intent.setAction(WebsocketService.ACTION_ADD_CONFERENCE_USER);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    mContext.startActivity(intent);
+                    addToCallButton.close(true);
+                }
+            });
+
+            programFab2.setTag(user.Id);
+
+            addToCallButton.addMenuButton(programFab2);
+        }
+    }
+
+    @Override
   public View onCreateView(
       LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     controlView = inflater.inflate(R.layout.fragment_call, container, false);
@@ -109,10 +130,10 @@ public class CallFragment extends Fragment {
     contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
     disconnectButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_disconnect);
     cameraSwitchButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_switch_camera);
+    toggleVideoButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_video);
     //videoScalingButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_scaling_mode);
     toggleMuteButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_mic);
-    captureFormatText = (TextView) controlView.findViewById(R.id.capture_format_text_call);
-    captureFormatSlider = (SeekBar) controlView.findViewById(R.id.capture_format_slider_call);
+
     addToCallButton = (FloatingActionMenu)  controlView.findViewById(R.id.add_to_call);
     addAllButton = (FloatingActionButton) controlView.findViewById(R.id.add_all);
 
@@ -166,6 +187,14 @@ public class CallFragment extends Fragment {
       }
     });
 
+    toggleVideoButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            boolean enabled = callEvents.onToggleVideo();
+            toggleVideoButton.setImageResource(enabled ? R.drawable.ic_visibility_white_24dp :R.drawable.ic_visibility_off_white_24dp);
+        }
+    });
+
     return controlView;
   }
 
@@ -176,6 +205,7 @@ public class CallFragment extends Fragment {
     boolean captureSliderEnabled = false;
     Bundle args = getArguments();
     if (args != null) {
+        mOwnId = args.getString(WebsocketService.EXTRA_OWN_ID);
       String contactName = args.getString(CallActivity.EXTRA_ROOMID);
       contactView.setText(contactName);
       videoCallEnabled = args.getBoolean(CallActivity.EXTRA_VIDEO_CALL, true);
@@ -185,13 +215,7 @@ public class CallFragment extends Fragment {
     if (!videoCallEnabled) {
       cameraSwitchButton.setVisibility(View.INVISIBLE);
     }
-    if (captureSliderEnabled) {
-      captureFormatSlider.setOnSeekBarChangeListener(
-          new CaptureQualityController(captureFormatText, callEvents));
-    } else {
-      captureFormatText.setVisibility(View.GONE);
-      captureFormatSlider.setVisibility(View.GONE);
-    }
+
 
     if (mSoundPlayer != null) {
       mSoundPlayer.Stop();

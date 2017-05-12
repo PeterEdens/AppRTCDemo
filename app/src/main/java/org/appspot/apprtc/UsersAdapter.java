@@ -17,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.json.JSONException;
@@ -29,20 +30,22 @@ import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
 
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder> {
 
+    private final String mOwnId;
     String mServer = "";
     ArrayList<User> userList;
     Context mContext;
 
-    public UsersAdapter(ArrayList<User> userList, Context context, String server) {
+    public UsersAdapter(ArrayList<User> userList, Context context, String server, String ownId) {
         this.userList = userList;
         mServer = server;
         mContext = context;
+        mOwnId = ownId;
     }
 
     @Override
     public UsersAdapter.UsersViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v= LayoutInflater.from(parent.getContext()).inflate(R.layout.user_row,parent,false);
-        UsersViewHolder viewHolder=new UsersViewHolder(v);
+        UsersViewHolder viewHolder=new UsersViewHolder(v, mOwnId);
         return viewHolder;
     }
 
@@ -55,12 +58,18 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
         if (buddyPic.length() != 0) {
             String path = buddyPic.substring(4);
             String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-            ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true);
+            ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true, true);
         }
         else {
             holder.image.setImageResource(R.drawable.user_icon_round);
         }
         holder.text.setText(user.displayName);
+        if (user.message != null) {
+            holder.message.setText(user.message);
+        }
+        else {
+            holder.message.setText("");
+        }
         holder.user = user;
     }
 
@@ -77,19 +86,25 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
         ImageButton shareFileButton;*/
         protected ImageView image;
         protected TextView text;
+        protected TextView message;
         public User user;
         public String mServer = "";
-
-        public UsersViewHolder(View itemView) {
+        public String mOwnId;
+        
+        public UsersViewHolder(View itemView, String ownId) {
             super(itemView);
             image= (ImageView) itemView.findViewById(R.id.image_id);
             text= (TextView) itemView.findViewById(R.id.text_id);
+            message = (TextView) itemView.findViewById(R.id.message);
+            mOwnId = ownId;
+            
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(view.getContext(), UserActivity.class);
                     intent.putExtra(EXTRA_SERVER_NAME, mServer);
-                    intent.putExtra(CallActivity.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                     view.getContext().startActivity(intent);
                 }
             });

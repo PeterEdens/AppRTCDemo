@@ -4,21 +4,27 @@
         android:key="@string/pref_videosettings_key"
         android:title="@string/pref_videosettings_title">
 
-        <CheckBoxPreference
-            android:key="@string/pref_videocall_key"
-            android:title="@string/pref_videocall_title"
-            android:dialogTitle="@string/pref_videocall_dlg"
-            android:defaultValue="@string/pref_videocall_default" />
+        <!-- <CheckBoxPreference
+             android:key="@string/pref_videocall_key"
+             android:title="@string/pref_videocall_title"
+             android:dialogTitle="@string/pref_videocall_dlg"
+             android:defaultValue="@string/pref_videocall_default" />
 
-        <CheckBoxPreference
-            android:key="@string/pref_screencapture_key"
-            android:title="@string/pref_screencapture_title"
-            android:defaultValue="@string/pref_screencapture_default" />
+     <CheckBoxPreference
+             android:key="@string/pref_screencapture_key"
+             android:title="@string/pref_screencapture_title"
+             android:defaultValue="@string/pref_screencapture_default" />
 
         <CheckBoxPreference
             android:key="@string/pref_camera2_key"
             android:title="@string/pref_camera2_title"
-            android:defaultValue="@string/pref_camera2_default" />
+            android:defaultValue="@string/pref_camera2_default" />-->
+
+        <EditTextPreference
+            android:key="@string/pref_status_key"
+            android:title="@string/pref_status_title"
+            android:defaultValue="@string/pref_status_default"
+            android:dialogTitle="@string/pref_status_dlg" />
 
         <ListPreference
             android:key="@string/pref_resolution_key"
@@ -36,7 +42,7 @@
             android:entries="@array/cameraFps"
             android:entryValues="@array/cameraFps" />
 
-        <CheckBoxPreference
+        <!--<CheckBoxPreference
             android:key="@string/pref_capturequalityslider_key"
             android:title="@string/pref_capturequalityslider_title"
             android:dialogTitle="@string/pref_capturequalityslider_dlg"
@@ -81,10 +87,10 @@
             android:key="@string/pref_flexfec_key"
             android:title="@string/pref_flexfec_title"
             android:dialogTitle="@string/pref_flexfec_dlg"
-            android:defaultValue="@string/pref_flexfec_default" />
+            android:defaultValue="@string/pref_flexfec_default" />-->
     </PreferenceCategory>
 
-    <PreferenceCategory
+   <!-- <PreferenceCategory
         android:key="@string/pref_audiosettings_key"
         android:title="@string/pref_audiosettings_title">
 
@@ -159,9 +165,9 @@
             android:dialogTitle="@string/pref_speakerphone_dlg"
             android:entries="@array/speakerphone"
             android:entryValues="@array/speakerphoneValues" />
-    </PreferenceCategory>
+    </PreferenceCategory>-->
 
-    <PreferenceCategory
+    <!--<PreferenceCategory
         android:key="@string/pref_datasettings_key"
         android:title="@string/pref_datasettings_title">
 
@@ -207,9 +213,9 @@
             android:inputType="number"
             android:defaultValue="@string/pref_data_id_default"
             android:dialogTitle="@string/pref_data_id_dlg" />
-    </PreferenceCategory>
+    </PreferenceCategory>-->
 
-    <PreferenceCategory
+    <!--<PreferenceCategory
         android:key="@string/pref_miscsettings_key"
         android:title="@string/pref_miscsettings_title">
 
@@ -231,6 +237,6 @@
             android:title="@string/pref_force_relay_title"
             android:dialogTitle="@string/pref_force_relay_dlg"
             android:defaultValue="@string/pref_force_relay_default" />
-    </PreferenceCategory>
+    </PreferenceCategory>-->
 
 </PreferenceScreen>

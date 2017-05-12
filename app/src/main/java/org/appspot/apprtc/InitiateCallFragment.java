@@ -25,6 +25,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
@@ -108,20 +109,31 @@ public class InitiateCallFragment extends Fragment {
         boolean captureSliderEnabled = false;
         Bundle args = getArguments();
         if (args != null) {
-            if (args.containsKey(CallActivity.EXTRA_USER)) {
-                User user = (User) args.getSerializable(CallActivity.EXTRA_USER);
-                String server = args.getString(ConnectActivity.EXTRA_SERVERURL);
-                contactView.setText(user.displayName);
+            if (args.containsKey(WebsocketService.EXTRA_USER)) {
+                User user = (User) args.getSerializable(WebsocketService.EXTRA_USER);
+                String server = args.getString(WebsocketService.EXTRA_ADDRESS);
+                String contactText = "";
+
+                incomingCall = args.containsKey(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
+
+                if (incomingCall) {
+                    contactText = getString(R.string.incoming_call_from) + " " + user.displayName;
+                }
+                else {
+                    contactText = getString(R.string.calling) + " " + user.displayName;
+                }
+
+                contactView.setText(contactText);
+
                 String buddyPic = user.buddyPicture;
                 if (buddyPic.length() != 0) {
                     String path = buddyPic.substring(4);
                     String url = "https://" + server + RoomActivity.BUDDY_IMG_PATH + path;
-                    ThumbnailsCacheManager.LoadImage(url, contactImageView, user.displayName, true);
+                    ThumbnailsCacheManager.LoadImage(url, contactImageView, user.displayName, true, true);
                 }
                 else {
                     contactImageView.setImageResource(R.drawable.user_icon);
                 }
-                incomingCall = false;
                 enableCallButtons();
             }
         }
@@ -132,7 +144,6 @@ public class InitiateCallFragment extends Fragment {
 
         if (!incomingCall) {
             // initiate call when not incoming
-            disconnectButton.setText(R.string.stop_calling);
             callEvents.onStartCall();
             mSoundPlayer = new SoundPlayer(mContext, R.raw.ringtone1);
             mSoundPlayer.Play(true);
@@ -140,7 +151,6 @@ public class InitiateCallFragment extends Fragment {
         }
         else {
 
-            disconnectButton.setText(R.string.reject_call);
             mSoundPlayer = new SoundPlayer(mContext, R.raw.whistle1);
             mSoundPlayer.Play(true);
         }

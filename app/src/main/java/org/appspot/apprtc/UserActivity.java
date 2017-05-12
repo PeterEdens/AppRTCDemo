@@ -9,47 +9,62 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 
 import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
-import static org.appspot.apprtc.RoomActivity.EXTRA_USER;
 
 public class UserActivity extends AppCompatActivity {
 
     private String mServer;
     private TextView text;
+    private TextView message;
     private ImageView image;
     RelativeLayout callButton;
     RelativeLayout chatButton;
     RelativeLayout shareFileButton;
     private User user;
     private RelativeLayout videocallButton;
+    private String mOwnId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user);
 
+        ThumbnailsCacheManager.ThumbnailsCacheManagerInit(getApplicationContext());
+
         image = (ImageView) findViewById(R.id.image_id);
         text = (TextView) findViewById(R.id.text_id);
+        message = (TextView) findViewById(R.id.message);
         Intent intent = getIntent();
+
+        if (intent.hasExtra(WebsocketService.EXTRA_OWN_ID)) {
+            mOwnId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
+        }
 
         if (intent.hasExtra(EXTRA_SERVER_NAME)) {
             mServer = intent.getStringExtra(EXTRA_SERVER_NAME);
         }
-        if (intent.hasExtra(EXTRA_USER)) {
-            user = (User) intent.getSerializableExtra(EXTRA_USER);
+        if (intent.hasExtra(WebsocketService.EXTRA_USER)) {
+            user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
             String buddyPic = user.buddyPicture;
 
             if (buddyPic.length() != 0) {
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
-                ThumbnailsCacheManager.LoadImage(url, image, user.displayName, true);
+                ThumbnailsCacheManager.LoadImage(url, image, user.displayName, true, true);
             }
             else {
                 image.setImageResource(R.drawable.user_icon);
             }
             text.setText(user.displayName);
+            if (user.message != null) {
+                message.setText(user.message);
+            }
+            else {
+                message.setText("");
+            }
         }
 
         videocallButton = (RelativeLayout) findViewById(R.id.videocall_layout);
@@ -63,7 +78,7 @@ public class UserActivity extends AppCompatActivity {
                 if (v.getId() == shareFileButton.getId()){
                     Intent intent = new Intent(v.getContext(), RoomActivity.class);
                     intent.setAction(RoomActivity.ACTION_SHARE_FILE);
-                    intent.putExtra(CallActivity.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
                     v.getContext().startActivity(intent);
                 }
             }
@@ -75,8 +90,9 @@ public class UserActivity extends AppCompatActivity {
                 if (v.getId() == videocallButton.getId()){
                     Intent intent = new Intent(v.getContext(), CallActivity.class);
                     intent.setAction(CallActivity.ACTION_NEW_CALL);
-                    intent.putExtra(ConnectActivity.EXTRA_SERVERURL, mServer);
-                    intent.putExtra(CallActivity.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_ADDRESS, mServer);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                     intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, true);
                     v.getContext().startActivity(intent);
                 }
@@ -89,8 +105,9 @@ public class UserActivity extends AppCompatActivity {
                 if (v.getId() == callButton.getId()){
                     Intent intent = new Intent(v.getContext(), CallActivity.class);
                     intent.setAction(CallActivity.ACTION_NEW_CALL);
-                    intent.putExtra(ConnectActivity.EXTRA_SERVERURL, mServer);
-                    intent.putExtra(CallActivity.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_ADDRESS, mServer);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                     intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, false);
                     v.getContext().startActivity(intent);
                 }
@@ -103,7 +120,7 @@ public class UserActivity extends AppCompatActivity {
                 if (v.getId() == chatButton.getId()){
                     Intent intent = new Intent(v.getContext(), RoomActivity.class);
                     intent.setAction(RoomActivity.ACTION_NEW_CHAT);
-                    intent.putExtra(RoomActivity.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
                     v.getContext().startActivity(intent);
                 }
             }

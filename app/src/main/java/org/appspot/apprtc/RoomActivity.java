@@ -1,5 +1,7 @@
 package org.appspot.apprtc;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -10,6 +12,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -47,6 +51,7 @@ import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -69,7 +74,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
     public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
     public static final String ACTION_NEW_CHAT = "org.appspot.apprtc.ACTION_NEW_CHAT";
-    public static final String EXTRA_USER = "org.appspot.apprtc.EXTRA_USER";
     public static final String ACTION_SHARE_FILE = "org.appspot.apprtc.ACTION_SHARE_FILE";
     public static final String ACTION_DOWNLOAD = "org.appspot.apprtc.ACTION_DOWNLOAD";
     public static final String ACTION_CANCEL_DOWNLOAD = "org.appspot.apprtc.ACTION_CANCEL_DOWNLOAD";
@@ -77,6 +81,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_INDEX = "org.appspot.apprtc.EXTRA_INDEX";
     public static final String ACTION_VIEW_CHAT = "org.appspot.apprtc.ACTION_VIEW_CHAT";
     public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
+    public static final String EXTRA_AVATAR_URL = "org.appspot.apprtc.EXTRA_AVATAR_URL";
 
     static final int CHAT_INDEX = 1;
 
@@ -203,6 +208,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private InputStream inputStream;
     private long totalSize;
     private int mCurrentId = 0;
+    private String mAvatar;
+    private String mDisplayName;
+    private String mServerName;
 
     private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
         mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user);
@@ -225,12 +233,16 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     }
 
     @Override
+    protected void restart() {
+        Intent connectActivity = new Intent(this, ConnectActivity.class);
+        connectActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(connectActivity);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
-
-        ThumbnailsCacheManager.ThumbnailsCacheManagerInit(getApplicationContext());
-
 
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
@@ -272,10 +284,48 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 new PeerConnectionClient.PeerConnectionParameters(false, false, false, 0, 0, 0, 0, "", false, false, 0, "", true, false, false, true, true, true, false, dataChannelParameters);
 
         Intent intent = getIntent();
+        Account account = getCurrentOwnCloudAccount(this);
+        if (account != null) {
+            AccountManager accountMgr = AccountManager.get(this);
+            String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+            mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+            String name = account.name.substring(0, account.name.indexOf('@'));
+            int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+        }
+        
         handleIntent(intent);
 
     }
 
+    String getEncodedImage() {
+        String encodedImage = "";
+        if (mAvatar == null) {
+            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+            byte[] byteArrayImage = baos.toByteArray();
+
+            encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+        }
+        else {
+            encodedImage = mAvatar;
+        }
+        return encodedImage;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        String encodedImage = getEncodedImage();
+        if (mService != null) {
+            mService.sendStatus(mDisplayName, encodedImage, getStatusText());
+        }
+    }
+  
     /*private void setupPeerConnection() {
         // is there a connection open?
         if (peerConnectionClient != null) {
@@ -331,7 +381,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
         else if (action != null && action.equals(ACTION_NEW_CHAT)) {
             viewPager.setCurrentItem(CHAT_INDEX);
-            User user = (User) intent.getSerializableExtra(EXTRA_USER);
+            User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
             mChatFragment.setUser(user);
         }
         else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
@@ -339,7 +389,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mChatFragment.viewChat(key);
         }
         else if (action != null && action.equals(ACTION_SHARE_FILE)) {
-            User user = (User) intent.getSerializableExtra(EXTRA_USER);
+            User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
             mFileRecipient = user.Id;
             mChatFragment.setUser(user);
 
@@ -405,6 +455,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
         }
 
+        if (intent.hasExtra(EXTRA_SERVER_NAME)) {
+            mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
+        }
     }
 
     private String getNextId() {
@@ -638,6 +691,16 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             // PeerConnectionEvents.onLocalDescription event.
             peerConnectionClient.createAnswer();
         }*/
+    }
+
+    @Override
+    public void onVideoEnabled() {
+
+    }
+
+    @Override
+    public void onVideoDisabled() {
+
     }
 
     @Override

@@ -95,7 +95,7 @@ public interface AppRTCClient {
 
   void sendAuthentication(String userid, String nonce);
 
-  void sendStatus(String displayName, String buddyPicture);
+  void sendStatus(String displayName, String buddyPicture, String message);
 
   void sendChatMessage(String message, String to);
 

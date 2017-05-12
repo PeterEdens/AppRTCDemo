@@ -286,6 +286,10 @@ public class PeerConnectionClient {
 
     void onPeerConnectionCreated();
     void onRemoteSdpSet();
+
+    void onVideoEnabled();
+
+    void onVideoDisabled();
   }
 
   private PeerConnectionClient() {
@@ -496,7 +500,7 @@ public class PeerConnectionClient {
     }
 
     // Check if there is a camera on device and disable video call if not.
-    if (videoCapturer == null) {
+    if (videoCapturer == null && mediaStream == null) {
       Log.w(TAG, "No camera on device. Switch to audio only call.");
       videoCallEnabled = false;
     }
@@ -1236,6 +1240,7 @@ public class PeerConnectionClient {
             for (VideoRenderer.Callbacks remoteRender : remoteRenders) {
               remoteVideoTrack.addRenderer(new VideoRenderer(remoteRender));
             }
+            events.onVideoEnabled();
           }
         }
       });
@@ -1247,6 +1252,7 @@ public class PeerConnectionClient {
         @Override
         public void run() {
           remoteVideoTrack = null;
+          events.onVideoDisabled();
         }
       });
     }
@@ -1403,9 +1409,15 @@ public class PeerConnectionClient {
     return mediaStream;
   }
 
-  public void removeStream(MediaStream stream) {
-      if (peerConnection != null) {
+  public void removeStream(final MediaStream stream) {
+    executor.execute(new Runnable() {
+      @Override
+      public void run() {
+        if (peerConnection != null) {
           peerConnection.removeStream(stream);
+          mediaStream = null;
+        }
       }
+    });
   }
 }

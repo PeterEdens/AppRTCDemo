@@ -1,6 +1,7 @@
 <RelativeLayout  xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@color/room_item">
 
     <ImageView
         android:layout_width="48dp"
@@ -23,29 +24,31 @@
         android:id="@+id/text_id"/>
 
     <TextView
-        android:id="@+id/file_status"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_toLeftOf="@+id/message_status"
-        android:layout_margin="5dp"
-        android:gravity="center"
-        android:background="@drawable/share_file"/>
-
-    <TextView
         android:id="@+id/message_status"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_toLeftOf="@+id/joined_status"
         android:gravity="center"
         android:layout_margin="5dp"
-        android:textColor="@color/white"
-        android:background="@drawable/ic_chat_bubble_black_24dp"/>
+        android:textColor="@color/black"
+        android:background="@drawable/recent_chats_message"/>
 
     <ImageView
         android:id="@+id/joined_status"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/right_arrow"
+        android:layout_centerVertical="true"
+        android:layout_margin="5dp"
+        android:src="@drawable/ic_check_circle_black_24dp"/>
+
+
+    <ImageView
+        android:id="@+id/right_arrow"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:layout_alignParentRight="true"
         android:layout_margin="5dp"
-        android:src="@drawable/ic_tick"/>
+        android:layout_centerVertical="true"
+        android:src="@drawable/right_arrow"/>
 </RelativeLayout>

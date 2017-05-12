@@ -1,6 +1,7 @@
 package org.appspot.apprtc;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,9 +58,9 @@ public class RoomAdapter extends ArrayAdapter<String> {
         TextView text1 = (TextView) convertView.findViewById(R.id.text_id);
         ImageView joinedStatus = (ImageView) convertView.findViewById(R.id.joined_status);
         TextView messageStatus = (TextView) convertView.findViewById(R.id.message_status);
-        TextView fileStatus = (TextView) convertView.findViewById(R.id.file_status);
 
-        if (mMessages.containsKey(name) && mMessages.get(name) != 0) {
+        if ((mMessages.containsKey(name) && mMessages.get(name) != 0) ||
+                mFiles.containsKey(name) && mFiles.get(name) != 0) {
             messageStatus.setText(String.valueOf(mMessages.get(name)));
             messageStatus.setVisibility(View.VISIBLE);
         }
@@ -67,19 +68,13 @@ public class RoomAdapter extends ArrayAdapter<String> {
             messageStatus.setVisibility(View.GONE);
         }
 
-        if (mFiles.containsKey(name) && mFiles.get(name) != 0) {
-            fileStatus.setText(String.valueOf(mFiles.get(name)));
-            fileStatus.setVisibility(View.VISIBLE);
-        }
-        else {
-            fileStatus.setVisibility(View.GONE);
-        }
-
         if (name.equals(mCurrentRoom)) {
             joinedStatus.setVisibility(View.VISIBLE);
+            text1.setTypeface(null, Typeface.BOLD);
         }
         else {
             joinedStatus.setVisibility(View.GONE);
+            text1.setTypeface(null, Typeface.NORMAL);
         }
         // Populate the data into the template view using the data object
         if (name.length() == 0) {

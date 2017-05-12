@@ -8,47 +8,40 @@
     android:fitsSystemWindows="true"
     android:clickable="true" >
 
-    <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_margin="16dp"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
+        android:layout_height="match_parent">
 
-        android:weightSum="1"
-        android:layout_centerHorizontal="true">
+        <android.support.design.widget.AppBarLayout
+            android:id="@+id/appbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/ThemeOverlay.AppCompat.Light">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:titleTextColor="@color/white"
+            android:subtitleTextColor="@color/white"
+            app:layout_scrollFlags="scroll|enterAlways"
+            app:theme="@style/ToolBarStyle"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+        </android.support.design.widget.AppBarLayout>
 
         <LinearLayout
             android:id="@+id/connect_layout"
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:id="@+id/room_edittext_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/enter_server_name"
-                android:visibility="gone"/>
-
-            <EditText
-                android:id="@+id/room_edittext"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"
-                android:inputType="text"
-                android:visibility="gone"/>
-
-            <Button
-                android:id="@+id/connect_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/connect"
-                android:visibility="gone"/>
+            android:gravity="left|center_vertical"
+            android:layout_below="@+id/appbar"
+            android:layout_alignTop="@+id/connected_state"
+            android:layout_alignBottom="@+id/connected_state"
+            android:layout_toRightOf="@+id/connected_state">
 
             <ProgressBar
                 android:layout_width="wrap_content"
@@ -56,67 +49,35 @@
                 android:indeterminate="true"/>
         </LinearLayout>
 
-        <RelativeLayout
-            android:id="@+id/login_layout"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginBottom="8dp"
-            android:visibility="gone">
 
-            <EditText
-                android:id="@+id/username_edittext"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_toLeftOf="@+id/login_button"
-                android:layout_weight="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"
-                android:inputType="text"/>
-
-            <EditText
-                android:id="@+id/password_edittext"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_toLeftOf="@+id/login_button"
-                android:layout_below="@+id/username_edittext"
-                android:singleLine="true"
-                android:imeOptions="actionDone"
-                android:inputType="text"/>
-
-            <Button
-                android:id="@+id/login_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:text="@string/login" />
-
-        </RelativeLayout>
         <TextView
             android:id="@+id/connected_state"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_margin="8dp"
             android:lines="1"
             android:maxLines="1"
+            android:textColor="@android:color/holo_red_dark"
             android:textAppearance="?android:attr/textAppearanceMedium"
+            android:layout_below="@+id/appbar"
             android:text="@string/disconnected"/>
 
         <RelativeLayout
             android:id="@+id/room_list_layout"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_below="@id/connected_state"
             android:visibility="visible">
 
             <TextView
                 android:id="@+id/room_listview_description"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_marginTop="8dp"
+                android:layout_margin="8dp"
                 android:lines="1"
                 android:maxLines="1"
+                android:textStyle="bold"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/rooms"
                 android:gravity="center_vertical"/>
@@ -163,9 +124,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:text="@string/no_favorites" />
+                android:text="@string/no_rooms" />
         </RelativeLayout>
-    </LinearLayout>
+    </RelativeLayout>
 
 
     <include

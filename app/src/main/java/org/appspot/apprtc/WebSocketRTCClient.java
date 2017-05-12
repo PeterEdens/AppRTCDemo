@@ -509,7 +509,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send Status.
   @Override
-  public void sendStatus(final String displayName, final String buddyPicture) {
+  public void sendStatus(final String displayName, final String buddyPicture, final String message) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -519,6 +519,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         JSONObject json = new JSONObject();
         jsonPut(json, "displayName", displayName);
         jsonPut(json, "buddyPicture", "data:image/jpeg;base64," + buddyPicture);
+        jsonPut(json, "message", message);
 
         JSONObject jsonStatus = new JSONObject();
         jsonPut(jsonStatus, "Type", "Status");
@@ -768,7 +769,10 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       String username = jsonTurn.optString("username");
       String urlsText = jsonTurn.optString("urls");
       int ttl = jsonTurn.optInt("ttl");
-      events.onTurnTtl(ttl);
+
+      if (ttl != 0) {
+        events.onTurnTtl(ttl);
+      }
 
       if (urlsText.length() != 0) {
         JSONArray array = new JSONArray(urlsText);
@@ -875,9 +879,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 JSONObject statusJson = new JSONObject(status);
                 String buddyPicture = statusJson.optString("buddyPicture");
                 String displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
 
-                if (!mId.equals(Id)) {
+                if (!mId.equals(Id) && !displayName.equals("null")) {
                   User user = new User(userId, buddyPicture, displayName, Id);
+                  if (!message.equals("null")) {
+                    user.message = message;
+                  }
                   events.onUserEnteredRoom(user, roomName);
                 }
               }
@@ -904,9 +912,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 JSONObject statusJson = new JSONObject(status);
                 String buddyPicture = statusJson.optString("buddyPicture");
                 String displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
 
-                if (!mId.equals(Id)) {
+                if (!mId.equals(Id) && !displayName.equals("null")) {
                   User user = new User(userId, buddyPicture, displayName, Id);
+                  if (!message.equals("null")) {
+                    user.message = message;
+                  }
                   events.onUserEnteredRoom(user, mRoomName);
                 }
               }
@@ -930,9 +942,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 JSONObject statusJson = new JSONObject(status);
                 buddyPicture = statusJson.optString("buddyPicture");
                 displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
 
                 if (!mId.equals(Id) && !displayName.equals("null")) {
                     User user = new User(userId, buddyPicture, displayName, Id);
+                    if (!message.equals("null")) {
+                      user.message = message;
+                    }
                     events.onUserEnteredRoom(user, mRoomName);
                 }
             }
@@ -957,9 +973,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               JSONObject statusJson = new JSONObject(status);
               buddyPicture = statusJson.optString("buddyPicture");
               displayName = statusJson.optString("displayName");
+              String message = statusJson.optString("message");
 
               if (!mId.equals(Id) && !displayName.equals("null")) {
                 User user = new User(userId, buddyPicture, displayName, Id);
+                if (!message.equals("null")) {
+                  user.message = message;
+                }
                 events.onUserEnteredRoom(user, mRoomName);
               }
             }

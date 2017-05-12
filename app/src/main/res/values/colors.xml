@@ -9,4 +9,6 @@
     <color name="outgoing">#ffffffff</color>
     <color name="disabled">#ff444444</color>
     <color name="grey50">#fffafafa</color>
+    <color name="connect_layout">#ff95CCEE</color>
+    <color name="room_item">#ffCFE3F0</color>
 </resources>

@@ -74,8 +74,10 @@ public class ThumbnailsCacheManager {
         synchronized (mThumbnailsDiskCacheLock) {
             mAppContext = context;
 
-            // initialise thumbnails cache on background thread
-            new InitDiskCacheTask().execute();
+            if (mThumbnailCacheStarting) {
+                // initialise thumbnails cache on background thread
+                new InitDiskCacheTask().execute();
+            }
         }
     }
 
@@ -155,11 +157,27 @@ public class ThumbnailsCacheManager {
         return null;
     }
 
-    public static void LoadImage(String url, ImageView image, String displayname, final boolean rounded) {
+    public static void LoadImage(final String url, ImageView image, final String displayname, final boolean rounded, boolean fromCache) {
         final WeakReference<ImageView> imageView = new WeakReference<ImageView>(image);
         final Handler uiHandler = new Handler();
         final int FG_COLOR = 0xFFFAFAFA;
         final String name = displayname;
+
+        if (fromCache) {
+            Bitmap bitmap = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+            if (bitmap != null) {
+                if (rounded) {
+                    RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(imageView.get().getResources(), bitmap);
+                    roundedBitmap.setCircular(true);
+                    imageView.get().setImageDrawable(roundedBitmap);
+                } else {
+                    imageView.get().setImageBitmap(bitmap);
+                }
+                imageView.get().setContentDescription(displayname);
+                return;
+            }
+        }
 
         AsyncHttpURLConnection httpConnection =
                 new AsyncHttpURLConnection("GET", url, "", new AsyncHttpURLConnection.AsyncHttpEvents() {
@@ -175,6 +193,7 @@ public class ThumbnailsCacheManager {
                         Canvas canvas = new Canvas(bitmap);
                         final String trimmedName = name == null ? "" : name.trim();
                         drawTile(canvas, trimmedName, 0, 0, size, size);
+                        ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
                         onHttpComplete(bitmap);
                     }
 
@@ -192,6 +211,7 @@ public class ThumbnailsCacheManager {
                                     else {
                                         imageView.get().setImageBitmap(response);
                                     }
+                                    imageView.get().setContentDescription(displayname);
                                 }
 
                             });
@@ -235,6 +255,203 @@ public class ThumbnailsCacheManager {
         httpConnection.send();
     }
 
+    public interface LoadImageCallback {
+        void onImageLoaded(Bitmap bitmap);
+    }
+
+    public static void LoadImage(final String url, LoadImageCallback callback, final Resources resources, final String displayname, final boolean rounded, boolean fromCache) {
+        final LoadImageCallback mCallback = callback;
+        final Handler uiHandler = new Handler();
+        final int FG_COLOR = 0xFFFAFAFA;
+        final String name = displayname;
+
+        if (fromCache) {
+            Bitmap bitmap = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+            if (bitmap != null) {
+                if (rounded) {
+                    RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(resources, bitmap);
+                    roundedBitmap.setCircular(true);
+                    mCallback.onImageLoaded(roundedBitmap.getBitmap());
+                } else {
+                    mCallback.onImageLoaded(bitmap);
+                }
+                return;
+            }
+        }
+
+        AsyncHttpURLConnection httpConnection =
+                new AsyncHttpURLConnection("GET", url, "", new AsyncHttpURLConnection.AsyncHttpEvents() {
+                    @Override
+                    public void onHttpError(String errorMessage) {
+                        Log.d("LoadImage", errorMessage);
+                    }
+
+                    @Override
+                    public void onHttpComplete(String response) {
+                        int size = 96;
+                        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        final String trimmedName = name == null ? "" : name.trim();
+                        drawTile(canvas, trimmedName, 0, 0, size, size);
+                        ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
+                        onHttpComplete(bitmap);
+                    }
+
+                    @Override
+                    public void onHttpComplete(final Bitmap response) {
+                        if (mCallback != null) {
+                            uiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (rounded) {
+                                        RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(resources, response);
+                                        roundedBitmap.setCircular(true);
+                                        mCallback.onImageLoaded(roundedBitmap.getBitmap());
+                                    }
+                                    else {
+                                        mCallback.onImageLoaded(response);
+                                    }
+
+                                }
+
+                            });
+
+                        }
+                    }
+
+                    private boolean drawTile(Canvas canvas, String letter, int tileColor,
+                                             int left, int top, int right, int bottom) {
+                        letter = letter.toUpperCase(Locale.getDefault());
+                        Paint tilePaint = new Paint(), textPaint = new Paint();
+                        tilePaint.setColor(tileColor);
+                        textPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+                        textPaint.setColor(FG_COLOR);
+                        textPaint.setTypeface(Typeface.create("sans-serif-light",
+                                Typeface.NORMAL));
+                        textPaint.setTextSize((float) ((right - left) * 0.8));
+                        Rect rect = new Rect();
+
+                        canvas.drawRect(new Rect(left, top, right, bottom), tilePaint);
+                        textPaint.getTextBounds(letter, 0, 1, rect);
+                        float width = textPaint.measureText(letter);
+                        canvas.drawText(letter, (right + left) / 2 - width / 2, (top + bottom)
+                                / 2 + rect.height() / 2, textPaint);
+                        return true;
+                    }
+
+                    private boolean drawTile(Canvas canvas, String name, int left, int top, int right, int bottom) {
+                        if (name != null) {
+                            final String letter = getFirstLetter(name);
+                            final int color = ThumbnailsCacheManager.getColorForName(name);
+                            drawTile(canvas, letter, color, left, top, right, bottom);
+                            return true;
+                        }
+                        return false;
+                    }
+
+
+                });
+        httpConnection.setBitmap();
+        httpConnection.send();
+    }
+
+    public static void LoadMenuImage(final String url, MenuItem menuItem, String displayname, final boolean rounded, Resources resources, boolean fromCache) {
+        final Resources mResources = resources;
+        final WeakReference<MenuItem> menuItemImage = new WeakReference<MenuItem>(menuItem);
+        final Handler uiHandler = new Handler();
+        final int FG_COLOR = 0xFFFAFAFA;
+        final String name = displayname;
+
+        if (fromCache) {
+            Bitmap bitmap = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+            if (bitmap != null) {
+                if (rounded) {
+                    RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(mResources, bitmap);
+                    roundedBitmap.setCircular(true);
+                    menuItemImage.get().setIcon(roundedBitmap);
+                } else {
+                    menuItemImage.get().setIcon(new BitmapDrawable(bitmap));
+                }
+                return;
+            }
+        }
+
+        AsyncHttpURLConnection httpConnection =
+                new AsyncHttpURLConnection("GET", url, "", new AsyncHttpURLConnection.AsyncHttpEvents() {
+                    @Override
+                    public void onHttpError(String errorMessage) {
+                        Log.d("LoadImage", errorMessage);
+                    }
+
+                    @Override
+                    public void onHttpComplete(String response) {
+                        int size = 96;
+                        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        final String trimmedName = name == null ? "" : name.trim();
+                        drawTile(canvas, trimmedName, 0, 0, size, size);
+                        ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
+                        onHttpComplete(bitmap);
+                    }
+
+                    @Override
+                    public void onHttpComplete(final Bitmap response) {
+                        if (menuItemImage != null && menuItemImage.get() != null) {
+                            uiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (rounded) {
+                                        RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(mResources, response);
+                                        roundedBitmap.setCircular(true);
+                                        menuItemImage.get().setIcon(roundedBitmap);
+                                    }
+                                    else {
+                                        menuItemImage.get().setIcon(new BitmapDrawable(response));
+                                    }
+                                }
+
+                            });
+
+                        }
+                    }
+
+                    private boolean drawTile(Canvas canvas, String letter, int tileColor,
+                                             int left, int top, int right, int bottom) {
+                        letter = letter.toUpperCase(Locale.getDefault());
+                        Paint tilePaint = new Paint(), textPaint = new Paint();
+                        tilePaint.setColor(tileColor);
+                        textPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+                        textPaint.setColor(FG_COLOR);
+                        textPaint.setTypeface(Typeface.create("sans-serif-light",
+                                Typeface.NORMAL));
+                        textPaint.setTextSize((float) ((right - left) * 0.8));
+                        Rect rect = new Rect();
+
+                        canvas.drawRect(new Rect(left, top, right, bottom), tilePaint);
+                        textPaint.getTextBounds(letter, 0, 1, rect);
+                        float width = textPaint.measureText(letter);
+                        canvas.drawText(letter, (right + left) / 2 - width / 2, (top + bottom)
+                                / 2 + rect.height() / 2, textPaint);
+                        return true;
+                    }
+
+                    private boolean drawTile(Canvas canvas, String name, int left, int top, int right, int bottom) {
+                        if (name != null) {
+                            final String letter = getFirstLetter(name);
+                            final int color = ThumbnailsCacheManager.getColorForName(name);
+                            drawTile(canvas, letter, color, left, top, right, bottom);
+                            return true;
+                        }
+                        return false;
+                    }
+
+
+                });
+        httpConnection.setBitmap();
+        httpConnection.send();
+    }
 
     public static int getColorForName(String name) {
         if (name == null || name.isEmpty()) {

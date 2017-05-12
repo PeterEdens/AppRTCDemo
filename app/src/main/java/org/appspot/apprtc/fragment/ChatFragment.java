@@ -35,9 +35,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
-import java.util.concurrent.BlockingQueue;
-
-import static org.appspot.apprtc.ConnectActivity.EXTRA_AVATAR;
 
 
 public class ChatFragment extends Fragment {
@@ -60,10 +57,10 @@ public class ChatFragment extends Fragment {
     private SoundPlayer mSoundPlayer;
     private String mCurrentId;
     private HashMap<String, User> userIdList = new HashMap<String, User>();
-    private Button recentButton;
+    private RelativeLayout recentButton;
     private RelativeLayout recentControlsLayout;
-    private Button roomChatButton;
-    private String mAvatar;
+    private TextView roomChatButton;
+    private String mAvatarUrl;
 
     public void clearMessages() {
         chatList.clear();
@@ -83,7 +80,7 @@ public class ChatFragment extends Fragment {
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
-        adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatar);
+        adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
         recyclerView.setAdapter(adapter);
         User user = userIdList.get(key);
         mUserNameTextView.setText(user.displayName);
@@ -200,12 +197,12 @@ public class ChatFragment extends Fragment {
 
         mUserNameTextView = (TextView) controlView.findViewById(R.id.userName);
         recentControlsLayout = (RelativeLayout) controlView.findViewById(R.id.recent_controls_layout);
-        recentButton = (Button) controlView.findViewById(R.id.recentButton);
+        recentButton = (RelativeLayout) controlView.findViewById(R.id.recent_back_layout);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyChat = (TextView) controlView.findViewById(R.id.emptyChat);
         sendButton = (ImageButton) controlView.findViewById(R.id.sendButton);
         editChat = (EditText) controlView.findViewById(R.id.chatEdit);
-        roomChatButton = (Button) controlView.findViewById(R.id.roomChatButton);
+        roomChatButton = (TextView) controlView.findViewById(R.id.roomChatButton);
 
         roomChatButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -270,12 +267,18 @@ public class ChatFragment extends Fragment {
                 userIdList.put("", new User("", "", mRoomName, ""));
             }
 
-            if (args.containsKey(EXTRA_AVATAR)) {
-                mAvatar = args.getString(EXTRA_AVATAR);
-            }
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
                 mServerName = args.getString(RoomActivity.EXTRA_SERVER_NAME);
             }
+
+            if (args.containsKey(RoomActivity.EXTRA_AVATAR_URL)) {
+                mAvatarUrl = args.getString(RoomActivity.EXTRA_AVATAR_URL);
+            }
+        }
+
+        mCurrentId = "";
+        if (chatList.get("") == null) {
+            chatList.put("", new ArrayList<ChatItem>());
         }
 
         layoutManager=new LinearLayoutManager(mContext);
@@ -288,7 +291,7 @@ public class ChatFragment extends Fragment {
         }
         else {
             recentControlsLayout.setVisibility(View.VISIBLE);
-            adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatar);
+            adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
             mUserNameTextView.setText(userIdList.get(mCurrentId).displayName);
         }
         recyclerView.setAdapter(adapter);

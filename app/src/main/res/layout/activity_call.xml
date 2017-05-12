@@ -9,40 +9,112 @@
         android:id="@+id/remote_video_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/remote_video_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_video_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/remote_user_image1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/user_icon_round"/>
+            <TextView
+                android:id="@+id/remote_video_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/grey50"
+                android:layout_margin="3dp"
+                android:layout_alignParentBottom="true"
+                android:text="remote_video_label"/>
+        </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
     <org.appspot.apprtc.PercentFrameLayout
         android:id="@+id/remote_video_layout2"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/remote_video_view2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_video_view2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/remote_user_image2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/user_icon_round"/>
+            <TextView
+                android:id="@+id/remote_video_label2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/grey50"
+                android:layout_margin="3dp"
+                android:layout_alignParentBottom="true"
+                android:text="remote_video_label2"/>
+        </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
     <org.appspot.apprtc.PercentFrameLayout
         android:id="@+id/remote_video_layout3"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/remote_video_view3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_video_view3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/remote_user_image3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/user_icon_round"/>
+            <TextView
+                android:id="@+id/remote_video_label3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/grey50"
+                android:layout_margin="3dp"
+                android:layout_alignParentBottom="true"
+                android:text="remote_video_label3"/>
+        </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
     <org.appspot.apprtc.PercentFrameLayout
         android:id="@+id/remote_video_layout4"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/remote_video_view4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_video_view4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/remote_user_image4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/user_icon_round"/>
+            <TextView
+                android:id="@+id/remote_video_label4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/grey50"
+                android:layout_margin="3dp"
+                android:layout_alignParentBottom="true"
+                android:text="remote_video_label4"/>
+        </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
     <org.appspot.apprtc.PercentFrameLayout
