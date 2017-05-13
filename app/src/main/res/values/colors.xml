@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#ff0091ea</color>
+    <color name="primary_dark">#ff0091ff</color>
+    <color name="accent">#ff0091ea</color>
+    <color name="white">#ffffffff</color>
+    <color name="white70">#b2ffffff</color>
+    <color name="incoming">#ff259b24</color>
+    <color name="outgoing">#ffffffff</color>
+    <color name="disabled">#ff444444</color>
+    <color name="grey50">#fffafafa</color>
+    <color name="connect_layout">#ff95CCEE</color>
+    <color name="room_item">#ffCFE3F0</color>
+</resources>

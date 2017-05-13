@@ -14,12 +14,25 @@
         android:textSize="24sp"
         android:layout_margin="8dp"/>
 
+<<<<<<< HEAD
     <LinearLayout
+=======
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/button_call_disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_call_end_white_48dp"
+        style="@style/EndCallButtonStyle"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="90dp"/>
+
+    <RelativeLayout
+>>>>>>> 5fa66c4... updated UI
            android:id="@+id/buttons_call_container"
            android:orientation="horizontal"
-           android:layout_above="@+id/capture_format_text_call"
            android:layout_alignWithParentIfMissing="true"
-           android:layout_marginBottom="32dp"
+           android:layout_marginBottom="10dp"
            android:layout_centerHorizontal="true"
            android:layout_width="wrap_content"
            android:layout_height="wrap_content">
@@ -32,6 +45,7 @@
            android:layout_width="48dp"
            android:layout_height="48dp"/>
 
+<<<<<<< HEAD
        <ImageButton
            android:id="@+id/button_call_switch_camera"
            android:background="@android:drawable/ic_menu_camera"
@@ -39,6 +53,27 @@
            android:layout_marginEnd="8dp"
            android:layout_width="48dp"
            android:layout_height="48dp"/>
+=======
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_switch_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_camera"
+            style="@style/CallActionButtonStyle"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="10dp"/>
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_toggle_video"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_visibility_white_24dp"
+            style="@style/CallActionButtonStyle"
+            android:layout_alignParentBottom="true"
+            android:layout_toRightOf="@+id/button_call_switch_camera"
+            android:layout_marginLeft="10dp"/>
+>>>>>>> 5fa66c4... updated UI
 
         <ImageButton
            android:id="@+id/button_call_scaling_mode"
@@ -47,6 +82,7 @@
            android:layout_width="48dp"
            android:layout_height="48dp"/>
 
+<<<<<<< HEAD
        <ImageButton
            android:id="@+id/button_call_toggle_mic"
            android:background="@android:drawable/ic_btn_speak_now"
@@ -55,23 +91,62 @@
            android:layout_width="48dp"
            android:layout_height="48dp"/>
     </LinearLayout>
+=======
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_toggle_mic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_btn_speak_now"
+            style="@style/CallActionButtonStyle"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true" />
 
-    <TextView
-        android:id="@+id/capture_format_text_call"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_above="@+id/capture_format_slider_call"
-        android:textSize="16sp"
-        android:text="@string/capture_format_change_text"/>
+        <com.github.clans.fab.FloatingActionMenu
+            android:id="@+id/add_to_call"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            fab:menu_labels_style="@style/MenuLabelsStyle"
+            fab:menu_labels_showAnimation="@anim/jump_from_down"
+            fab:menu_labels_hideAnimation="@anim/jump_to_down"
+            fab:menu_animationDelayPerItem="0"
+            fab:menu_shadowColor="#00000000"
+            fab:menu_colorNormal="#55ffffff"
+            fab:menu_colorPressed="#55dddddd"
+            fab:menu_colorRipple="#55eeeeee"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="10dp"
+            fab:menu_buttonSpacing="5dp"
+            android:layout_alignParentBottom="true">
 
-    <SeekBar
-        android:id="@+id/capture_format_slider_call"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        android:progress="50"
-        android:layout_margin="8dp"/>
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/add_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_add_white_24dp"
+                fab:fab_label="@string/all"
+                style="@style/CallActionButtonStyle" />
+
+        </com.github.clans.fab.FloatingActionMenu>
+
+    </RelativeLayout>
+>>>>>>> 5fa66c4... updated UI
+
+    <!-- <TextView
+         android:id="@+id/capture_format_text_call"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_centerHorizontal="true"
+         android:layout_above="@+id/capture_format_slider_call"
+         android:textSize="16sp"
+         android:text="@string/capture_format_change_text"/
+
+         <SeekBar
+         android:id="@+id/capture_format_slider_call"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_centerHorizontal="true"
+         android:layout_alignParentBottom="true"
+         android:progress="50"
+         android:layout_margin="8dp"/>-->
 
 </RelativeLayout>

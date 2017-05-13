@@ -124,7 +124,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendStatus(String displayName, String buddyPicture) {
+  public void sendStatus(String displayName, String buddyPicture, String message) {
 
   }
 

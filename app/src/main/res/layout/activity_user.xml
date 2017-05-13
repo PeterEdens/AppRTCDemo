@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_user"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="org.appspot.apprtc.UserActivity"
+    android:background="@color/white">
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#333"
+        android:id="@+id/user_header">
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:id="@+id/image_id"
+            android:layout_margin="10dp"
+            android:layout_alignParentLeft="true"
+            android:src="@drawable/user_icon_round"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="User Name"
+            android:layout_margin="10dp"
+            android:layout_below="@+id/image_id"
+            android:textSize="20sp"
+            android:textColor="@color/white"
+            android:id="@+id/text_id"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="Message"
+            android:layout_margin="10dp"
+            android:layout_below="@+id/text_id"
+            android:textSize="15sp"
+            android:textColor="@color/white"
+            android:id="@+id/message"/>
+</RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/videocall_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/user_header"
+        android:background="@color/white70"
+        android:clickable="true">
+        <ImageView
+            android:id="@+id/videocall_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:tint="#666666"
+            android:src="@drawable/ic_voice_chat_black_48dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="@string/video_call"
+            android:layout_margin="5dp"
+            android:layout_toRightOf="@+id/videocall_button"
+            android:layout_alignTop="@+id/videocall_button"
+            android:layout_alignBottom="@+id/videocall_button"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:id="@+id/videocall_text"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/call_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/videocall_layout"
+        android:background="@color/white70"
+        android:clickable="true">
+        <ImageView
+            android:id="@+id/call_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:tint="#666666"
+            android:src="@drawable/ic_call_black_48dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="@string/voice_call"
+            android:layout_margin="5dp"
+            android:layout_toRightOf="@+id/call_button"
+            android:layout_alignTop="@+id/call_button"
+            android:layout_alignBottom="@+id/call_button"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:id="@+id/voicecall_text"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/chat_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/call_layout"
+        android:background="@color/white70"
+        android:clickable="true">
+        <ImageView
+            android:id="@+id/chat_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:tint="#666666"
+            android:src="@drawable/ic_textsms_black_48dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="@string/send_message"
+            android:layout_margin="5dp"
+            android:layout_toRightOf="@+id/chat_button"
+            android:layout_alignTop="@+id/chat_button"
+            android:layout_alignBottom="@+id/chat_button"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:id="@+id/chat_text"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/file_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/chat_layout"
+        android:background="@color/white70"
+        android:clickable="true">
+        <ImageView
+            android:id="@+id/file_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:tint="#666666"
+            android:src="@drawable/ic_library_books_black_48dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="@string/share_a_file"
+            android:layout_margin="5dp"
+            android:layout_toRightOf="@+id/file_button"
+            android:layout_alignTop="@+id/file_button"
+            android:layout_alignBottom="@+id/file_button"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:id="@+id/file_text"/>
+    </RelativeLayout>
+</RelativeLayout>

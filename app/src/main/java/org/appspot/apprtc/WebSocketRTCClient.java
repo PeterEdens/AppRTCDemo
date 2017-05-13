@@ -345,7 +345,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send Status.
   @Override
-  public void sendStatus(final String displayName, final String buddyPicture) {
+  public void sendStatus(final String displayName, final String buddyPicture, final String message) {
     handler.post(new Runnable() {
       @Override
       public void run() {
@@ -355,6 +355,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         JSONObject json = new JSONObject();
         jsonPut(json, "displayName", displayName);
         jsonPut(json, "buddyPicture", "data:image/jpeg;base64," + buddyPicture);
+        jsonPut(json, "message", message);
 
         JSONObject jsonStatus = new JSONObject();
         jsonPut(jsonStatus, "Type", "Status");
@@ -431,6 +432,67 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+<<<<<<< HEAD
+=======
+  @Override
+  public void sendSelf() {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Type", "Self");
+        wsClient.send(json.toString());
+      }
+    });
+  }
+
+    public void sendUsers() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                JSONObject json = new JSONObject();
+                jsonPut(json, "Type", "Users");
+                wsClient.send(json.toString());
+            }
+        });
+    }
+
+  private void handleSelf(JSONObject json) throws JSONException {
+    events.onSelf();
+    String id = json.getString("Id");
+    mId = id;
+    String sid = json.getString("Sid");
+    mSid = sid;
+    String turnText = json.optString("Turn");
+    if (turnText.length() != 0) {
+      JSONObject jsonTurn = new JSONObject(turnText);
+      String password = jsonTurn.optString("password");
+      String username = jsonTurn.optString("username");
+      String urlsText = jsonTurn.optString("urls");
+      int ttl = jsonTurn.optInt("ttl");
+
+      if (ttl != 0) {
+        events.onTurnTtl(ttl);
+      }
+
+      if (urlsText.length() != 0) {
+        JSONArray array = new JSONArray(urlsText);
+        for (int i = 0; i < array.length(); i++) {
+          String url = array.getString(i);
+          events.onAddTurnServer(url, username, password);
+        }
+      }
+
+      String stunText = json.getString("Stun");
+      JSONArray stunArray = new JSONArray(stunText);
+      for (int i = 0; i < stunArray.length(); i++) {
+        String url = stunArray.getString(i);
+        events.onAddStunServer(url, username, password);
+      }
+
+    }
+  }
+>>>>>>> 5fa66c4... updated UI
   // --------------------------------------------------------------------
   // WebSocketChannelEvents interface implementation.
   // All events are called by WebSocketChannelClient on a local looper thread
@@ -501,16 +563,53 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 JSONObject statusJson = new JSONObject(status);
                 String buddyPicture = statusJson.optString("buddyPicture");
                 String displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
 
-                if (!mId.equals(Id)) {
+                if (!mId.equals(Id) && !displayName.equals("null")) {
                   User user = new User(userId, buddyPicture, displayName, Id);
+                  if (!message.equals("null")) {
+                    user.message = message;
+                  }
                   events.onUserEnteredRoom(user, roomName);
                 }
               }
 
           }
+<<<<<<< HEAD
           }
 
+=======
+        }
+        else if (type.equals("Self")) {
+          handleSelf(json);
+        }
+        else if (type.equals("Users")) {
+          events.clearRoomUsers(mRoomName);
+          String usersText = json.getString("Users");
+          JSONArray array = new JSONArray(usersText);
+          for (int i = 0; i < array.length(); i++) {
+            JSONObject usersJson = array.getJSONObject(i);
+            String usersType = usersJson.optString("Type");
+            if (usersType.equals("Online")) {
+              Iterator<String> it = usersJson.keys();
+              String Id = usersJson.optString("Id");
+              String userId = usersJson.optString("Userid");
+              String status = usersJson.optString("Status");
+              if (status.length() != 0) {
+                JSONObject statusJson = new JSONObject(status);
+                String buddyPicture = statusJson.optString("buddyPicture");
+                String displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
+
+                if (!mId.equals(Id) && !displayName.equals("null")) {
+                  User user = new User(userId, buddyPicture, displayName, Id);
+                  if (!message.equals("null")) {
+                    user.message = message;
+                  }
+                  events.onUserEnteredRoom(user, mRoomName);
+                }
+              }
+>>>>>>> 5fa66c4... updated UI
 
         }
         else if (type.equals("Joined")) {
@@ -522,6 +621,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             String Id = usersJson.optString("Id");
             String userId = usersJson.optString("Userid");
             String status = usersJson.optString("Status");
+<<<<<<< HEAD
             JSONObject statusJson = new JSONObject(status);
             String buddyPicture = statusJson.optString("buddyPicture");
             String displayName = statusJson.optString("displayName");
@@ -529,6 +629,55 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             if (!mId.equals(Id)) {
               User user = new User(userId, buddyPicture, displayName, Id);
               events.onUserEnteredRoom(user, mRoomName);
+=======
+            String buddyPicture = "";
+            String displayName = "";
+
+            if (status.length() != 0) {
+                JSONObject statusJson = new JSONObject(status);
+                buddyPicture = statusJson.optString("buddyPicture");
+                displayName = statusJson.optString("displayName");
+                String message = statusJson.optString("message");
+
+                if (!mId.equals(Id) && !displayName.equals("null")) {
+                    User user = new User(userId, buddyPicture, displayName, Id);
+                    if (!message.equals("null")) {
+                      user.message = message;
+                    }
+                    events.onUserEnteredRoom(user, mRoomName);
+                }
+            }
+            else {
+              sendUsers();
+            }
+
+          }
+        }
+        else if (type.equals("Status")) {
+
+          JSONObject usersJson = new JSONObject(msgText);
+          String usersType = usersJson.optString("Type");
+          if (usersType.equals("Status")) {
+            String Id = usersJson.optString("Id");
+            String userId = usersJson.optString("Userid");
+            String status = usersJson.optString("Status");
+            String buddyPicture = "";
+            String displayName = "";
+
+            if (status.length() != 0) {
+              JSONObject statusJson = new JSONObject(status);
+              buddyPicture = statusJson.optString("buddyPicture");
+              displayName = statusJson.optString("displayName");
+              String message = statusJson.optString("message");
+
+              if (!mId.equals(Id) && !displayName.equals("null")) {
+                User user = new User(userId, buddyPicture, displayName, Id);
+                if (!message.equals("null")) {
+                  user.message = message;
+                }
+                events.onUserEnteredRoom(user, mRoomName);
+              }
+>>>>>>> 5fa66c4... updated UI
             }
           }
         }

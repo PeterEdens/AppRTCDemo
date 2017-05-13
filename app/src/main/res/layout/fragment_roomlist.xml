@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_room"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context="org.appspot.apprtc.RoomActivity">
+
+    <RelativeLayout
+        android:id="@+id/room_controls_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary"
+        android:layout_marginBottom="2dp">
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:id="@+id/rooms_back_layout">
+
+            <ImageView
+                android:id="@+id/back_arrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignTop="@+id/roomsButton"
+                android:layout_alignBottom="@+id/roomsButton"
+                android:src="@drawable/ic_arrow_back_white_24dp"/>
+            <TextView
+                android:id="@+id/roomsButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rooms_button"
+                android:gravity="left|center_vertical"
+                android:layout_toRightOf="@+id/back_arrow"
+                android:textColor="@color/white"
+                android:background="@color/primary"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/roomName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_alignTop="@+id/rooms_back_layout"
+            android:layout_alignBottom="@+id/rooms_back_layout"
+            android:textColor="@color/white"
+            android:text="Room Name"/>
+
+    </RelativeLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:background="#ECEFF1"
+        android:layout_below="@+id/room_controls_layout"/>
+
+    <TextView
+        android:id="@+id/emptyRoom"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/roomName"
+        android:text="@string/emptyRoom"
+        android:gravity="center"
+        android:textSize="20sp"/>
+
+</RelativeLayout>

@@ -1,6 +1,7 @@
 package org.appspot.apprtc;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +25,31 @@ public class RoomAdapter extends ArrayAdapter<String> {
         String name = getItem(position);
 
         // Lookup view for data population
+<<<<<<< HEAD
         TextView text1 = (TextView) convertView.findViewById(android.R.id.text1);
+=======
+        TextView text1 = (TextView) convertView.findViewById(R.id.text_id);
+        ImageView joinedStatus = (ImageView) convertView.findViewById(R.id.joined_status);
+        TextView messageStatus = (TextView) convertView.findViewById(R.id.message_status);
+
+        if ((mMessages.containsKey(name) && mMessages.get(name) != 0) ||
+                mFiles.containsKey(name) && mFiles.get(name) != 0) {
+            messageStatus.setText(String.valueOf(mMessages.get(name)));
+            messageStatus.setVisibility(View.VISIBLE);
+        }
+        else {
+            messageStatus.setVisibility(View.GONE);
+        }
+
+        if (name.equals(mCurrentRoom)) {
+            joinedStatus.setVisibility(View.VISIBLE);
+            text1.setTypeface(null, Typeface.BOLD);
+        }
+        else {
+            joinedStatus.setVisibility(View.GONE);
+            text1.setTypeface(null, Typeface.NORMAL);
+        }
+>>>>>>> 5fa66c4... updated UI
         // Populate the data into the template view using the data object
         if (name.length() == 0) {
             name = mContext.getString(R.string.default_room);

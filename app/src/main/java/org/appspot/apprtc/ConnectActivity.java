@@ -10,7 +10,12 @@
 
 package org.appspot.apprtc;
 
+<<<<<<< HEAD
 import android.app.Activity;
+=======
+import android.accounts.Account;
+import android.accounts.AccountManager;
+>>>>>>> 5fa66c4... updated UI
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -26,7 +31,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+<<<<<<< HEAD
+=======
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+>>>>>>> 5fa66c4... updated UI
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -52,6 +63,11 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.appspot.apprtc.service.WebsocketService;
+<<<<<<< HEAD
+=======
+import org.appspot.apprtc.util.AsyncHttpURLConnection;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
+>>>>>>> 5fa66c4... updated UI
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,9 +88,9 @@ public class ConnectActivity extends AppCompatActivity {
   ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
 
   LinearLayout mConnectionLayout;
-  RelativeLayout mLoginLayout;
   RelativeLayout mRoomListLayout;
 
+<<<<<<< HEAD
   private TextView mTextDescription;
   private EditText mUsernameEditText;
   private EditText mPasswordEditText;
@@ -83,6 +99,11 @@ public class ConnectActivity extends AppCompatActivity {
   TextView mConnectionTextView;
   private Button connectButton;
   private EditText roomEditText;
+=======
+  FloatingActionButton mAddRoom;
+  EditText mAddRoomEditText;
+  TextView mConnectionTextView;
+>>>>>>> 5fa66c4... updated UI
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefVideoCallEnabled;
@@ -114,6 +135,7 @@ public class ConnectActivity extends AppCompatActivity {
   private String keyprefRoomList;
   private ArrayList<String> roomList;
   private RoomAdapter adapter;
+<<<<<<< HEAD
   private String keyprefEnableDataChannel;
   private String keyprefOrdered;
   private String keyprefMaxRetransmitTimeMs;
@@ -123,6 +145,13 @@ public class ConnectActivity extends AppCompatActivity {
   private String keyprefDataId;
   private Button mLoginButton;
   private boolean mWaitingToEnterRoom;
+=======
+  private boolean mWaitingToEnterRoom;
+  private boolean mStatusSent = false;
+  private String mCurrentRoom = "";
+  private Toolbar toolbar;
+  private String mOwnId;
+>>>>>>> 5fa66c4... updated UI
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -152,13 +181,67 @@ public class ConnectActivity extends AppCompatActivity {
   };
 
   private void onConnected() {
+<<<<<<< HEAD
+=======
+    adapter.setCurrentRoom(mCurrentRoom);
+    adapter.notifyDataSetChanged();
+
+    mConnectionLayout.setVisibility(View.GONE);
+>>>>>>> 5fa66c4... updated UI
     mConnectionTextView.setText(getString(R.string.connected));
+    mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
     mConnectionState = ConnectionState.CONNECTED;
+<<<<<<< HEAD
     mConnectionLayout.setVisibility(View.GONE);
     mTextDescription.setText(getString(R.string.login_desc));
     mLoginLayout.setVisibility(View.VISIBLE);
     mRoomListLayout.setVisibility(View.VISIBLE);
+=======
+    mRoomListLayout.setVisibility(View.VISIBLE);
+
+    if (!mStatusSent) {
+      sendAccountBitmap();
+      mStatusSent = true;
+    }
   }
+
+  void sendAccountBitmap() {
+    Account account = getCurrentOwnCloudAccount(this);
+    if (account != null) {
+      AccountManager accountMgr = AccountManager.get(this);
+      String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+      mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+      String name = account.name.substring(0, account.name.indexOf('@'));
+      int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+      String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+      Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+
+      String encodedImage = "";
+      ThumbnailsCacheManager.LoadImage(url, new ThumbnailsCacheManager.LoadImageCallback() {
+
+        @Override
+        public void onImageLoaded(Bitmap bitmap) {
+          String encodedImage = getEncodedImage(bitmap);
+          mService.sendStatus(mDisplayName, encodedImage, getStatusText());
+        }
+      }, getResources(), mDisplayName, true, true);
+    }
+>>>>>>> 5fa66c4... updated UI
+  }
+
+  String getEncodedImage(Bitmap bitmap) {
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos); //bm is the bitmap object
+    byte[] byteArrayImage = baos.toByteArray();
+
+    String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+
+    return encodedImage;
+  }
+
 
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
@@ -168,12 +251,19 @@ public class ConnectActivity extends AppCompatActivity {
         onConnected();
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
         mConnectionTextView.setText(getString(R.string.disconnected));
+        mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         mConnectionState = ConnectionState.DISCONNECTED;
         mConnectionLayout.setVisibility(View.VISIBLE);
+<<<<<<< HEAD
         mLoginLayout.setVisibility(View.GONE);
+=======
+        // try to reconnect
+        mService.connectToServer(mServerName);
+>>>>>>> 5fa66c4... updated UI
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
 
+        mOwnId = mService.getId();
         if (!roomList.contains(roomName)) {
             adapter.add(roomName);
             adapter.notifyDataSetChanged();
@@ -184,8 +274,23 @@ public class ConnectActivity extends AppCompatActivity {
           mWaitingToEnterRoom = false;
 
           Intent roomIntent = new Intent(getApplicationContext(), RoomActivity.class);
+          roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
           roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
           roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
+<<<<<<< HEAD
+=======
+          Account account = getCurrentOwnCloudAccount(getApplicationContext());
+          if (account != null) {
+            AccountManager accountMgr = AccountManager.get(getApplicationContext());
+            String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+            mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+            String name = account.name.substring(0, account.name.indexOf('@'));
+            int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            roomIntent.putExtra(RoomActivity.EXTRA_AVATAR_URL, url);
+          }
+>>>>>>> 5fa66c4... updated UI
           startActivity(roomIntent);
         }
       }
@@ -215,8 +320,16 @@ public class ConnectActivity extends AppCompatActivity {
   };
 
   @Override
+  protected void restart() {
+    Intent connectActivity = new Intent(this, ConnectActivity.class);
+    connectActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    startActivity(connectActivity);
+  }
+
+  @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
 
     // Get setting keys.
     PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
@@ -257,7 +370,10 @@ public class ConnectActivity extends AppCompatActivity {
     keyprefDataId = getString(R.string.pref_data_id_key);
 
     setContentView(R.layout.activity_connect);
+    toolbar = (Toolbar) findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
 
+<<<<<<< HEAD
     roomEditText = (EditText) findViewById(R.id.room_edittext);
     roomEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
       @Override
@@ -269,25 +385,33 @@ public class ConnectActivity extends AppCompatActivity {
       }
     });
     roomEditText.requestFocus();
+=======
+    if (getSupportActionBar() != null) {
+      getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+      getSupportActionBar().setHomeButtonEnabled(true);
+      setupDrawer();
+      getSupportActionBar().setTitle(R.string.spreed_talk);
+    }
+
+
+>>>>>>> 5fa66c4... updated UI
 
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
     roomListView.setOnItemClickListener(roomListClickListener);
     registerForContextMenu(roomListView);
     mConnectionTextView = (TextView) findViewById(R.id.connected_state);
+<<<<<<< HEAD
     connectButton = (Button) findViewById(R.id.connect_button);
     connectButton.setOnClickListener(connectListener);
     mAddRoom = (ImageButton) findViewById(R.id.add_room_button);
+=======
+    mAddRoom = (FloatingActionButton) findViewById(R.id.add_room_button);
+>>>>>>> 5fa66c4... updated UI
     mAddRoom.setOnClickListener(addRoomListener);
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
     mConnectionLayout = (LinearLayout) findViewById(R.id.connect_layout);
-    mLoginLayout = (RelativeLayout) findViewById(R.id.login_layout);
     mRoomListLayout = (RelativeLayout) findViewById(R.id.room_list_layout);
-    mLoginButton = (Button) findViewById(R.id.login_button);
-    mLoginButton.setOnClickListener(loginButtonListener);
-    mUsernameEditText = (EditText) findViewById(R.id.username_edittext);
-    mPasswordEditText = (EditText) findViewById(R.id.password_edittext);
-    mTextDescription = (TextView) findViewById(R.id.room_edittext_description);
 
     mIntentFilter = new IntentFilter();
     mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
@@ -298,6 +422,28 @@ public class ConnectActivity extends AppCompatActivity {
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
+<<<<<<< HEAD
+=======
+    Account account = getCurrentOwnCloudAccount(this);
+    if (account != null) {
+      AccountManager accountMgr = AccountManager.get(this);
+      String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+      mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+      String name = account.name.substring(0, account.name.indexOf('@'));
+      int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+      String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+      Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+      mServerName = serverUrl;
+      if (mServerName.startsWith("https://")) {
+        mServerName = mServerName.substring(8);
+      }
+    }
+
+
+
+>>>>>>> 5fa66c4... updated UI
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
       boolean loopback = intent.getBooleanExtra(CallActivity.EXTRA_LOOPBACK, false);
       int runTimeMs = intent.getIntExtra(CallActivity.EXTRA_RUNTIME, 0);
@@ -340,10 +486,12 @@ public class ConnectActivity extends AppCompatActivity {
   public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
     if (v.getId() == R.id.room_listview) {
       AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
-      menu.setHeaderTitle(roomList.get(info.position));
-      String[] menuItems = getResources().getStringArray(R.array.roomListContextMenu);
-      for (int i = 0; i < menuItems.length; i++) {
-        menu.add(Menu.NONE, i, i, menuItems[i]);
+      if (roomList.get(info.position).length() != 0) { // cannot remove default room ""
+        menu.setHeaderTitle(roomList.get(info.position));
+        String[] menuItems = getResources().getStringArray(R.array.roomListContextMenu);
+        for (int i = 0; i < menuItems.length; i++) {
+          menu.add(Menu.NONE, i, i, menuItems[i]);
+        }
       }
     } else {
       super.onCreateContextMenu(menu, v, menuInfo);
@@ -378,10 +526,12 @@ public class ConnectActivity extends AppCompatActivity {
   @Override
   public void onPause() {
     super.onPause();
+<<<<<<< HEAD
     String room = roomEditText.getText().toString();
+=======
+>>>>>>> 5fa66c4... updated UI
     String roomListJson = new JSONArray(roomList).toString();
     SharedPreferences.Editor editor = sharedPref.edit();
-    editor.putString(keyprefRoom, room);
     editor.putString(keyprefRoomList, roomListJson);
     editor.commit();
   }
@@ -389,8 +539,11 @@ public class ConnectActivity extends AppCompatActivity {
   @Override
   public void onResume() {
     super.onResume();
+<<<<<<< HEAD
     String room = sharedPref.getString(keyprefRoom, "");
     roomEditText.setText(room);
+=======
+>>>>>>> 5fa66c4... updated UI
     roomList = new ArrayList<String>();
     String roomListJson = sharedPref.getString(keyprefRoomList, null);
     if (roomListJson != null) {
@@ -408,6 +561,10 @@ public class ConnectActivity extends AppCompatActivity {
     if (adapter.getCount() > 0) {
       roomListView.requestFocus();
       roomListView.setItemChecked(0, true);
+    }
+
+    if (mService != null) {
+      sendAccountBitmap();
     }
   }
 
@@ -735,26 +892,6 @@ public class ConnectActivity extends AppCompatActivity {
     }*/
   }
 
-  private boolean validateUrl(String url) {
-    if (URLUtil.isHttpsUrl(url) || URLUtil.isHttpUrl(url) || url.startsWith("wss://")) {
-      return true;
-    }
-
-    new AlertDialog.Builder(this)
-        .setTitle(getText(R.string.invalid_url_title))
-        .setMessage(getString(R.string.invalid_url_text, url))
-        .setCancelable(false)
-        .setNeutralButton(R.string.ok,
-            new DialogInterface.OnClickListener() {
-              public void onClick(DialogInterface dialog, int id) {
-                dialog.cancel();
-              }
-            })
-        .create()
-        .show();
-    return false;
-  }
-
   private final AdapterView.OnItemClickListener roomListClickListener =
       new AdapterView.OnItemClickListener() {
         @Override
@@ -764,6 +901,7 @@ public class ConnectActivity extends AppCompatActivity {
         }
       };
 
+<<<<<<< HEAD
   private final OnClickListener addFavoriteListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
@@ -774,13 +912,18 @@ public class ConnectActivity extends AppCompatActivity {
       }
     }
   };
+=======
+>>>>>>> 5fa66c4... updated UI
 
   private final OnClickListener connectListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
       mConnectionTextView.setText(getString(R.string.connecting));
+<<<<<<< HEAD
       mServerName = roomEditText.getText().toString();
       mService.connectToServer(roomEditText.getText().toString());
+=======
+>>>>>>> 5fa66c4... updated UI
     }
   };
 
@@ -799,6 +942,7 @@ public class ConnectActivity extends AppCompatActivity {
     }
   };
 
+<<<<<<< HEAD
   private OnClickListener loginButtonListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
@@ -818,4 +962,65 @@ public class ConnectActivity extends AppCompatActivity {
 
     }
   };
+=======
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putString("currentRoom", adapter.mCurrentRoom);
+  }
+
+  @Override
+  public void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    String currentRoom = savedInstanceState.getString("currentRoom");
+    mCurrentRoom = currentRoom;
+  }
+
+
+  private void requestPermission(String permission) {
+
+    // Should we show an explanation?
+    if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+            permission)) {
+
+      // Show an explanation to the user *asynchronously* -- don't block
+      // this thread waiting for the user's response! After the user
+      // sees the explanation, try again to request the permission.
+
+    } else {
+
+      // No explanation needed, we can request the permission.
+
+      ActivityCompat.requestPermissions(this,
+              MANDATORY_PERMISSIONS,
+              PERMISSIONS_REQUEST);
+    }
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode,
+                                         String permissions[], int[] grantResults) {
+    switch (requestCode) {
+      case PERMISSIONS_REQUEST: {
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+          // permission was granted, yay! Do the
+          // contacts-related task you need to do.
+
+        } else {
+
+          // permission denied, boo! Disable the
+          // functionality that depends on this permission.
+        }
+        return;
+      }
+
+      // other 'case' lines to check for other
+      // permissions this app might request
+    }
+  }
+>>>>>>> 5fa66c4... updated UI
 }

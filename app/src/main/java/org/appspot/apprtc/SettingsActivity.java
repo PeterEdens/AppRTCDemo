@@ -116,12 +116,12 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
     SharedPreferences sharedPreferences =
         settingsFragment.getPreferenceScreen().getSharedPreferences();
     sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-    updateSummaryB(sharedPreferences, keyprefVideoCall);
-    updateSummaryB(sharedPreferences, keyprefScreencapture);
-    updateSummaryB(sharedPreferences, keyprefCamera2);
+    //updateSummaryB(sharedPreferences, keyprefVideoCall);
+   // updateSummaryB(sharedPreferences, keyprefScreencapture);
+   // updateSummaryB(sharedPreferences, keyprefCamera2);
     updateSummary(sharedPreferences, keyprefResolution);
     updateSummary(sharedPreferences, keyprefFps);
-    updateSummaryB(sharedPreferences, keyprefCaptureQualitySlider);
+   /* updateSummaryB(sharedPreferences, keyprefCaptureQualitySlider);
     updateSummary(sharedPreferences, keyprefMaxVideoBitrateType);
     updateSummaryBitrate(sharedPreferences, keyprefMaxVideoBitrateValue);
     setVideoBitrateEnable(sharedPreferences);
@@ -190,7 +190,7 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
 
       disableBuiltInNSPreference.setSummary(getString(R.string.pref_built_in_ns_not_available));
       disableBuiltInNSPreference.setEnabled(false);
-    }
+    }*/
   }
 
   @Override

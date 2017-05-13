@@ -13,24 +13,36 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+<<<<<<< HEAD
+=======
+import org.appspot.apprtc.service.WebsocketService;
+import org.appspot.apprtc.util.AsyncHttpURLConnection;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.lang.ref.WeakReference;
+>>>>>>> 5fa66c4... updated UI
 import java.util.ArrayList;
 
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder> {
 
+    private final String mOwnId;
     String mServer = "";
     ArrayList<User> userList;
     Context mContext;
 
-    public UsersAdapter(ArrayList<User> userList, Context context, String server) {
+    public UsersAdapter(ArrayList<User> userList, Context context, String server, String ownId) {
         this.userList = userList;
         mServer = server;
         mContext = context;
+        mOwnId = ownId;
     }
 
     @Override
     public UsersAdapter.UsersViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v= LayoutInflater.from(parent.getContext()).inflate(R.layout.user_row,parent,false);
-        UsersViewHolder viewHolder=new UsersViewHolder(v);
+        UsersViewHolder viewHolder=new UsersViewHolder(v, mOwnId);
         return viewHolder;
     }
 
@@ -41,11 +53,21 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
         if (buddyPic.length() != 0) {
             String path = buddyPic.substring(4);
             String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
+<<<<<<< HEAD
+=======
+            ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true, true);
+>>>>>>> 5fa66c4... updated UI
         }
         else {
             holder.image.setImageResource(R.drawable.user_icon);
         }
         holder.text.setText(user.displayName);
+        if (user.message != null) {
+            holder.message.setText(user.message);
+        }
+        else {
+            holder.message.setText("");
+        }
         holder.user = user;
     }
 
@@ -59,13 +81,52 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
         ImageButton callButton;
         protected ImageView image;
         protected TextView text;
+        protected TextView message;
         public User user;
+<<<<<<< HEAD
 
         public UsersViewHolder(View itemView) {
             super(itemView);
             image= (ImageView) itemView.findViewById(R.id.image_id);
             text= (TextView) itemView.findViewById(R.id.text_id);
             callButton = (ImageButton) itemView.findViewById(R.id.call_button);
+=======
+        public String mServer = "";
+        public String mOwnId;
+        
+        public UsersViewHolder(View itemView, String ownId) {
+            super(itemView);
+            image= (ImageView) itemView.findViewById(R.id.image_id);
+            text= (TextView) itemView.findViewById(R.id.text_id);
+            message = (TextView) itemView.findViewById(R.id.message);
+            mOwnId = ownId;
+            
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(view.getContext(), UserActivity.class);
+                    intent.putExtra(EXTRA_SERVER_NAME, mServer);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    view.getContext().startActivity(intent);
+                }
+            });
+            /*callButton = (ImageButton) itemView.findViewById(R.id.call_button);
+            chatButton = (ImageButton) itemView.findViewById(R.id.chat_button);
+            shareFileButton = (ImageButton) itemView.findViewById(R.id.file_button);
+
+            shareFileButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (v.getId() == shareFileButton.getId()){
+                        Intent intent = new Intent(v.getContext(), RoomActivity.class);
+                        intent.setAction(RoomActivity.ACTION_SHARE_FILE);
+                        intent.putExtra(CallActivity.EXTRA_USER, user);
+                        v.getContext().startActivity(intent);
+                    }
+                }
+            });
+>>>>>>> 5fa66c4... updated UI
 
             callButton.setOnClickListener(new View.OnClickListener() {
                 @Override

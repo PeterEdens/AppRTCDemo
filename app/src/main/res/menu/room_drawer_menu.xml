@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ownCloud Android client application
+
+  Copyright (C) 2016 ownCloud Inc.
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License version 2,
+  as published by the Free Software Foundation.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+          account list placeholder
+          all items in this group MUST have orderInCategory="2" set
+          all accounts are dynamically added with orderInCategory="1" set
+        -->
+    <group android:id="@+id/drawer_menu_accounts">
+        <item
+            android:orderInCategory="2"
+            android:id="@+id/drawer_menu_account_add"
+            android:icon="@drawable/ic_account_plus"
+            android:title="@string/prefs_add_account"/>
+        <item
+            android:orderInCategory="2"
+            android:id="@+id/drawer_menu_account_manage"
+            android:icon="@drawable/ic_settings"
+            android:title="@string/drawer_manage_accounts"/>
+    </group>
+
+    <!--
+      standard menu
+      all items in this group MUST have orderInCategory="0" set
+    -->
+    <group android:id="@+id/drawer_menu_standard" android:checkableBehavior="none">
+
+
+        <item
+            android:orderInCategory="3"
+            android:id="@+id/action_settings"
+            android:title="@string/action_settings"
+            android:icon="@drawable/ic_settings"/>
+    </group>
+
+    <group android:id="@+id/drawer_menu_navigation" android:checkableBehavior="single">
+
+        <item
+            android:orderInCategory="3"
+            android:id="@+id/nav_chat"
+            android:icon="@drawable/ic_chat_bubble_black_24dp"
+            android:title="@string/drawer_chat"/>
+        <item
+            android:orderInCategory="3"
+            android:id="@+id/nav_video_chat"
+            android:icon="@drawable/ic_voice_chat_black_24dp"
+            android:title="@string/drawer_video_chat"/>
+        <item
+            android:orderInCategory="3"
+            android:id="@+id/nav_share_files"
+            android:icon="@drawable/ic_cloud_black_24dp"
+            android:title="@string/drawer_share_files"/>
+    </group>
+
+
+    <!--
+      dummy group/element as a workaround to see
+      the whole menu in case of quota being displayed
+    -->
+    <group>
+        <item
+            android:enabled="false"
+            android:orderInCategory="200"
+            android:title=""/>
+    </group>
+</menu>

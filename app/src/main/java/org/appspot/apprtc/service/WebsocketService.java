@@ -37,6 +37,49 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_RESPONSE = "org.appspot.apprtc.service.EXTRA_RESPONSE";
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
+<<<<<<< HEAD
+=======
+    public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
+    public static final String ACTION_FILE_MESSAGE = "org.appspot.apprtc.service.ACTION_FILE_MESSAGE";
+    public static final String EXTRA_TOKEN = "org.appspot.apprtc.service.EXTRA_TOKEN";
+    public static final String EXTRA_ID = "org.appspot.apprtc.service.EXTRA_ID";
+    public static final String EXTRA_OWN_ID = "org.appspot.apprtc.service.EXTRA_OWN_ID";
+    public static final String EXTRA_FILEINFO = "org.appspot.apprtc.service.EXTRA_FILEINFO";
+    public static final String ACTION_ADD_CONFERENCE_USER = "org.appspot.apprtc.service.ACTION_ADD_CONFERENCE_USER";
+    public static final String EXTRA_CONFERENCE_ID = "org.appspot.apprtc.service.EXTRA_CONFERENCE_ID";
+    public static final String ACTION_ADD_ALL_CONFERENCE = "org.appspot.apprtc.service.ACTION_ADD_ALL_CONFERENCE";
+    public static final String EXTRA_USERACTION = "org.appspot.apprtc.service.EXTRA_USERACTION";
+
+    private String mServer = "";
+
+    private Handler selfHandler = new Handler();
+    private Runnable selfRenew = new Runnable() {
+
+        @Override
+        public void run() {
+            if (appRtcClient != null) {
+                appRtcClient.sendSelf();
+            }
+        }
+    };
+
+    public String getCurrentRoomName() {
+        if (appRtcClient != null) {
+            return appRtcClient.getRoomName();
+        }
+        return null;
+    }
+    public void disconnectFromServer() {
+        if (appRtcClient != null) {
+            appRtcClient.disconnectFromRoom();
+            mState = ConnectionState.DISCONNECTED;
+            mUsers.clear();
+        }
+    }
+
+
+
+>>>>>>> 5fa66c4... updated UI
 
     enum ConnectionState {
         DISCONNECTED,
@@ -110,9 +153,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendStatus(String displayName, String buddyPicture) {
+    public void sendStatus(String displayName, String buddyPicture, String message) {
         if (appRtcClient != null) {
-            appRtcClient.sendStatus(displayName, buddyPicture);
+            appRtcClient.sendStatus(displayName, buddyPicture, message);
         }
     }
 
@@ -203,6 +246,23 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+<<<<<<< HEAD
+=======
+        broadcastIntent.putExtra(EXTRA_TOKEN, token);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
+        broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+        broadcastIntent.putExtra(EXTRA_ADDRESS, mServer);
+
+        ArrayList<User> users = mUsers.get(roomName);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(fromId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
+            }
+        }
+>>>>>>> 5fa66c4... updated UI
         sendBroadcast(broadcastIntent);
     }
 
@@ -220,6 +280,39 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
+<<<<<<< HEAD
+=======
+    public void onSelf() {
+        clearIceServers();
+    }
+
+    @Override
+    public void onTurnTtl(int ttl) {
+        long interval = (long)(ttl - (ttl * 0.1f)) * 1000; // ms
+
+        selfHandler.postDelayed(selfRenew, interval);
+    }
+
+    @Override
+    public void onConferenceUser(String roomName, String conferenceId, String id) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_ADD_CONFERENCE_USER);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
+        broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+        ArrayList<User> users = mUsers.get(roomName);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(id)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
+            }
+        }
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
+>>>>>>> 5fa66c4... updated UI
     public void onChannelOpen() {
         mState = ConnectionState.CONNECTED;
         Intent broadcastIntent = new Intent();

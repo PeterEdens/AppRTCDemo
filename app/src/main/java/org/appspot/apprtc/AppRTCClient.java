@@ -79,7 +79,7 @@ public interface AppRTCClient {
 
   void sendAuthentication(String userid, String nonce);
 
-  void sendStatus(String displayName, String buddyPicture);
+  void sendStatus(String displayName, String buddyPicture, String message);
 
   /**
    * Struct holding the signaling parameters of an AppRTC room.

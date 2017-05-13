@@ -4,12 +4,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#00bbbb">
+    android:background="#00000000">
 
     <ImageView
         android:id="@+id/contact_image"
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:layout_margin="10dp"
         android:layout_centerHorizontal="true"
         android:src="@drawable/user_icon"/>
     <TextView
@@ -17,22 +18,29 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_above="@+id/buttons_call_container"
+        android:layout_below="@+id/contact_image"
         android:textSize="24sp"
         android:layout_margin="8dp"
+        android:textColor="@color/white70"
+        android:shadowColor="@color/black"
+        android:shadowRadius="2"
+        android:shadowDx="2"
+        android:shadowDy="2"
         android:text="Incoming call..."/>
 
     <LinearLayout
         android:id="@+id/buttons_call_container"
-        android:orientation="vertical"
-        android:layout_above="@+id/capture_format_text_call"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
         android:layout_alignWithParentIfMissing="true"
         android:layout_marginBottom="32dp"
         android:layout_centerHorizontal="true"
         android:layout_width="match_parent"
+        android:gravity="center"
         android:layout_height="wrap_content">
 
         <Button
+<<<<<<< HEAD
             android:id="@+id/button_call_connect"
             android:background="@android:color/holo_green_dark"
             android:layout_margin="16dp"
@@ -49,6 +57,24 @@
             android:layout_height="96dp"
             android:textColor="@android:color/white"
             android:text="@string/reject_call" />
+=======
+            android:id="@+id/button_call_disconnect"
+            android:background="@drawable/hangup"
+            android:layout_margin="20dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:focusableInTouchMode="false"
+            android:textColor="@android:color/white"/>
+
+        <Button
+            android:id="@+id/button_call_connect"
+            android:background="@drawable/answer"
+            android:layout_margin="20dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:focusableInTouchMode="false"
+            android:textColor="@android:color/white"/>
+>>>>>>> 5fa66c4... updated UI
 
     </LinearLayout>
 
