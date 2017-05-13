@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.TimeZone;
 
 
+
 public class ChatFragment extends Fragment {
 
     private View controlView;

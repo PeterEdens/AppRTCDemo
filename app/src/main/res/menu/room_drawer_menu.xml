@@ -41,7 +41,6 @@
     -->
     <group android:id="@+id/drawer_menu_standard" android:checkableBehavior="none">
 
-
         <item
             android:orderInCategory="3"
             android:id="@+id/action_settings"

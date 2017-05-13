@@ -1,24 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Spreedbox Webrtc</string>
-<<<<<<< HEAD
-    <string name="settings_name" translatable="false">AppRTC Settings</string>
-    <string name="disconnect_call">Disconnect Call</string>
-    <string name="room_description">
-        Please enter a room name. Room names are shared with everyone, so think
-        of something unique and send it to a friend.
-    </string>
-    <string name="favorites">Favorites</string>
-    <string name="no_favorites">No favorites</string>
-    <string name="invalid_url_title">Invalid URL</string>
-    <string name="invalid_url_text">The URL or room name you entered resulted in an invalid URL: %1$s
-    </string>
-=======
+
     <string name="settings_name" translatable="false">SecureMeet Settings</string>
     <string name="manage_accounts_class" translatable="false">com.owncloud.android.ui.activity.ManageAccountsActivity</string>
 
     <string name="no_rooms">No rooms</string>
->>>>>>> 5fa66c4... updated UI
     <string name="channel_error_title">Connection error</string>
     <string name="connecting_to">Connecting to: %1$s</string>
     <string name="missing_url">FATAL ERROR: Missing URL to connect to.</string>
@@ -233,18 +220,14 @@
     <string name="connect">Connect</string>
     <string name="disconnect">Disconnect</string>
     <string name="rooms">Rooms</string>
-<<<<<<< HEAD
-=======
     <string name="rooms_button">Rooms</string>
->>>>>>> 5fa66c4... updated UI
     <string name="default_room">Default Room</string>
     <string name="login">Login</string>
     <string name="login_desc">Please enter your username and password for the Spreedbox</string>
     <string name="answer">Answer</string>
     <string name="reject_call">Reject Call</string>
     <string name="stop_calling">Stop Calling</string>
-<<<<<<< HEAD
-=======
+
     <string name="recent">Recent</string>
     <string name="recent_button">Recent</string>
     <string name="files">Files</string>
@@ -281,5 +264,4 @@
     <string name="action_status">Status</string>
     <string name="incoming_call_from">Incoming call from</string>
     <string name="calling">Calling</string>
->>>>>>> 5fa66c4... updated UI
 </resources>

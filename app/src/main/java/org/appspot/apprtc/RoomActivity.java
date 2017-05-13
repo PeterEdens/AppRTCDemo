@@ -1,41 +1,42 @@
 package org.appspot.apprtc;
 
-<<<<<<< HEAD
-=======
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
->>>>>>> 5fa66c4... updated UI
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-<<<<<<< HEAD
-=======
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
->>>>>>> 5fa66c4... updated UI
 import android.os.IBinder;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.appspot.apprtc.fragment.ChatFragment;
+import org.appspot.apprtc.fragment.FilesFragment;
+import org.appspot.apprtc.fragment.RoomFragment;
 import org.appspot.apprtc.service.WebsocketService;
 import org.w3c.dom.Text;
 
-<<<<<<< HEAD
-=======
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,16 +47,15 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
->>>>>>> 5fa66c4... updated UI
 import java.util.ArrayList;
+import java.util.List;
 
 public class RoomActivity extends AppCompatActivity {
-    static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
-    static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
+    public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
+    public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
 
-<<<<<<< HEAD
     static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
-=======
+
 public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatEvents, PeerConnectionClient.PeerConnectionEvents, PeerConnectionClient.DataChannelCallback, TokenPeerConnection.TokenPeerConnectionEvents {
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
     public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
@@ -68,7 +68,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String ACTION_VIEW_CHAT = "org.appspot.apprtc.ACTION_VIEW_CHAT";
     public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
     public static final String EXTRA_AVATAR_URL = "org.appspot.apprtc.EXTRA_AVATAR_URL";
->>>>>>> 5fa66c4... updated UI
 
     private RecyclerView recyclerView;
     private RecyclerView.Adapter adapter;
@@ -82,6 +81,10 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     boolean mWebsocketServiceBound = false;
     private IntentFilter mIntentFilter;
 
+    private Toolbar toolbar;
+    private TabLayout tabLayout;
+    private ViewPager viewPager;
+
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -94,11 +97,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mWebsocketServiceBound = true;
 
             ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
-            if (users != null) {
-                userList.clear();
-                userList.addAll(users);
-            }
-            adapter.notifyDataSetChanged();
+
+            mRoomFragment.addUsers(users);
         }
 
         @Override
@@ -135,8 +135,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             }
         }
     };
-<<<<<<< HEAD
-=======
+
     private RoomFragment mRoomFragment;
     private boolean mWaitingToEnterRoom;
     private ChatFragment mChatFragment;
@@ -174,7 +173,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id, Id), user);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
->>>>>>> 5fa66c4... updated UI
 
     private void ShowMessage(String message, String time, String status) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
@@ -182,18 +180,12 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     private void AddUser(User userEntered) {
 
-        if (userEntered != null && !userList.contains(userEntered)) {
-            userList.add(userEntered);
-        }
-        adapter.notifyDataSetChanged();
+        mRoomFragment.addUser(userEntered);
     }
 
     private void RemoveUser(User userLeft) {
 
-        if (userLeft != null && userList.contains(userLeft)) {
-            userList.remove(userLeft);
-        }
-        adapter.notifyDataSetChanged();
+        mRoomFragment.removeUser(userLeft);
     }
 
     @Override
@@ -216,8 +208,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
 
         Intent intent = getIntent();
-<<<<<<< HEAD
-=======
+
         Account account = getCurrentOwnCloudAccount(this);
         if (account != null) {
             AccountManager accountMgr = AccountManager.get(this);
@@ -381,17 +372,11 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
                 connection.setRemoteDescription(sd);
                 mPeerConnections.put(peerConnectionId, connection);
->>>>>>> 5fa66c4... updated UI
 
-        if (intent != null && intent.hasExtra(EXTRA_ROOM_NAME)) {
-            mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
-        }
 
-<<<<<<< HEAD
-        if (intent != null && intent.hasExtra(EXTRA_SERVER_NAME)) {
-            mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
-        }
-=======
+        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        setupViewPager(viewPager);
+
         if (intent.hasExtra(EXTRA_SERVER_NAME)) {
             mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
         }
@@ -425,16 +410,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 size = TokenPeerConnection.getContentSize(path, this);
                 name = TokenPeerConnection.getContentName(path, this);
             }
->>>>>>> 5fa66c4... updated UI
-
-        mRoomNameTextView = (TextView) findViewById(R.id.roomName);
-        mRoomNameTextView.setText(mRoomName);
-        recyclerView= (RecyclerView) findViewById(R.id.recycler_view);
-        layoutManager=new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-
-        adapter=new UsersAdapter(userList,getApplicationContext(), mServerName);
-        recyclerView.setAdapter(adapter);
 
     }
 
@@ -460,8 +435,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         unregisterReceiver(mReceiver);
     }
 
-<<<<<<< HEAD
-=======
+
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -492,11 +466,13 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         mRoomFragment = new RoomFragment();
+
         mRoomFragment.setArguments(getIntent().getExtras());
         adapter.addFrag(mRoomFragment, getString(R.string.rooms));
         mChatFragment = new ChatFragment();
         mChatFragment.setArguments(getIntent().getExtras());
         adapter.addFrag(mChatFragment, getString(R.string.recent));
+
         adapter.addFrag(new FilesFragment(), getString(R.string.files));
         viewPager.setAdapter(adapter);
     }
@@ -847,5 +823,4 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         return ret;
     }
 
->>>>>>> 5fa66c4... updated UI
 }
