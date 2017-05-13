@@ -8,13 +8,6 @@
     android:weightSum="1"
     android:layout_centerHorizontal="true">
 
-<<<<<<< HEAD
-    <TextView
-        android:id="@+id/room_edittext_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/enter_server_name"/>
-
     <LinearLayout
         android:id="@+id/connect_layout"
         android:orientation="horizontal"
@@ -22,7 +15,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_marginBottom="8dp">
-=======
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -46,32 +39,22 @@
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
         </android.support.design.widget.AppBarLayout>
->>>>>>> 5fa66c4... updated UI
+
+        <TextView
+            android:id="@+id/room_edittext_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/enter_server_name"/>
 
         <EditText
             android:id="@+id/room_edittext"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-<<<<<<< HEAD
-            android:layout_weight="1"
-            android:singleLine="true"
-            android:imeOptions="actionDone"
-            android:inputType="text"/>
-
-        <Button
-            android:id="@+id/connect_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/connect" />
-
-    </LinearLayout>
-=======
             android:gravity="left|center_vertical"
             android:layout_below="@+id/appbar"
             android:layout_alignTop="@+id/connected_state"
             android:layout_alignBottom="@+id/connected_state"
             android:layout_toRightOf="@+id/connected_state">
->>>>>>> 5fa66c4... updated UI
 
     <RelativeLayout
         android:id="@+id/login_layout"
@@ -82,88 +65,23 @@
         android:layout_marginBottom="8dp"
         android:visibility="gone">
 
-<<<<<<< HEAD
-        <EditText
-            android:id="@+id/username_edittext"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toLeftOf="@+id/login_button"
-            android:layout_weight="1"
-            android:singleLine="true"
-            android:imeOptions="actionDone"
-            android:inputType="text"/>
-
-        <EditText
-            android:id="@+id/password_edittext"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toLeftOf="@+id/login_button"
-            android:layout_below="@+id/username_edittext"
-            android:singleLine="true"
-            android:imeOptions="actionDone"
-            android:inputType="text"/>
-
-        <Button
-            android:id="@+id/login_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:text="@string/login" />
-
-    </RelativeLayout>
-    <TextView
-        android:id="@+id/connected_state"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:lines="1"
-        android:maxLines="1"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/disconnected"/>
-
-    <RelativeLayout
-        android:id="@+id/room_list_layout"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/room_listview_description"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-=======
 
         <TextView
             android:id="@+id/connected_state"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
->>>>>>> 5fa66c4... updated UI
             android:lines="1"
             android:maxLines="1"
             android:textColor="@android:color/holo_red_dark"
             android:textAppearance="?android:attr/textAppearanceMedium"
-<<<<<<< HEAD
-            android:text="@string/rooms"
-            android:gravity="center_vertical"/>
-=======
             android:layout_below="@+id/appbar"
             android:text="@string/disconnected"/>
->>>>>>> 5fa66c4... updated UI
 
         <LinearLayout
             android:id="@+id/add_room_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-<<<<<<< HEAD
-            android:orientation="horizontal"
-            android:layout_below="@+id/room_listview_description">
-
-            <EditText
-                android:id="@+id/addroom_edittext"
-=======
             android:layout_weight="1"
             android:layout_below="@id/connected_state"
             android:visibility="visible">
@@ -182,7 +100,6 @@
 
             <LinearLayout
                 android:id="@+id/add_room_layout"
->>>>>>> 5fa66c4... updated UI
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -195,10 +112,6 @@
                 android:id="@+id/add_room_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-<<<<<<< HEAD
-                android:layout_toRightOf="@+id/addroom_edittext"
-                android:src="@drawable/ic_add_white_24dp"/>
-=======
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentRight="true"
                 android:layout_marginRight="15dp"
@@ -213,7 +126,6 @@
                 android:text="@string/no_rooms" />
         </RelativeLayout>
     </RelativeLayout>
->>>>>>> 5fa66c4... updated UI
 
         </LinearLayout>
 

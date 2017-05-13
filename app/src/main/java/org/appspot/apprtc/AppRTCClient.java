@@ -160,5 +160,9 @@ public interface AppRTCClient {
     void onPatchResponse(String response);
 
     void onPostResponse(String response);
+
+    void onConfigResponse(String response);
+
+    void onChatMessage(String message, String time, String status, String fromId, String roomName);
   }
 }

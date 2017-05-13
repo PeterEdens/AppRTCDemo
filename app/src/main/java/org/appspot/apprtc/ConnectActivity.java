@@ -23,7 +23,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -42,7 +41,6 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -53,7 +51,6 @@ import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
@@ -140,7 +137,10 @@ public class ConnectActivity extends AppCompatActivity {
       mService = binder.getService();
       mWebsocketServiceBound = true;
 
-      if (mService.getIsConnected()) {
+      if (!mService.getIsConnected()) {
+        mService.connectToServer(mServerName);
+      }
+      else {
         onConnected();
       }
 
@@ -204,6 +204,7 @@ public class ConnectActivity extends AppCompatActivity {
     String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
 
     return encodedImage;
+
   }
 
 
@@ -214,6 +215,7 @@ public class ConnectActivity extends AppCompatActivity {
       if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED)) {
         onConnected();
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
+        mStatusSent = false;
         mConnectionTextView.setText(getString(R.string.disconnected));
         mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         mConnectionState = ConnectionState.DISCONNECTED;
@@ -381,6 +383,11 @@ public class ConnectActivity extends AppCompatActivity {
       if (mServerName.startsWith("https://")) {
         mServerName = mServerName.substring(8);
       }
+      serverNameEditText.setText(mServerName);
+    }
+
+    if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
+      mDisplayName = intent.getStringExtra(EXTRA_DISPLAYNAME);
     }
 
 
@@ -837,6 +844,16 @@ public class ConnectActivity extends AppCompatActivity {
         }
       };
 
+  private final OnClickListener addFavoriteListener = new OnClickListener() {
+    @Override
+    public void onClick(View view) {
+      String newRoom = serverNameEditText.getText().toString();
+      if (newRoom.length() > 0 && !roomList.contains(newRoom)) {
+        adapter.add(newRoom);
+        adapter.notifyDataSetChanged();
+      }
+    }
+  };
 
   private final OnClickListener connectListener = new OnClickListener() {
     @Override

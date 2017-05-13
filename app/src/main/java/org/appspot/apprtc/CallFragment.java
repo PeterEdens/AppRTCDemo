@@ -221,6 +221,9 @@ public class CallFragment extends Fragment {
     }
 
 
+    if (mSoundPlayer != null) {
+      mSoundPlayer.Stop();
+    }
     mSoundPlayer = new SoundPlayer(mContext, R.raw.connect1);
     mSoundPlayer.Play(false);
   }

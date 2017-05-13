@@ -10,12 +10,17 @@ import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.WebSocketRTCClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.IceCandidate;
+import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class WebsocketService extends Service implements AppRTCClient.SignalingEvents{
     public static final String ACTION_CONNECT = "org.appspot.apprtc.service.ACTION_CONNECT";
@@ -35,10 +40,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_CANDIDATE = "org.appspot.apprtc.service.EXTRA_CANDIDATE";
     public static final String EXTRA_REMOTE_DESCRIPTION = "org.appspot.apprtc.service.EXTRA_REMOTE_DESCRIPTION";
     public static final String EXTRA_RESPONSE = "org.appspot.apprtc.service.EXTRA_RESPONSE";
+    public static final String EXTRA_MESSAGE = "org.appspot.apprtc.service.EXTRA_MESSAGE";
+    public static final String EXTRA_TIME = "org.appspot.apprtc.service.EXTRA_TIME";
+    public static final String EXTRA_STATUS = "org.appspot.apprtc.service.EXTRA_STATUS";
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
-<<<<<<< HEAD
-=======
     public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
     public static final String ACTION_FILE_MESSAGE = "org.appspot.apprtc.service.ACTION_FILE_MESSAGE";
     public static final String EXTRA_TOKEN = "org.appspot.apprtc.service.EXTRA_TOKEN";
@@ -77,10 +83,6 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-
-
->>>>>>> 5fa66c4... updated UI
-
     enum ConnectionState {
         DISCONNECTED,
         CONNECTED,
@@ -94,9 +96,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     private AppRTCClient appRtcClient;
     private HashMap<String, ArrayList<User>> mUsers = new HashMap<String, ArrayList<User>>();
+    private List<PeerConnection.IceServer> mIceServers = new ArrayList<PeerConnection.IceServer>();
 
     public ArrayList<User> getUsersInRoom(String roomName) {
         return mUsers.get(roomName);
+    }
+
+    public List<PeerConnection.IceServer> getIceServers() {
+        return mIceServers;
     }
 
     public void connectToRoom(String roomName) {
@@ -242,12 +249,51 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
+    public void onConfigResponse(String response) {
+        try {
+            JSONObject json = new JSONObject(response);
+            String username = json.getString("TurnUsername");
+            String password = json.getString("TurnPassword");
+            JSONArray stunUris = json.getJSONArray("TurnURIs");
+            for (int count = 0; count < stunUris.length(); count++) {
+                String stunUri = stunUris.getString(count);
+                PeerConnection.IceServer iceServer = new PeerConnection.IceServer(stunUri, "", "");
+                mIceServers.add(iceServer);
+            }
+            JSONArray turnUris = json.getJSONArray("TurnURIs");
+            for (int count = 0; count < turnUris.length(); count++) {
+                String turnUri = turnUris.getString(count);
+                PeerConnection.IceServer iceServer = new PeerConnection.IceServer(turnUri, username, password);
+                mIceServers.add(iceServer);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void onChatMessage(String message, String time, String status, String fromId, String roomName) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_CHAT_MESSAGE);
+        broadcastIntent.putExtra(EXTRA_MESSAGE, message);
+        broadcastIntent.putExtra(EXTRA_TIME, time);
+        broadcastIntent.putExtra(EXTRA_STATUS, status);
+
+        ArrayList<User> users = mUsers.get(roomName);
+        for (User user : users) {
+            if (user.Id.equals(fromId)) {
+                broadcastIntent.putExtra(EXTRA_USER, user);
+            }
+        }
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
     public void onRemoteDescription(SerializableSessionDescription sdp) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
-<<<<<<< HEAD
-=======
         broadcastIntent.putExtra(EXTRA_TOKEN, token);
         broadcastIntent.putExtra(EXTRA_ID, id);
         broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
@@ -262,7 +308,6 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
                 }
             }
         }
->>>>>>> 5fa66c4... updated UI
         sendBroadcast(broadcastIntent);
     }
 
@@ -280,8 +325,6 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-<<<<<<< HEAD
-=======
     public void onSelf() {
         clearIceServers();
     }
@@ -312,7 +355,6 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
->>>>>>> 5fa66c4... updated UI
     public void onChannelOpen() {
         mState = ConnectionState.CONNECTED;
         Intent broadcastIntent = new Intent();

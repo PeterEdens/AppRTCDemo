@@ -26,10 +26,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.IceCandidate;
+import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -78,6 +81,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     handlerThread.start();
     handler = new Handler(handlerThread.getLooper());
   }
+
 
   // --------------------------------------------------------------------
   // AppRTCClient interface implementation.
@@ -174,6 +178,27 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     wsClient = new WebSocketChannelClient(handler, this);
 
     wsClient.connect("wss://" + address + "/webrtc/ws", "wss://" + address + "/webrtc/ws");
+
+    getWebrtcConfig("https://" + address + "/webrtc/api/v1/config");
+  }
+
+  private void getWebrtcConfig(String url) {
+
+    AsyncHttpURLConnection httpConnection =
+            new AsyncHttpURLConnection("GET", url, "", new AsyncHttpEvents() {
+              @Override
+              public void onHttpError(String errorMessage) {
+                reportError("getWebrtc error: " + errorMessage);
+              }
+
+              @Override
+              public void onHttpComplete(String response) {
+                events.onConfigResponse(response);
+              }
+            });
+
+    httpConnection.setContentType("application/x-www-form-urlencoded");
+    httpConnection.send();
   }
 
   // Connects to room - function runs on a local looper thread.
@@ -688,15 +713,10 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           if (usersType.equals("Left")) {
             Iterator<String> it = usersJson.keys();
             String Id = usersJson.optString("Id");
-            String userId = usersJson.optString("Userid");
-            String status = usersJson.optString("Status");
-            JSONObject statusJson = new JSONObject(status);
-            String buddyPicture = statusJson.optString("buddyPicture");
-            String displayName = statusJson.optString("displayName");
 
             if (!mId.equals(Id)) {
-              User user = new User(userId, buddyPicture, displayName, Id);
-              events.onUserEnteredRoom(user, mRoomName);
+              User user = new User("", "", "", Id);
+              events.onUserLeftRoom(user, mRoomName);
             }
           }
         }
@@ -732,8 +752,20 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           String byeTxt = json.optString("Bye");
           JSONObject byeJson = new JSONObject(byeTxt);
           events.onBye(byeJson.optString("Reason"));
-        } else {
-          //reportError("Unexpected WebSocket message: " + msg);
+        } else if (type.equals("Chat")) {
+          String chatTxt = json.optString("Chat");
+          JSONObject chatJson = new JSONObject(chatTxt);
+          String message = chatJson.optString("Message");
+          String time = chatJson.optString("Time");
+          String status = "";
+          String statusTxt = chatJson.optString("Status");
+          if (statusTxt != null && !statusTxt.equals("null") && statusTxt.length() > 0) {
+            JSONObject jsonStatus = new JSONObject(statusTxt);
+            if (jsonStatus.has("Typing")) {
+              status = " is Typing";
+            }
+          }
+          events.onChatMessage(message, time, status, mIdFrom, mRoomName);
         }
       } else {
         if (errorText != null && errorText.length() > 0) {
