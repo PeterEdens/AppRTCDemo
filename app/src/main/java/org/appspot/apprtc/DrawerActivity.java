@@ -840,7 +840,6 @@ public abstract class DrawerActivity extends AppCompatActivity {
     }
 
 
-
     public boolean setCurrentOwnCloudAccount(Context context, String accountName) {
         boolean result = false;
         if (accountName != null) {

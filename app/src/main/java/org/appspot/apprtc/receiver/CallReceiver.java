@@ -7,6 +7,7 @@ import android.content.Intent;
 import org.appspot.apprtc.CallActivity;
 import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
+import org.appspot.apprtc.User;
 import org.appspot.apprtc.service.WebsocketService;
 
 public class CallReceiver extends BroadcastReceiver {
@@ -26,14 +27,7 @@ public class CallReceiver extends BroadcastReceiver {
             SerializableSessionDescription candidate = (SerializableSessionDescription)intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
             activityIntent.putExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION, candidate);
             activityIntent.setAction(WebsocketService.ACTION_REMOTE_DESCRIPTION);
-<<<<<<< HEAD
-            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(activityIntent);
-        }
-        else if (intent.getAction().equals(WebsocketService.ACTION_BYE)) {
-            Intent activityIntent = new Intent(intent);
-            activityIntent.setClass(context, CallActivity.class);
-=======
+
             if (intent.hasExtra(WebsocketService.EXTRA_USER)) {
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 activityIntent.putExtra(WebsocketService.EXTRA_USER, user);
@@ -77,7 +71,6 @@ public class CallReceiver extends BroadcastReceiver {
             String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
             activityIntent.putExtra(WebsocketService.EXTRA_CONFERENCE_ID, conferenceId);
 
->>>>>>> 5fa66c4... updated UI
             activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(activityIntent);
         }

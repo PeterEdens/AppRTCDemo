@@ -23,9 +23,11 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
 
 /**
@@ -50,6 +52,10 @@ public class InitiateCallFragment extends Fragment {
             connectButton.setVisibility(View.VISIBLE);
         }
         disconnectButton.setVisibility(View.VISIBLE);
+    }
+
+    public void showPickupTimeout(User user) {
+        Toast.makeText(mContext, user.displayName + " does not pickup", Toast.LENGTH_LONG).show();
     }
 
     public interface OnInitiateCallEvents {
@@ -103,12 +109,6 @@ public class InitiateCallFragment extends Fragment {
         boolean captureSliderEnabled = false;
         Bundle args = getArguments();
         if (args != null) {
-<<<<<<< HEAD
-            if (args.containsKey(CallActivity.EXTRA_USER)) {
-                User user = (User) args.getSerializable(CallActivity.EXTRA_USER);
-                contactView.setText(user.displayName);
-                incomingCall = false;
-=======
             if (args.containsKey(WebsocketService.EXTRA_USER)) {
                 User user = (User) args.getSerializable(WebsocketService.EXTRA_USER);
                 String server = args.getString(WebsocketService.EXTRA_ADDRESS);
@@ -134,7 +134,6 @@ public class InitiateCallFragment extends Fragment {
                 else {
                     contactImageView.setImageResource(R.drawable.user_icon);
                 }
->>>>>>> 5fa66c4... updated UI
                 enableCallButtons();
             }
         }
@@ -158,6 +157,14 @@ public class InitiateCallFragment extends Fragment {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (mSoundPlayer != null) {
+            mSoundPlayer.Stop();
+        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         if (mSoundPlayer != null) {
@@ -171,5 +178,13 @@ public class InitiateCallFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         callEvents = (OnInitiateCallEvents) activity;
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mSoundPlayer != null) {
+            mSoundPlayer.Stop();
+        }
+        super.onDestroy();
     }
 }

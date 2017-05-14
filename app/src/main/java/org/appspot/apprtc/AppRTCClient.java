@@ -71,6 +71,8 @@ public interface AppRTCClient {
    */
   void disconnectFromRoom();
 
+  void sendLeave();
+
   void sendBye(String to);
 
   void sendPostMessage(String username, String password, final String url);
@@ -80,6 +82,8 @@ public interface AppRTCClient {
   void sendAuthentication(String userid, String nonce);
 
   void sendStatus(String displayName, String buddyPicture, String message);
+
+  void sendChatMessage(String message, String to);
 
   /**
    * Struct holding the signaling parameters of an AppRTC room.
@@ -121,7 +125,7 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote SDP is received.
      */
-    void onRemoteDescription(final SerializableSessionDescription sdp);
+    void onRemoteDescription(final SerializableSessionDescription sdp, String fromId, String roomName);
 
     /**
      * Callback fired once remote Ice candidate is received.
@@ -152,7 +156,7 @@ public interface AppRTCClient {
 
     void onUserLeftRoom(User user, String room);
 
-    void onBye(final String reason);
+    void onBye(final String reason, String fromId, String roomName);
 
     void sendBye(String mPeerId);
 

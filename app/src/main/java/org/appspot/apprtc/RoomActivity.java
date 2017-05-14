@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +36,7 @@ import org.appspot.apprtc.fragment.ChatFragment;
 import org.appspot.apprtc.fragment.FilesFragment;
 import org.appspot.apprtc.fragment.RoomFragment;
 import org.appspot.apprtc.service.WebsocketService;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.w3c.dom.Text;
 
 import java.io.ByteArrayOutputStream;
@@ -50,9 +52,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RoomActivity extends AppCompatActivity {
+public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatEvents {
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
     public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
+    public static final String ACTION_NEW_CHAT = "org.appspot.apprtc.ACTION_NEW_CHAT";
+    public static final String EXTRA_USER = "org.appspot.apprtc.EXTRA_USER";
+
+    static final int CHAT_INDEX = 1;
 
     static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
 
@@ -126,12 +132,14 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
                 String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
-
+                
                 if (user != null && message.length() == 0) {
                     // status message
                     message = user.displayName + status;
                 }
-                ShowMessage(message, time, status);
+                else if (user != null) {
+                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, user.Id);
+                }
             }
         }
     };
@@ -174,8 +182,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
-    private void ShowMessage(String message, String time, String status) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id) {
+        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id));
     }
 
     private void AddUser(User userEntered) {
@@ -199,6 +207,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
+
+        ThumbnailsCacheManager.ThumbnailsCacheManagerInit(getApplicationContext());
+
 
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
@@ -411,6 +422,23 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 name = TokenPeerConnection.getContentName(path, this);
             }
 
+        String action = intent.getAction();
+
+        if (action != null && action.equals(ACTION_NEW_CHAT)) {
+            viewPager.setCurrentItem(CHAT_INDEX);
+            User user = (User) intent.getSerializableExtra(EXTRA_USER);
+            mChatFragment.setUser(user);
+        }
+
+        if (intent.hasExtra(EXTRA_ROOM_NAME)) {
+            mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
+        }
+
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        handleIntent(intent);
     }
 
     @Override
@@ -434,7 +462,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
         unregisterReceiver(mReceiver);
     }
-
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
@@ -472,7 +499,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         mChatFragment = new ChatFragment();
         mChatFragment.setArguments(getIntent().getExtras());
         adapter.addFrag(mChatFragment, getString(R.string.recent));
-
         adapter.addFrag(new FilesFragment(), getString(R.string.files));
         viewPager.setAdapter(adapter);
     }

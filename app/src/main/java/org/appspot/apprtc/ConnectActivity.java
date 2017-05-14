@@ -59,15 +59,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.net.ssl.HttpsURLConnection;
+
+
 /**
  * Handles the initial setup where the user selects which room to join.
  */
-public class ConnectActivity extends AppCompatActivity {
+public class ConnectActivity extends DrawerActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
   public static final String EXTRA_SERVERURL = "org.appspot.apprtc.EXTRA_SERVERURL";
   public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
+  public static final String EXTRA_AVATAR = "org.appspot.apprtc.EXTRA_AVATAR";
   private static boolean commandLineRun = false;
 
   WebsocketService mService;
@@ -85,31 +89,6 @@ public class ConnectActivity extends AppCompatActivity {
   TextView mConnectionTextView;
   private ListView roomListView;
   private SharedPreferences sharedPref;
-  private String keyprefVideoCallEnabled;
-  private String keyprefScreencapture;
-  private String keyprefCamera2;
-  private String keyprefResolution;
-  private String keyprefFps;
-  private String keyprefCaptureQualitySlider;
-  private String keyprefVideoBitrateType;
-  private String keyprefVideoBitrateValue;
-  private String keyprefVideoCodec;
-  private String keyprefAudioBitrateType;
-  private String keyprefAudioBitrateValue;
-  private String keyprefAudioCodec;
-  private String keyprefHwCodecAcceleration;
-  private String keyprefCaptureToTexture;
-  private String keyprefFlexfec;
-  private String keyprefNoAudioProcessingPipeline;
-  private String keyprefAecDump;
-  private String keyprefOpenSLES;
-  private String keyprefDisableBuiltInAec;
-  private String keyprefDisableBuiltInAgc;
-  private String keyprefDisableBuiltInNs;
-  private String keyprefEnableLevelControl;
-  private String keyprefDisplayHud;
-  private String keyprefTracing;
-  private String keyprefRoomServerUrl;
   private String keyprefRoom;
   private String keyprefRoomList;
   private ArrayList<String> roomList;
@@ -136,6 +115,10 @@ public class ConnectActivity extends AppCompatActivity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+
+      if (mService.getIsConnected() && !mServerName.equals(mService.getServerAddress())) {
+          mService.disconnectFromServer();
+      }
 
       if (!mService.getIsConnected()) {
         mService.connectToServer(mServerName);
@@ -294,42 +277,11 @@ public class ConnectActivity extends AppCompatActivity {
 
 
     // Get setting keys.
-    PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+    PreferenceManager.setDefaultValues(this, R.xml.webrtc_preferences, false);
     sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-    keyprefVideoCallEnabled = getString(R.string.pref_videocall_key);
-    keyprefScreencapture = getString(R.string.pref_screencapture_key);
-    keyprefCamera2 = getString(R.string.pref_camera2_key);
-    keyprefResolution = getString(R.string.pref_resolution_key);
-    keyprefFps = getString(R.string.pref_fps_key);
-    keyprefCaptureQualitySlider = getString(R.string.pref_capturequalityslider_key);
-    keyprefVideoBitrateType = getString(R.string.pref_maxvideobitrate_key);
-    keyprefVideoBitrateValue = getString(R.string.pref_maxvideobitratevalue_key);
-    keyprefVideoCodec = getString(R.string.pref_videocodec_key);
-    keyprefHwCodecAcceleration = getString(R.string.pref_hwcodec_key);
-    keyprefCaptureToTexture = getString(R.string.pref_capturetotexture_key);
-    keyprefFlexfec = getString(R.string.pref_flexfec_key);
-    keyprefAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
-    keyprefAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
-    keyprefAudioCodec = getString(R.string.pref_audiocodec_key);
-    keyprefNoAudioProcessingPipeline = getString(R.string.pref_noaudioprocessing_key);
-    keyprefAecDump = getString(R.string.pref_aecdump_key);
-    keyprefOpenSLES = getString(R.string.pref_opensles_key);
-    keyprefDisableBuiltInAec = getString(R.string.pref_disable_built_in_aec_key);
-    keyprefDisableBuiltInAgc = getString(R.string.pref_disable_built_in_agc_key);
-    keyprefDisableBuiltInNs = getString(R.string.pref_disable_built_in_ns_key);
-    keyprefEnableLevelControl = getString(R.string.pref_enable_level_control_key);
-    keyprefDisplayHud = getString(R.string.pref_displayhud_key);
-    keyprefTracing = getString(R.string.pref_tracing_key);
-    keyprefRoomServerUrl = getString(R.string.pref_room_server_url_key);
+
     keyprefRoom = getString(R.string.pref_room_key);
     keyprefRoomList = getString(R.string.pref_room_list_key);
-    keyprefEnableDataChannel = getString(R.string.pref_enable_datachannel_key);
-    keyprefOrdered = getString(R.string.pref_ordered_key);
-    keyprefMaxRetransmitTimeMs = getString(R.string.pref_max_retransmit_time_ms_key);
-    keyprefMaxRetransmits = getString(R.string.pref_max_retransmits_key);
-    keyprefDataProtocol = getString(R.string.pref_data_protocol_key);
-    keyprefNegotiated = getString(R.string.pref_negotiated_key);
-    keyprefDataId = getString(R.string.pref_data_id_key);
 
     setContentView(R.layout.activity_connect);
     toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -341,8 +293,6 @@ public class ConnectActivity extends AppCompatActivity {
       setupDrawer();
       getSupportActionBar().setTitle(R.string.spreed_talk);
     }
-
-
 
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
@@ -386,12 +336,13 @@ public class ConnectActivity extends AppCompatActivity {
       serverNameEditText.setText(mServerName);
     }
 
+    if (intent.hasExtra(EXTRA_AVATAR)) {
+      mAvatar = intent.getStringExtra(EXTRA_AVATAR);
+    }
+
     if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
       mDisplayName = intent.getStringExtra(EXTRA_DISPLAYNAME);
     }
-
-
-
 
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
       boolean loopback = intent.getBooleanExtra(CallActivity.EXTRA_LOOPBACK, false);
@@ -462,16 +413,20 @@ public class ConnectActivity extends AppCompatActivity {
   }
 
   @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    // Handle presses on the action bar items.
-    if (item.getItemId() == R.id.action_settings) {
-      Intent intent = new Intent(this, SettingsActivity.class);
-      startActivity(intent);
+  public boolean onOptionsItemSelected(final MenuItem item) {
+    if (item.getItemId() == android.R.id.home) {
+
+      if (isDrawerOpen()) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+
       return true;
-    } else {
-      return super.onOptionsItemSelected(item);
     }
+    return super.onOptionsItemSelected(item);
   }
+
 
   @Override
   public void onPause() {
@@ -499,7 +454,8 @@ public class ConnectActivity extends AppCompatActivity {
         Log.e(TAG, "Failed to load room list: " + e.toString());
       }
     }
-    adapter = new RoomAdapter(this, android.R.layout.simple_list_item_1, roomList);
+    adapter = new RoomAdapter(this, R.id.text_id, R.layout.rooms_list, roomList);
+    adapter.setCurrentRoom(mCurrentRoom);
     roomListView.setAdapter(adapter);
     if (adapter.getCount() > 0) {
       roomListView.requestFocus();
@@ -840,6 +796,9 @@ public class ConnectActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = roomList.get(i);
+          mCurrentRoom = roomId;
+          adapter.setCurrentRoom(roomId);
+          adapter.notifyDataSetChanged();
           connectToRoom(roomId, false, false, false, 0);
         }
       };
@@ -870,6 +829,9 @@ public class ConnectActivity extends AppCompatActivity {
         mAddRoom.setImageResource(R.drawable.ic_input_white_24dp);
       }
       else {
+        mCurrentRoom = mAddRoomEditText.getText().toString();
+        adapter.setCurrentRoom(mCurrentRoom);
+        adapter.notifyDataSetChanged();
         mService.connectToRoom(mAddRoomEditText.getText().toString());
         mAddRoomEditText.setVisibility(View.GONE);
         mAddRoom.setImageResource(R.drawable.ic_add_white_24dp);

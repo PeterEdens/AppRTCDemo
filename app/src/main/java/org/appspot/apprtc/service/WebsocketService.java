@@ -106,6 +106,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         return mIceServers;
     }
 
+    public String getServerAddress() {
+        return mServer;
+    }
+
     public void connectToRoom(String roomName) {
         if (appRtcClient != null) {
             appRtcClient.connectToRoom(roomName);
@@ -143,8 +147,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     public void connectToServer(String address) {
+        mServer = address;
         if (appRtcClient != null) {
             appRtcClient.connectToServer(address);
+        }
+    }
+
+    public void sendChatMessage(String message, String to) {
+        if (appRtcClient != null) {
+            appRtcClient.sendChatMessage(message, to);
         }
     }
 
@@ -193,21 +204,24 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         if (!found) {
             users.add(user);
             mUsers.put(room, users);
-        }
 
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_USER_ENTERED);
-        broadcastIntent.putExtra(EXTRA_USER, user);
-        broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
-        sendBroadcast(broadcastIntent);
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_USER_ENTERED);
+            broadcastIntent.putExtra(EXTRA_USER, user);
+            broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
+            sendBroadcast(broadcastIntent);
+        }
     }
 
     @Override
     public void onUserLeftRoom(User user, String room) {
         ArrayList<User> users = mUsers.get(room);
-        if (users.contains(user)) {
-            users.remove(user);
-            mUsers.put(room, users);
+        for (User u : users) {
+            if (u.Id.equals(user.Id)) {
+                users.remove(u);
+                mUsers.put(room, users);
+                break;
+            }
         }
 
         Intent broadcastIntent = new Intent();
@@ -218,10 +232,16 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onBye(final String reason) {
+    public void onBye(final String reason, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_BYE);
         broadcastIntent.putExtra(EXTRA_REASON, reason);
+        ArrayList<User> users = mUsers.get(roomName);
+        for (User user : users) {
+            if (user.Id.equals(fromId)) {
+                broadcastIntent.putExtra(EXTRA_USER, user);
+            }
+        }
         sendBroadcast(broadcastIntent);
     }
 
@@ -254,7 +274,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             JSONObject json = new JSONObject(response);
             String username = json.getString("TurnUsername");
             String password = json.getString("TurnPassword");
-            JSONArray stunUris = json.getJSONArray("TurnURIs");
+            JSONArray stunUris = json.getJSONArray("StunURIs");
             for (int count = 0; count < stunUris.length(); count++) {
                 String stunUri = stunUris.getString(count);
                 PeerConnection.IceServer iceServer = new PeerConnection.IceServer(stunUri, "", "");
@@ -290,7 +310,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp) {
+    public void onRemoteDescription(SerializableSessionDescription sdp, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);

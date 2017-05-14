@@ -39,6 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="top">
 
+
             <ImageView
                 android:id="@+id/drawer_current_account"
                 android:layout_width="@dimen/nav_drawer_header_avatar"

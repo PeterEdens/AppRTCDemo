@@ -6,28 +6,34 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
 public class RoomAdapter extends ArrayAdapter<String> {
     Context mContext;
+    String mCurrentRoom = "";
 
-    public RoomAdapter(Context context, int layout_id, ArrayList<String> items){
-        super(context, layout_id, items);
+    public RoomAdapter(Context context, int textViewId, int layout_id, ArrayList<String> items){
+        super(context, textViewId, layout_id, items);
         mContext = context;
+    }
+
+    public void setCurrentRoom(String roomName) {
+        mCurrentRoom = roomName;
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent){
-        convertView = super.getView(position, convertView, parent);
+        if (convertView == null) {
+            LayoutInflater inflater = (LayoutInflater) this.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            convertView = inflater.inflate(R.layout.rooms_list,parent,false);
+        }
         // Get the data item for this position
-        String name = getItem(position);
+        String name = (String)getItem(position);
 
         // Lookup view for data population
-<<<<<<< HEAD
-        TextView text1 = (TextView) convertView.findViewById(android.R.id.text1);
-=======
         TextView text1 = (TextView) convertView.findViewById(R.id.text_id);
         ImageView joinedStatus = (ImageView) convertView.findViewById(R.id.joined_status);
         TextView messageStatus = (TextView) convertView.findViewById(R.id.message_status);
@@ -49,7 +55,7 @@ public class RoomAdapter extends ArrayAdapter<String> {
             joinedStatus.setVisibility(View.GONE);
             text1.setTypeface(null, Typeface.NORMAL);
         }
->>>>>>> 5fa66c4... updated UI
+
         // Populate the data into the template view using the data object
         if (name.length() == 0) {
             name = mContext.getString(R.string.default_room);

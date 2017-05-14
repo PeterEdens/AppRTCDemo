@@ -17,6 +17,7 @@ import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Base64;
@@ -29,7 +30,9 @@ import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -70,7 +73,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   private String leaveUrl;
 
   // Spreedbox
-  String mId;
+  String mId = "";
   String mSid;
   String mIdFrom;
 
@@ -124,6 +127,17 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
+  @Override
+  public void sendLeave() {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        LeaveRoomInternal();
+        handler.getLooper().quit();
+      }
+    });
+  }
+
     @Override
     public void sendBye(final String to) {
         handler.post(new Runnable() {
@@ -138,7 +152,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 JSONObject jsonBye = new JSONObject();
                 jsonPut(jsonBye, "To", to);
                 jsonPut(jsonBye, "Type", "Bye");
-                jsonPut(jsonBye, "Offer", json);
+                jsonPut(jsonBye, "Bye", json);
 
                 jsonPut(jsonByeWrap, "Bye", jsonBye);
                 jsonPut(jsonBye, "Type", "Bye");
@@ -165,6 +179,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               @Override
               public void onHttpComplete(String response) {
                 events.onPostResponse(response);
+              }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
               }
             });
 
@@ -195,6 +214,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               public void onHttpComplete(String response) {
                 events.onConfigResponse(response);
               }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
+              }
             });
 
     httpConnection.setContentType("application/x-www-form-urlencoded");
@@ -223,6 +247,23 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
 
 
+      }
+    });
+  }
+
+  // Connects to room - function runs on a local looper thread.
+  private void LeaveRoomInternal() {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject json = new JSONObject();
+
+        JSONObject jsonLeave = new JSONObject();
+        jsonPut(jsonLeave, "Leave", json);
+        jsonPut(jsonLeave, "Type", "Leave");
+
+        wsClient.send(jsonLeave.toString());
       }
     });
   }
@@ -406,8 +447,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
         JSONObject json = new JSONObject();
         jsonPut(json, "type", "candidate");
-        jsonPut(json, "label", candidate.sdpMLineIndex);
-        jsonPut(json, "id", candidate.sdpMid);
+        jsonPut(json, "sdpMLineIndex", candidate.sdpMLineIndex);
+        jsonPut(json, "sdpMid", candidate.sdpMid);
         jsonPut(json, "candidate", candidate.sdp);
 
         JSONObject jsonCandidate = new JSONObject();
@@ -421,6 +462,42 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
         // Call  sends ice candidates to websocket server.
         wsClient.send(jsonCandidateWrap.toString());
+
+      }
+    });
+  }
+
+  // Send Ice candidate to the other participant.
+  @Override
+  public void sendChatMessage(final String message, final String to) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        SecureRandom random = new SecureRandom();
+        byte mid[] = new byte[20];
+        random.nextBytes(mid);
+
+        JSONObject jsonChatWrap = new JSONObject();
+        jsonPut(jsonChatWrap, "Type", "Chat");
+
+        JSONObject json = new JSONObject();
+
+        jsonPut(json, "Message", message);
+        jsonPut(json, "NoEcho", true);
+
+        JSONObject jsonChat = new JSONObject();
+        if (to.length() != 0) {
+          jsonPut(jsonChat, "To", to);
+        }
+        jsonPut(jsonChat, "Type", "Chat");
+        jsonPut(jsonChat, "Chat", json);
+
+        jsonPut(jsonChatWrap, "Chat", jsonChat);
+
+
+        // Call  sends ice candidates to websocket server.
+        wsClient.send(jsonChatWrap.toString());
 
       }
     });
@@ -457,8 +534,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     });
   }
 
-<<<<<<< HEAD
-=======
   @Override
   public void sendSelf() {
     handler.post(new Runnable() {
@@ -517,7 +592,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
     }
   }
->>>>>>> 5fa66c4... updated UI
+  
   // --------------------------------------------------------------------
   // WebSocketChannelEvents interface implementation.
   // All events are called by WebSocketChannelClient on a local looper thread
@@ -538,11 +613,29 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           String typeText = json.getString("Type");
           if (typeText.equals("Self")) {
             String id = json.getString("Id");
+            String oldId = mId;
             mId = id;
             String sid = json.getString("Sid");
             mSid = sid;
+            JSONObject hello;
 
-            JSONObject hello = new JSONObject("{ Type: \"Hello\", Hello: {\"Version\": \"1.0.0\", \"Ua\": \"Spreedbox Android 1.0\", \"Name\": \"\", \"Type\": \"\" } }");
+            if (oldId.length() != 0) {
+              hello = new JSONObject();
+              jsonPut(json, "Name", "");
+              jsonPut(json, "Version", "1.0.0");
+              jsonPut(json, "Ua", "Spreedbox Android 1.0");
+              jsonPut(json, "Type", "");
+              jsonPut(json, "Iid", mId);
+
+              JSONObject jsonRoom = new JSONObject();
+              jsonPut(jsonRoom, "Hello", json);
+              jsonPut(jsonRoom, "Type", "Hello");
+
+            }
+            else {
+              hello = new JSONObject("{ Type: \"Hello\", Hello: {\"Version\": \"1.0.0\", \"Ua\": \"Spreedbox Android 1.0\", \"Name\": \"\", \"Type\": \"\" } }");
+            }
+
             wsClient.send(hello.toString());
             wsClient.setState(WebSocketConnectionState.REGISTERED);
           }
@@ -600,10 +693,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               }
 
           }
-<<<<<<< HEAD
-          }
-
-=======
         }
         else if (type.equals("Self")) {
           handleSelf(json);
@@ -634,7 +723,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                   events.onUserEnteredRoom(user, mRoomName);
                 }
               }
->>>>>>> 5fa66c4... updated UI
 
         }
         else if (type.equals("Joined")) {
@@ -646,15 +734,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             String Id = usersJson.optString("Id");
             String userId = usersJson.optString("Userid");
             String status = usersJson.optString("Status");
-<<<<<<< HEAD
-            JSONObject statusJson = new JSONObject(status);
-            String buddyPicture = statusJson.optString("buddyPicture");
-            String displayName = statusJson.optString("displayName");
-
-            if (!mId.equals(Id)) {
-              User user = new User(userId, buddyPicture, displayName, Id);
-              events.onUserEnteredRoom(user, mRoomName);
-=======
             String buddyPicture = "";
             String displayName = "";
 
@@ -702,7 +781,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 }
                 events.onUserEnteredRoom(user, mRoomName);
               }
->>>>>>> 5fa66c4... updated UI
             }
           }
         }
@@ -736,7 +814,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           JSONObject answerJson = new JSONObject(answerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
                     SerializableSessionDescription.Type.fromCanonicalForm(type), answerJson.getString("sdp"), mIdFrom);
-            events.onRemoteDescription(sdp);
+            events.onRemoteDescription(sdp, mIdFrom, mRoomName);
 
         } else if (type.equals("Offer")) {
           if (!initiator) {
@@ -744,14 +822,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             JSONObject offerJson = new JSONObject(offerTxt);
             SerializableSessionDescription sdp = new SerializableSessionDescription(
                     SerializableSessionDescription.Type.fromCanonicalForm(type), offerJson.getString("sdp"), mIdFrom);
-            events.onRemoteDescription(sdp);
+            events.onRemoteDescription(sdp, mIdFrom, mRoomName);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
         } else if (type.equals("Bye")) {
           String byeTxt = json.optString("Bye");
           JSONObject byeJson = new JSONObject(byeTxt);
-          events.onBye(byeJson.optString("Reason"));
+          events.onBye(byeJson.optString("Reason"), mIdFrom, mRoomName);
         } else if (type.equals("Chat")) {
           String chatTxt = json.optString("Chat");
           JSONObject chatJson = new JSONObject(chatTxt);
@@ -842,6 +920,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               }
             }
           }
+
+          @Override
+          public void onHttpComplete(Bitmap response) {
+
+          }
         });
     httpConnection.send();
   }
@@ -884,6 +967,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               public void onHttpComplete(String response) {
                 events.onPatchResponse(response);
               }
+
+              @Override
+              public void onHttpComplete(Bitmap response) {
+
+              }
             });
     httpConnection.setContentType("application/json");
     httpConnection.send();
@@ -892,8 +980,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // Converts a Java candidate to a JSONObject.
   private JSONObject toJsonCandidate(final SerializableIceCandidate candidate) {
     JSONObject json = new JSONObject();
-    jsonPut(json, "label", candidate.sdpMLineIndex);
-    jsonPut(json, "id", candidate.sdpMid);
+    jsonPut(json, "sdpMLineIndex", candidate.sdpMLineIndex);
+    jsonPut(json, "sdpMid", candidate.sdpMid);
     jsonPut(json, "candidate", candidate.sdp);
     return json;
   }

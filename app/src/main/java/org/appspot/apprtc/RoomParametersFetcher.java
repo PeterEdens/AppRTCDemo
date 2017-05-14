@@ -14,6 +14,7 @@ import org.appspot.apprtc.AppRTCClient.SignalingParameters;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -78,6 +79,11 @@ public class RoomParametersFetcher {
           @Override
           public void onHttpComplete(String response) {
             roomHttpResponseParse(response);
+          }
+
+          @Override
+          public void onHttpComplete(Bitmap response) {
+
           }
         });
     httpConnection.send();

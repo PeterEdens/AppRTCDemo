@@ -51,4 +51,5 @@
         android:layout_margin="5dp"
         android:layout_centerVertical="true"
         android:src="@drawable/right_arrow"/>
+
 </RelativeLayout>

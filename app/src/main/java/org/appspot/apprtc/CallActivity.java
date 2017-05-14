@@ -10,14 +10,17 @@
 
 package org.appspot.apprtc;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -25,6 +28,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -44,13 +49,12 @@ import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
-<<<<<<< HEAD
-=======
+
 import org.appspot.apprtc.util.SessionIdentifierGenerator;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.json.JSONException;
 import org.json.JSONObject;
->>>>>>> 5fa66c4... updated UI
+
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -134,7 +138,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   // List of mandatory application permissions.
   private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
-      "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
+      "android.permission.RECORD_AUDIO", "android.permission.INTERNET", "android.permission.CAMERA"};
 
   // Peer connection statistics callback period in ms.
   private static final int STAT_CALLBACK_PERIOD = 1000;
@@ -153,15 +157,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
+  private static final int PERMISSIONS_REQUEST = 1;
   private PeerConnectionClient peerConnectionClient = null;
 
   //private AppRTCClient appRtcClient;
   private String mPeerId = "";
-<<<<<<< HEAD
-=======
   private String mPeerName = "";
   private String mOwnId = "";
->>>>>>> 5fa66c4... updated UI
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
   private SerializableSessionDescription mRemoteSdp = null;
@@ -172,8 +174,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private EglBase rootEglBase;
   private SurfaceViewRenderer localRender;
   private SurfaceViewRenderer remoteRenderScreen;
-<<<<<<< HEAD
-=======
   private SurfaceViewRenderer remoteRenderScreen2;
   private SurfaceViewRenderer remoteRenderScreen3;
   private SurfaceViewRenderer remoteRenderScreen4;
@@ -187,7 +187,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private ImageView remoteUserImage4;
   private ArrayList<RemoteConnectionViews> remoteViewsList = new ArrayList<RemoteConnectionViews>();
   private ArrayList<RemoteConnectionViews> remoteViewsInUseList = new ArrayList<RemoteConnectionViews>();
->>>>>>> 5fa66c4... updated UI
   private VideoFileRenderer videoFileRenderer;
   private final List<VideoRenderer.Callbacks> remoteRenderers =
       new ArrayList<VideoRenderer.Callbacks>();
@@ -209,6 +208,40 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean screencaptureEnabled = false;
   private static Intent mediaProjectionPermissionResultData;
   private static int mediaProjectionPermissionResultCode;
+  private boolean disconnected = false;
+
+  private String keyprefVideoCallEnabled;
+  private String keyprefScreencapture;
+  private String keyprefCamera2;
+  private String keyprefResolution;
+  private String keyprefFps;
+  private String keyprefCaptureQualitySlider;
+  private String keyprefVideoBitrateType;
+  private String keyprefVideoBitrateValue;
+  private String keyprefVideoCodec;
+  private String keyprefAudioBitrateType;
+  private String keyprefAudioBitrateValue;
+  private String keyprefAudioCodec;
+  private String keyprefHwCodecAcceleration;
+  private String keyprefCaptureToTexture;
+  private String keyprefFlexfec;
+  private String keyprefNoAudioProcessingPipeline;
+  private String keyprefAecDump;
+  private String keyprefOpenSLES;
+  private String keyprefDisableBuiltInAec;
+  private String keyprefDisableBuiltInAgc;
+  private String keyprefDisableBuiltInNs;
+  private String keyprefEnableLevelControl;
+  private String keyprefDisplayHud;
+  private String keyprefTracing;
+  private String keyprefRoomServerUrl;
+  private String keyprefEnableDataChannel;
+  private String keyprefOrdered;
+  private String keyprefMaxRetransmitTimeMs;
+  private String keyprefMaxRetransmits;
+  private String keyprefDataProtocol;
+  private String keyprefNegotiated;
+  private String keyprefDataId;
 
   // Controls
   private InitiateCallFragment initiateCallFragment;
@@ -216,8 +249,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private HudFragment hudFragment;
   private CpuMonitor cpuMonitor;
 
-<<<<<<< HEAD
-=======
   private SharedPreferences sharedPref;
 
   private IntentFilter mIntentFilter;
@@ -253,7 +284,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       return textView;
     }
   }
->>>>>>> 5fa66c4... updated UI
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -276,9 +306,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean mWaitingToStartCall;
   private boolean mCaptureToTexture;
   private SoundPlayer mSoundPlayer;
-<<<<<<< HEAD
 
-=======
   private boolean mVideoCallEnabled;
   private boolean mUseCamera2;
   private String mProtocol;
@@ -310,6 +338,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private int mMaxRetrMs = -1;
   private SerializableIceCandidate mRemoteIceCandidate;
   private boolean mFinishCalled;
+  
   private HashMap<String, AdditionalPeerConnection> mAdditionalPeers = new HashMap<String, AdditionalPeerConnection>();
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
@@ -372,7 +401,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean mForceTurn;
   private ArrayList<User> mQueuedPeers = new ArrayList<User>();
   private String mServer;
->>>>>>> 5fa66c4... updated UI
+
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -388,9 +417,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
         | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     setContentView(R.layout.activity_call);
-
-<<<<<<< HEAD
-=======
 
     mIntentFilter = new IntentFilter();
     mIntentFilter.addAction(WebsocketService.ACTION_BYE);
@@ -436,7 +462,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     readPrefs();
 
->>>>>>> 5fa66c4... updated UI
     iceConnected = false;
     signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
     scalingType = ScalingType.SCALE_ASPECT_FILL;
@@ -444,8 +469,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Create UI controls.
     localRender = (SurfaceViewRenderer) findViewById(R.id.local_video_view);
     remoteRenderScreen = (SurfaceViewRenderer) findViewById(R.id.remote_video_view);
-<<<<<<< HEAD
-=======
+
     remoteRenderScreen2 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view2);
     remoteRenderScreen3 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view3);
     remoteRenderScreen4 = (SurfaceViewRenderer) findViewById(R.id.remote_video_view4);
@@ -457,7 +481,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     remoteUserImage2 = (ImageView) findViewById(R.id.remote_user_image2);
     remoteUserImage3 = (ImageView) findViewById(R.id.remote_user_image3);
     remoteUserImage4 = (ImageView) findViewById(R.id.remote_user_image4);
->>>>>>> 5fa66c4... updated UI
+
     localRenderLayout = (PercentFrameLayout) findViewById(R.id.local_video_layout);
     remoteRenderLayout = (PercentFrameLayout) findViewById(R.id.remote_video_layout);
     initiateCallFragment = new InitiateCallFragment();
@@ -511,72 +535,43 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Check for mandatory permissions.
     for (String permission : MANDATORY_PERMISSIONS) {
       if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-        logAndToast("Permission " + permission + " is not granted");
-        setResult(RESULT_CANCELED);
-        finish();
-        return;
+        requestPermission(permission);
       }
     }
 
-   /* Uri roomUri = intent.getData();
-    if (roomUri == null) {
-      logAndToast(getString(R.string.missing_url));
-      Log.e(TAG, "Didn't get any URL in intent!");
-      setResult(RESULT_CANCELED);
-      finish();
-      return;
-    }
 
-    // Get Intent parameters.
-    String roomId = intent.getStringExtra(EXTRA_ROOMID);
-    Log.d(TAG, "Room ID: " + roomId);
-    if (roomId == null || roomId.length() == 0) {
-      logAndToast(getString(R.string.missing_url));
-      Log.e(TAG, "Incorrect room ID in intent!");
-      setResult(RESULT_CANCELED);
-      finish();
-      return;
-    }*/
-
-    boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
-    boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, true);
-
-    int videoWidth = intent.getIntExtra(EXTRA_VIDEO_WIDTH, 0);
-    int videoHeight = intent.getIntExtra(EXTRA_VIDEO_HEIGHT, 0);
-
-    screencaptureEnabled = intent.getBooleanExtra(EXTRA_SCREENCAPTURE, false);
     // If capturing format is not specified for screencapture, use screen resolution.
-    if (screencaptureEnabled && videoWidth == 0 && videoHeight == 0) {
+    if (screencaptureEnabled && mVideoWidth == 0 && mVideoHeight == 0) {
       DisplayMetrics displayMetrics = new DisplayMetrics();
       WindowManager windowManager =
           (WindowManager) getApplication().getSystemService(Context.WINDOW_SERVICE);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
         windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
       }
-      videoWidth = displayMetrics.widthPixels;
-      videoHeight = displayMetrics.heightPixels;
+      mVideoWidth = displayMetrics.widthPixels;
+      mVideoHeight = displayMetrics.heightPixels;
     }
     DataChannelParameters dataChannelParameters = null;
-    if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, false)) {
-      dataChannelParameters = new DataChannelParameters(intent.getBooleanExtra(EXTRA_ORDERED, true),
-          intent.getIntExtra(EXTRA_MAX_RETRANSMITS_MS, -1),
-          intent.getIntExtra(EXTRA_MAX_RETRANSMITS, -1), intent.getStringExtra(EXTRA_PROTOCOL),
-          intent.getBooleanExtra(EXTRA_NEGOTIATED, false), intent.getIntExtra(EXTRA_ID, -1));
+    if (mDataChannelEnabled) {
+      dataChannelParameters = new DataChannelParameters(mOrdered,
+              mMaxRetrMs,
+              mMaxRetr, mProtocol,
+              mNegotiated, mId);
     }
     peerConnectionParameters =
-        new PeerConnectionParameters(intent.getBooleanExtra(EXTRA_VIDEO_CALL, true), loopback,
-            tracing, videoWidth, videoHeight, intent.getIntExtra(EXTRA_VIDEO_FPS, 0),
-            intent.getIntExtra(EXTRA_VIDEO_BITRATE, 0), intent.getStringExtra(EXTRA_VIDEOCODEC),
-            intent.getBooleanExtra(EXTRA_HWCODEC_ENABLED, true),
-            intent.getBooleanExtra(EXTRA_FLEXFEC_ENABLED, false),
-            intent.getIntExtra(EXTRA_AUDIO_BITRATE, 0), intent.getStringExtra(EXTRA_AUDIOCODEC),
-            intent.getBooleanExtra(EXTRA_NOAUDIOPROCESSING_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_AECDUMP_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_OPENSLES_ENABLED, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AEC, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AGC, false),
-            intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_NS, false),
-            intent.getBooleanExtra(EXTRA_ENABLE_LEVEL_CONTROL, false), dataChannelParameters);
+        new PeerConnectionParameters(mVideoCallEnabled, false,
+            false, mVideoWidth, mVideoHeight, mCameraFps,
+                mVideoStartBitrate, mVideoCodec,
+            mHwCodecEnabled,
+                mFlexfecEnabled,
+                mAudioStartBitrate, mAudioCodec,
+                mNoAudioProcessing,
+                mAecDump,
+                mUseOpenSLES,
+                mDisableBuiltInAEC,
+                mDisableBuiltInAGC,
+                mDisableBuiltInNS,
+                mEnableLevelControl, dataChannelParameters);
     commandLineRun = intent.getBooleanExtra(EXTRA_CMDLINE, false);
     runTimeMs = intent.getIntExtra(EXTRA_RUNTIME, 0);
 
@@ -596,9 +591,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Create CPU monitor
     cpuMonitor = new CpuMonitor(this);
     hudFragment.setCpuMonitor(cpuMonitor);
+    Bundle extras = intent.getExtras();
 
     // Send intent arguments to fragments.
-    initiateCallFragment.setArguments(intent.getExtras());
+    initiateCallFragment.setArguments(extras);
     callFragment.setArguments(intent.getExtras());
     hudFragment.setArguments(intent.getExtras());
     // Activate call and HUD fragments and start the call.
@@ -618,7 +614,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
 
     peerConnectionClient = PeerConnectionClient.getInstance();
-    if (loopback) {
+    if (mLoopback) {
       PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
       options.networkIgnoreMask = 0;
       peerConnectionClient.setPeerConnectionFactoryOptions(options);
@@ -641,8 +637,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
   }
 
-<<<<<<< HEAD
-=======
   RemoteConnectionViews getRemoteRenderScreen(String name, String url) {
     if (remoteViewsList.size() != 0) {
       RemoteConnectionViews remoteConnectionViews = remoteViewsList.get(0);
@@ -656,7 +650,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return null;
   }
 
->>>>>>> 5fa66c4... updated UI
   @Override
   protected void onNewIntent(Intent intent) {
     handleIntent(intent);
@@ -681,20 +674,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       initiator = true;
       signalingParameters = new SignalingParameters(new ArrayList<PeerConnection.IceServer>(), initiator, "", "", "", null, null);
     }
-<<<<<<< HEAD
-    if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
-     // onIceCandidate((SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE));
-    }
-    else if (intent.getAction().equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
-      SerializableSessionDescription sdp = (SerializableSessionDescription) intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
-      mPeerId = sdp.from;
-
-      if (peerConnectionClient.isConnected()) {
-        onRemoteDescription(sdp);
-      }
-      else {
-        mRemoteSdp = sdp;
-=======
     else if (intent.getAction().equals(WebsocketService.ACTION_ADD_ALL_CONFERENCE)) {
       ArrayList<User> users = getUsers();
       ArrayList<String> userIds = new ArrayList<String>();
@@ -824,7 +803,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           mAdditionalPeers.put(sdp.from, additionalPeerConnection);
           updateVideoView();
         }
->>>>>>> 5fa66c4... updated UI
       }
     }
 
@@ -868,7 +846,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   private boolean useCamera2() {
-    return Camera2Enumerator.isSupported(this) && getIntent().getBooleanExtra(EXTRA_CAMERA2, true);
+    return Camera2Enumerator.isSupported(this) && mUseCamera2;
   }
 
   private boolean captureToTexture() {
@@ -1015,12 +993,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   private void updateVideoView() {
-<<<<<<< HEAD
-    remoteRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
-    remoteRenderScreen.setScalingType(scalingType);
-    remoteRenderScreen.setMirror(false);
 
-=======
     int remoteHeight = REMOTE_HEIGHT;
     if (remoteViewsInUseList.size() == 2) {
       remoteHeight = REMOTE_HEIGHT2;
@@ -1072,7 +1045,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       remoteConnectionViews.getSurfaceViewRenderer().setMirror(false);
     }
 
->>>>>>> 5fa66c4... updated UI
     if (iceConnected) {
       localRenderLayout.setPosition(
           LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
@@ -1085,15 +1057,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     localRender.setMirror(true);
 
     localRender.requestLayout();
-<<<<<<< HEAD
-    remoteRenderScreen.requestLayout();
-=======
+
 
     for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
       remoteConnectionViews.getSurfaceViewRenderer().requestLayout();
     }
-
->>>>>>> 5fa66c4... updated UI
   }
 
   private void startCall() {
@@ -1146,12 +1114,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   // Disconnect from remote resources, dispose of local resources, and exit.
   private void disconnect() {
-<<<<<<< HEAD
-    activityRunning = false;
-    if (mService != null) {
-      mService.sendBye(mPeerId);
-    }
-=======
+
     if (!disconnected) {
       disconnected = true; // only call disconnect once per activity
       activityRunning = false;
@@ -1204,34 +1167,38 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       } else {
         setResult(RESULT_CANCELED);
       }
->>>>>>> 5fa66c4... updated UI
 
-    if (peerConnectionClient != null) {
-      peerConnectionClient.close();
-      peerConnectionClient = null;
+      if (peerConnectionClient != null) {
+        peerConnectionClient.close();
+        peerConnectionClient = null;
+      }
+      if (localRender != null) {
+        localRender.release();
+        localRender = null;
+      }
+      if (videoFileRenderer != null) {
+        videoFileRenderer.release();
+        videoFileRenderer = null;
+      }
+      if (remoteRenderScreen != null) {
+        remoteRenderScreen.release();
+        remoteRenderScreen = null;
+      }
+      if (audioManager != null) {
+        audioManager.stop();
+        audioManager = null;
+      }
+      if (iceConnected && !isError) {
+        setResult(RESULT_OK);
+      } else {
+        setResult(RESULT_CANCELED);
+      }
+
+      if (!mFinishCalled) {
+        mFinishCalled = true;
+        finish();
+      }
     }
-    if (localRender != null) {
-      localRender.release();
-      localRender = null;
-    }
-    if (videoFileRenderer != null) {
-      videoFileRenderer.release();
-      videoFileRenderer = null;
-    }
-    if (remoteRenderScreen != null) {
-      remoteRenderScreen.release();
-      remoteRenderScreen = null;
-    }
-    if (audioManager != null) {
-      audioManager.stop();
-      audioManager = null;
-    }
-    if (iceConnected && !isError) {
-      setResult(RESULT_OK);
-    } else {
-      setResult(RESULT_CANCELED);
-    }
-    finish();
   }
 
   private void disconnectWithErrorMessage(final String errorMessage) {
@@ -1329,21 +1296,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (peerConnectionParameters.videoCallEnabled) {
       videoCapturer = createVideoCapturer();
     }
-<<<<<<< HEAD
-    peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
-        remoteRenderers, videoCapturer, signalingParameters);
 
-    if (signalingParameters.initiator) {
-     // logAndToast("Creating OFFER...");
-      // Create offer. Offer SDP will be sent to answering client in
-      // PeerConnectionEvents.onLocalDescription event.
-      peerConnectionClient.createOffer();
-    } else {
-      if (params.offerSdp != null) {
-        peerConnectionClient.setRemoteDescription(params.offerSdp);
-      //  logAndToast("Creating ANSWER...");
-        // Create answer. Answer SDP will be sent to offering client in
-=======
 
     if (peerConnectionClient != null) {
       peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
@@ -1354,7 +1307,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       if (signalingParameters.initiator) {
         // logAndToast("Creating OFFER...");
         // Create offer. Offer SDP will be sent to answering client in
->>>>>>> 5fa66c4... updated UI
         // PeerConnectionEvents.onLocalDescription event.
         peerConnectionClient.createAnswer();
       }
@@ -1385,7 +1337,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteDescription(final SerializableSessionDescription sdp) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp, String fromId, String roomName) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -1480,7 +1432,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onBye(final String reason) {
+  public void onBye(final String reason, String fromId, String roomName) {
 
     runOnUiThread(new Runnable() {
       @Override
@@ -1682,7 +1634,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   public void onRejectCall() {
     mService.sendBye(mPeerId);
-    finish();
+    if (!mFinishCalled) {
+      mFinishCalled = true;
+      finish();
+    }
   }
 
   @Override
@@ -1697,8 +1652,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   public void onStartCall() {
     mWaitingToStartCall = true;
   }
-<<<<<<< HEAD
-=======
 
 
   /**
@@ -1708,10 +1661,12 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean sharedPrefGetBoolean(
           int attributeId, String intentName, int defaultId) {
     boolean defaultValue = Boolean.valueOf(getString(defaultId));
+
   Intent intent = getIntent();
     if (intent != null && intent.hasExtra(intentName)) {
       return intent.getBooleanExtra(intentName, defaultValue);
     }
+
     String attributeName = getString(attributeId);
     return sharedPref.getBoolean(attributeName, defaultValue);
   
@@ -1816,6 +1771,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mVideoWidth == 0 && mVideoHeight == 0) {
       String resolution =
               sharedPref.getString(keyprefResolution, getString(R.string.pref_resolution_default));
+
       if (resolution.equals("Default")) {
 
         mVideoWidth = 320;
@@ -1959,5 +1915,4 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     return false;
   }
->>>>>>> 5fa66c4... updated UI
 }

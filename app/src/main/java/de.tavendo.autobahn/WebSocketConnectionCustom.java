@@ -2,21 +2,27 @@
 package de.tavendo.autobahn;
 
 import android.net.SSLCertificateSocketFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
+import org.appspot.apprtc.util.TLSSocketFactory;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.Socket;
 import java.net.URI;
+import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -376,9 +382,37 @@ public class WebSocketConnectionCustom  extends WebSocketConnection implements W
 
                 SocketFactory factory = null;
                 if(this.mWebSocketURI.getScheme().equalsIgnoreCase("wss")) {
-                    SSLTrustManager sslTrustManager = new SSLTrustManager();
+                    //SSLTrustManager sslTrustManager = new SSLTrustManager();
 
-                    factory = sslTrustManager.GetSocketFactory();
+                    //factory = sslTrustManager.GetSocketFactory();
+
+                    // Create a trust manager that does not validate certificate chains
+                    X509TrustManager[] trustAllCerts = new X509TrustManager[] {
+                            new X509TrustManager() {
+                                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                                    return new X509Certificate[0];
+                                }
+                                public void checkClientTrusted(
+                                        java.security.cert.X509Certificate[] certs, String authType) {
+                                }
+                                public void checkServerTrusted(
+                                        java.security.cert.X509Certificate[] certs, String authType) {
+                                }
+                            }
+                    };
+                    // Install the all-trusting trust manager
+                    SSLSocketFactory noSSLv3Factory = null;
+                    try {
+                        SSLContext sc = SSLContext.getInstance("TLSv1");
+                        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+                            noSSLv3Factory = new TLSSocketFactory(trustAllCerts, new java.security.SecureRandom());
+                        } else {
+                            noSSLv3Factory = sc.getSocketFactory();
+                        }
+                        factory = noSSLv3Factory;
+                    } catch (GeneralSecurityException ex) {
+                    }
 
                 } else {
                     factory = SocketFactory.getDefault();
