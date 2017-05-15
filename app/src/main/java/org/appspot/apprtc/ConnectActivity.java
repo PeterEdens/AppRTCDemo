@@ -339,7 +339,6 @@ public class ConnectActivity extends DrawerActivity {
     mAddRoom = (FloatingActionButton) findViewById(R.id.add_room_button);
     mAddRoom.setOnClickListener(addRoomListener);
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
-    mConnectionLayout = (LinearLayout) findViewById(R.id.connect_layout);
     mRoomListLayout = (RelativeLayout) findViewById(R.id.room_list_layout);
 
     mIntentFilter = new IntentFilter();

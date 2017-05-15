@@ -69,11 +69,6 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     private SessionDescription mRemoteSdp;
     private final List<VideoRenderer.Callbacks> remoteRenderers =
             new ArrayList<VideoRenderer.Callbacks>();
-    private String mConferenceId;
-
-    public CallActivity.RemoteConnectionViews getRemoteViews() {
-        return mRemoteConnectionViews;
-    }
 
     private String mConferenceId;
 

@@ -684,7 +684,6 @@ public abstract class DrawerActivity extends AppCompatActivity {
         }
     }
 
->>>>>>> HEAD@{16}
     /**
      * Toggle between standard menu and account list including saving the state.
      */

@@ -923,6 +923,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                   events.onUserEnteredRoom(user, mRoomName);
                 }
               }
+            }
+          }
         }
         else if (type.equals("Joined")) {
           //{"Type":"Joined","Id":"bktktUup1ReVkLdrrN7cw4iev1ewPKbD4XTZNh5MEFN8PT1nRER5UTFQZ3RtR3FSLUpxZHVFSTU4dXJDbFlsbzBfZGU2ajhBSmdwR2k4d0lRSGQ2SE11QUkxY0c3MmhjZHp2SGJlRWYxfDQ1MDAyNzc4NDE=","Userid":"admin","Ua":"Chrome 56","Prio":100,"Status":{"buddyPicture":"img:NfDqvZdFAyD9EhgwL6vq\/sZjrk6Kw3NIU\/picture.png","displayName":"admin","message":null}}

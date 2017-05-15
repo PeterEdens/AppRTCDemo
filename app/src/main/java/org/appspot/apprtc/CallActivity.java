@@ -833,16 +833,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return "";
   }
 
-  String getUrl(String buddyPic) {
-
-    if (buddyPic.length() != 0) {
-      String path = buddyPic.substring(4);
-      String url = "https://" + getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
-      return url;
-    }
-    return "";
-  }
-
   @Override
   protected void onStart() {
     super.onStart();

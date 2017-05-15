@@ -17,12 +17,6 @@
         android:background="#333"
         android:id="@+id/user_header">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#333"
-        android:id="@+id/user_header">
-
         <ImageView
             android:layout_width="96dp"
             android:layout_height="96dp"

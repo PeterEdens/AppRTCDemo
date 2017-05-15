@@ -69,10 +69,6 @@ public class ChatFragment extends Fragment {
         chatList.clear();
     }
 
-    public void clearMessages() {
-        chatList.clear();
-    }
-
 
     public enum ChatMode {
         TOPLEVEL,
@@ -122,50 +118,6 @@ public class ChatFragment extends Fragment {
                 }
             },200);
         }
-    }
-
-    public void setDownloadedBytes(final int index, final long downloaded, final String to) {
-        uiUpdateHandler.post(new Runnable() {
-
-            @Override
-            public void run() {
-                ChatItem item = chatList.get(to).get(index);
-                long filesize = item.getFilesize();
-                item.setPercentDownloaded((int) ((float)((float)downloaded / (float)filesize) * 100.0f));
-                adapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    public void setDownloadPath(int index, String path, String to) {
-        ChatItem item = chatList.get(to).get(index);
-        item.setDownloadPath(path);
-    }
-
-    public void setDownloadComplete(final int index, final String to) {
-        uiUpdateHandler.post(new Runnable() {
-
-            @Override
-            public void run() {
-                ChatItem item = chatList.get(to).get(index);
-                item.setDownloadComplete();
-                adapter.notifyDataSetChanged();
-            }
-        });
-    }
-
-    public void onDownloadError(final String description, final int index, final String to) {
-        uiUpdateHandler.post(new Runnable() {
-
-            @Override
-            public void run() {
-                if (index < chatList.size()) {
-                    ChatItem item = chatList.get(to).get(index);
-                    item.setDownloadFailed(description);
-                    adapter.notifyDataSetChanged();
-                }
-            }
-        });
     }
 
     public void setDownloadedBytes(final int index, final long downloaded, final String to) {

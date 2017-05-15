@@ -28,8 +28,6 @@ public class UserActivity extends AppCompatActivity {
     private RelativeLayout videocallButton;
     private String mOwnId;
 
-    private String mOwnId;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

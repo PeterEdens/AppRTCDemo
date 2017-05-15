@@ -32,42 +32,6 @@
 
         </android.support.design.widget.AppBarLayout>
 
-        <android.support.design.widget.AppBarLayout
-            android:id="@+id/appbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:theme="@style/ThemeOverlay.AppCompat.Light">
-
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            android:titleTextColor="@color/white"
-            android:subtitleTextColor="@color/white"
-            app:layout_scrollFlags="scroll|enterAlways"
-            app:theme="@style/ToolBarStyle"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-
-        </android.support.design.widget.AppBarLayout>
-
-        <TextView
-            android:id="@+id/room_edittext_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="left|center_vertical"
-            android:layout_below="@+id/appbar"
-            android:layout_alignTop="@+id/connected_state"
-            android:layout_alignBottom="@+id/connected_state"
-            android:layout_toRightOf="@+id/connected_state">
-
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true"/>
-        </LinearLayout>
-
 
         <TextView
             android:id="@+id/connected_state"
@@ -80,6 +44,16 @@
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_below="@+id/appbar"
             android:text="@string/disconnected"/>
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:layout_below="@+id/appbar"
+            android:layout_alignTop="@+id/connected_state"
+            android:layout_alignBottom="@+id/connected_state"
+            android:layout_toRightOf="@+id/connected_state"/>
+
 
         <RelativeLayout
             android:id="@+id/room_list_layout"
