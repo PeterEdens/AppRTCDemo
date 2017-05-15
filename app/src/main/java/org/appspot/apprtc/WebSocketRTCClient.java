@@ -540,6 +540,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             @Override
             public void run() {
 
+              JSONObject jsonWrap = new JSONObject();
               JSONObject json = new JSONObject();
               JSONArray array = new JSONArray();
 
@@ -559,7 +560,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 e.printStackTrace();
               }
 
-              wsClient.send(json.toString());
+              jsonPut(jsonWrap, "Conference", json);
+              jsonPut(jsonWrap, "Type", "Conference");
+              wsClient.send(jsonWrap.toString());
             }
         });
     }
@@ -862,6 +865,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             events.onConnectedToRoom(roomName);
           }
 
+          events.clearRoomUsers(mRoomName);
           String usersText = json.getString("Users");
           JSONArray array = new JSONArray(usersText);
           for (int i = 0; i < array.length(); i++) {

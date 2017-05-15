@@ -1475,6 +1475,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
+  public void clearRoomUsers(String room) {
+
+  }
+
+  @Override
   public void onUserEnteredRoom(User user, String room) {
 
   }
@@ -1980,7 +1985,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mService != null) {
       if (conferenceId != null) {
         mService.sendConferenceOfferSdp(localSdp, remoteId, conferenceId);
-
       }
       else {
         mService.sendOfferSdp(localSdp, remoteId);

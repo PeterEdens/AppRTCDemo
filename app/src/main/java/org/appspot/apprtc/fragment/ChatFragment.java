@@ -70,6 +70,11 @@ public class ChatFragment extends Fragment {
         chatList.clear();
     }
 
+    public void clearMessages() {
+        chatList.clear();
+    }
+
+
     public enum ChatMode {
         TOPLEVEL,
         CONTENTS
@@ -374,7 +379,6 @@ public class ChatFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
     }
-
 
     public void addOutgoingMessage(ChatItem item) {
         addMessage(item, mUser);

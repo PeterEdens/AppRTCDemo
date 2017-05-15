@@ -162,7 +162,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         downloadButton.setVisibility(View.GONE);
                     }
                     else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> HEAD@{16}
                         Intent intent = new Intent(v.getContext(), RoomActivity.class);
                         intent.setAction(RoomActivity.ACTION_DOWNLOAD);
                         intent.putExtra(WebsocketService.EXTRA_FILEINFO, chatItem.fileinfo);

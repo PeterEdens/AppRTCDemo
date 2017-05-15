@@ -267,7 +267,6 @@
     <string name="room_chat_button">Room Chat</string>
     <string name="all">All</string>
     <string name="no_activity">There is no application available to open the file.</string>
-
     <string name="unshare">Unshare</string>
     <string name="action_status">Status</string>
     <string name="incoming_call_from">Incoming call from</string>

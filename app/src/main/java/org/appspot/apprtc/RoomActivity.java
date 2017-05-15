@@ -59,8 +59,10 @@ import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 import static android.R.id.message;
 
@@ -129,6 +131,28 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
             mRoomFragment.addUsers(users);
 
+            ArrayList<ChatItem> messages = mService.getMessages(mRoomName);
+
+            if (messages != null) {
+                HashMap<String, User> userMap = new HashMap<>();
+                for (User user : users) {
+                    userMap.put(user.Id, user);
+                }
+
+                mChatFragment.clearMessages();
+                for (ChatItem chatItem : messages) {
+                    User user = userMap.get(chatItem.Id);
+                    if (user != null) {
+                        mChatFragment.addMessage(chatItem, user);
+                    }
+                    else {
+                        // self
+                        user = userMap.get(chatItem.getRecipient());
+                        mChatFragment.addMessage(chatItem, user);
+                    }
+
+                }
+            }
         }
 
         @Override
@@ -489,7 +513,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             String token = downloadFile.id;
             int downloadIndex = intent.getIntExtra(EXTRA_INDEX, -1);
 
-            String connectionId = "1";
+            String connectionId = getNextId();
             String peerConnectionId = remoteId + token + connectionId;
             if (mPeerConnections.containsKey(peerConnectionId)) {
                 mPeerConnections.get(peerConnectionId).close();
@@ -512,6 +536,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         else if (action != null && action.equals(ACTION_SHARE_FILE)) {
             User user = (User) intent.getSerializableExtra(EXTRA_USER);
             mFileRecipient = user.Id;
+            mChatFragment.setUser(user);
 
             Intent i;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -577,6 +602,11 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     }
 
+    private String getNextId() {
+        mCurrentId++;
+        return String.valueOf(mCurrentId);
+    }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {
                 Uri path = intent.getData();
@@ -603,7 +633,15 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
             // Do something with the result...
                 if (mService != null) {
-                    mService.sendFileMessage(path.toString(), size, name, mime, mFileRecipient);
+                    SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                    fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+                    String time = fmt.format(new Date());
+                    FileInfo fileInfo = new FileInfo("", "", name, String.valueOf(size), mime);
+                    mService.sendFileMessage(time, "Me", "self", fileInfo, path.toString(), size, name, mime, mFileRecipient, mRoomName);
+
+                    ChatItem item = new ChatItem(time, "Me", fileInfo, "self", mFileRecipient);
+                    item.setOutgoing();
+                    mChatFragment.addOutgoingMessage(item);
                 }
 
         }

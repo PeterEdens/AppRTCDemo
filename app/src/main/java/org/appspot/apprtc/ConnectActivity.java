@@ -65,6 +65,8 @@ import org.json.JSONObject;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import static org.appspot.apprtc.R.id.roomName;
+
 
 /**
  * Handles the initial setup where the user selects which room to join.
@@ -152,6 +154,7 @@ public class ConnectActivity extends DrawerActivity {
     adapter.notifyDataSetChanged();
 
     mConnectionLayout.setVisibility(View.GONE);
+
     mConnectionTextView.setText(getString(R.string.connected));
     mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
     mConnectionState = ConnectionState.CONNECTED;
@@ -271,6 +274,31 @@ public class ConnectActivity extends DrawerActivity {
             e.printStackTrace();
           }
         }
+      } else if (intent.getAction().equals(WebsocketService.ACTION_CHAT_MESSAGE)) {
+        String message = intent.getStringExtra(WebsocketService.EXTRA_MESSAGE);
+        String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
+        String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+
+        if (user != null && message.length() == 0) {
+          // status message
+          message = user.displayName + status;
+        }
+        else if (user != null) {
+          String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+          adapter.addNewMessage(roomName);
+          adapter.notifyDataSetChanged();
+        }
+      } else if (intent.getAction().equals(WebsocketService.ACTION_FILE_MESSAGE)) {
+        FileInfo fileinfo = (FileInfo)intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
+        String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+
+        if (user != null) {
+          String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+          adapter.addNewFileMessage(roomName);
+          adapter.notifyDataSetChanged();
+        }
       }
     }
   };
@@ -322,6 +350,8 @@ public class ConnectActivity extends DrawerActivity {
     mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED_TO_ROOM);
     mIntentFilter.addAction(WebsocketService.ACTION_PATCH_RESPONSE);
     mIntentFilter.addAction(WebsocketService.ACTION_POST_RESPONSE);
+    mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
+    mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
@@ -381,6 +411,7 @@ public class ConnectActivity extends DrawerActivity {
     bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 
     registerReceiver(mReceiver, mIntentFilter);
+    mStatusSent = false; // just in case we lost connection
   }
 
   @Override
@@ -467,7 +498,9 @@ public class ConnectActivity extends DrawerActivity {
       }
     }
     adapter = new RoomAdapter(this, R.id.text_id, R.layout.rooms_list, roomList);
-    adapter.setCurrentRoom(mCurrentRoom);
+    if (mConnectionState == ConnectionState.CONNECTED) {
+      adapter.setCurrentRoom(mCurrentRoom);
+    }
     roomListView.setAdapter(adapter);
     if (adapter.getCount() > 0) {
       roomListView.requestFocus();
@@ -551,6 +584,7 @@ public class ConnectActivity extends DrawerActivity {
       mService.connectToRoom(roomId);
     }
 
+    adapter.clearFlags(roomId);
     mWaitingToEnterRoom = true;
 
     /*this.commandLineRun = commandLineRun;
