@@ -279,7 +279,7 @@ public class ChatFragment extends Fragment {
                 adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
                 recyclerView.setAdapter(adapter);
                 mUserNameTextView.setText(getString(R.string.recent));
-                recentControlsLayout.setVisibility(View.GONE);
+                recentControlsLayout.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -348,9 +348,7 @@ public class ChatFragment extends Fragment {
         recyclerView.setLayoutManager(layoutManager);
 
         if (mode == ChatMode.TOPLEVEL) {
-
             recentControlsLayout.setVisibility(View.INVISIBLE);
-
             adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
             mUserNameTextView.setText(getString(R.string.recent));
         }
