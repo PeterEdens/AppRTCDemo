@@ -84,6 +84,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
 
         ImageButton callButton;
         ImageButton chatButton;
+        ImageButton shareFileButton;
         protected ImageView image;
         protected TextView text;
         protected TextView message;

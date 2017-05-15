@@ -31,6 +31,7 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.TimeZone;
@@ -160,6 +161,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         downloadButton.setVisibility(View.GONE);
                     }
                     else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
+
                         Intent intent = new Intent(v.getContext(), RoomActivity.class);
                         intent.setAction(RoomActivity.ACTION_DOWNLOAD);
                         intent.putExtra(WebsocketService.EXTRA_FILEINFO, chatItem.fileinfo);

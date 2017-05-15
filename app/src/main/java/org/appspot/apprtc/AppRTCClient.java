@@ -51,15 +51,19 @@ public interface AppRTCClient {
    */
   void sendOfferSdp(final SessionDescription sdp, String to);
 
+  void sendTokenOffer(final SessionDescription sdp, final String token, final String id, final String to);
+
   /**
    * Send answer SDP to the other participant.
    */
   void sendAnswerSdp(final SessionDescription sdp, String to);
 
+  void sendTokenAnswer(final SessionDescription sdp, final String token, final String id, final String to);
+
   /**
    * Send Ice candidate to the other participant.
    */
-  void sendLocalIceCandidate(final SerializableIceCandidate candidate, String to);
+  void sendLocalIceCandidate(final SerializableIceCandidate candidate, String token, String id, String to);
 
   /**
    * Send removed ICE candidates to the other participant.
@@ -85,6 +89,8 @@ public interface AppRTCClient {
 
   void sendChatMessage(String message, String to);
 
+  void sendFileMessage(final String message, final String to);
+
   /**
    * Struct holding the signaling parameters of an AppRTC room.
    */
@@ -96,6 +102,8 @@ public interface AppRTCClient {
     public final String wssPostUrl;
     public SessionDescription offerSdp;
     public final List<IceCandidate> iceCandidates;
+    public String token;
+    public boolean dataonly;
 
     public SignalingParameters(List<PeerConnection.IceServer> iceServers, boolean initiator,
         String clientId, String wssUrl, String wssPostUrl, SessionDescription offerSdp,
@@ -125,12 +133,12 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote SDP is received.
      */
-    void onRemoteDescription(final SerializableSessionDescription sdp, String fromId, String roomName);
+    void onRemoteDescription(final SerializableSessionDescription sdp, String token, String id, String fromId, String roomName);
 
     /**
      * Callback fired once remote Ice candidate is received.
      */
-    void onRemoteIceCandidate(final SerializableIceCandidate candidate);
+    void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id);
 
     /**
      * Callback fired once remote Ice candidate removals are received.
@@ -168,5 +176,7 @@ public interface AppRTCClient {
     void onConfigResponse(String response);
 
     void onChatMessage(String message, String time, String status, String fromId, String roomName);
+
+    void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String mIdFrom, String mRoomName);
   }
 }

@@ -44,4 +44,63 @@
         android:layout_alignBottom="@+id/image_id"
         android:id="@+id/msgtext"/>
 
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_toRightOf="@+id/displayName"
+        android:layout_below="@+id/msgtime"
+        android:id="@+id/fileLayout">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/downloadButton"
+            android:textColor="@color/black"
+            android:text="@string/download"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Name"
+            android:layout_below="@+id/downloadButton"
+            android:id="@+id/name"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Size"
+            android:layout_margin="5dp"
+            android:layout_below="@+id/name"
+            android:id="@+id/size"/>
+
+        <RelativeLayout
+            android:id="@+id/downloadLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/name">
+
+            <ProgressBar
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:progressDrawable="@drawable/progress_drawable"
+                android:id="@+id/downloadProgress"/>
+
+            <TextView
+                android:id="@+id/downloadProgressText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#00000000"
+                android:gravity="center"
+                android:layout_alignLeft="@+id/downloadProgress"
+                android:layout_alignTop="@+id/downloadProgress"
+                android:layout_alignRight="@+id/downloadProgress"
+                android:layout_alignBottom="@+id/downloadProgress"
+                android:text="0 KB / 0%"/>
+
+        </RelativeLayout>
+    </RelativeLayout>
 </RelativeLayout>

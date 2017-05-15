@@ -160,6 +160,36 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    public void setDownloadedBytes(final int index, final long downloaded) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                ChatItem item = chatList.get(index);
+                long filesize = item.getFilesize();
+                item.setPercentDownloaded((int) ((float)((float)downloaded / (float)filesize) * 100.0f));
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    public void setDownloadPath(int index, String path) {
+        ChatItem item = chatList.get(index);
+        item.setDownloadPath(path);
+    }
+
+    public void setDownloadComplete(final int index) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                ChatItem item = chatList.get(index);
+                item.setDownloadComplete();
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
+
 
     /**
      * Call control interface for container activity.

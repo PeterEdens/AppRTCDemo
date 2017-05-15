@@ -138,6 +138,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
 
   }
 
+  @Override
+  public void sendFileMessage(String message, String to) {
+
+  }
+
   /**
    * Connects to the room.
    *
@@ -205,6 +210,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void sendTokenOffer(SessionDescription sdp, String token, String id, String to) {
+
+  }
+
+  @Override
   public void sendAnswerSdp(final SessionDescription sdp, String to) {
     executor.execute(new Runnable() {
       @Override
@@ -218,7 +228,12 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendLocalIceCandidate(final SerializableIceCandidate candidate, String to) {
+  public void sendTokenAnswer(SessionDescription sdp, String token, String id, String to) {
+
+  }
+
+  @Override
+  public void sendLocalIceCandidate(final SerializableIceCandidate candidate, String token, String id, String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
@@ -291,7 +306,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       JSONObject json = new JSONObject(msg);
       String type = json.optString("type");
       if (type.equals("candidate")) {
-        events.onRemoteIceCandidate(toJavaCandidate(json));
+        events.onRemoteIceCandidate(toJavaCandidate(json), "");
       } else if (type.equals("remove-candidates")) {
         JSONArray candidateArray = json.getJSONArray("candidates");
         SerializableIceCandidate[] candidates = new SerializableIceCandidate[candidateArray.length()];
@@ -302,7 +317,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       } else if (type.equals("answer")) {
         SerializableSessionDescription sdp = new SerializableSessionDescription(
                 SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"), "");
-        events.onRemoteDescription(sdp, "", "");
+        events.onRemoteDescription(sdp, "", "", "", "");
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(
             SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));

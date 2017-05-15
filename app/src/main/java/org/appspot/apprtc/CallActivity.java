@@ -19,6 +19,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -284,6 +285,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       return textView;
     }
   }
+  
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -340,6 +342,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean mFinishCalled;
   
   private HashMap<String, AdditionalPeerConnection> mAdditionalPeers = new HashMap<String, AdditionalPeerConnection>();
+
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -401,7 +404,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private boolean mForceTurn;
   private ArrayList<User> mQueuedPeers = new ArrayList<User>();
   private String mServer;
-
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -824,6 +826,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Bind to LocalService
     Intent intent = new Intent(this, WebsocketService.class);
     bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    registerReceiver(mReceiver, mIntentFilter);
   }
 
   @Override
@@ -834,6 +837,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       unbindService(mConnection);
       mWebsocketServiceBound = false;
     }
+    unregisterReceiver(mReceiver);
   }
 
   @Override
@@ -1297,7 +1301,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       videoCapturer = createVideoCapturer();
     }
 
-
     if (peerConnectionClient != null) {
       peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
               remoteRenderers, videoCapturer, signalingParameters);
@@ -1308,12 +1311,20 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         // logAndToast("Creating OFFER...");
         // Create offer. Offer SDP will be sent to answering client in
         // PeerConnectionEvents.onLocalDescription event.
-        peerConnectionClient.createAnswer();
-      }
-      if (params.iceCandidates != null) {
-        // Add remote ICE candidates from room.
-        for (IceCandidate iceCandidate : params.iceCandidates) {
-          peerConnectionClient.addRemoteIceCandidate(iceCandidate);
+        peerConnectionClient.createOffer();
+      } else {
+        if (params.offerSdp != null) {
+          peerConnectionClient.setRemoteDescription(params.offerSdp, params.token);
+          //  logAndToast("Creating ANSWER...");
+          // Create answer. Answer SDP will be sent to offering client in
+          // PeerConnectionEvents.onLocalDescription event.
+          peerConnectionClient.createAnswer();
+        }
+        if (params.iceCandidates != null) {
+          // Add remote ICE candidates from room.
+          for (IceCandidate iceCandidate : params.iceCandidates) {
+            peerConnectionClient.addRemoteIceCandidate(iceCandidate);
+          }
         }
       }
     }
@@ -1337,7 +1348,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteDescription(final SerializableSessionDescription sdp, String fromId, String roomName) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp, final String token, String id, String fromId, String roomName) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -1348,7 +1359,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         }
         logAndToast("Received remote " + sdp.type + ", delay=" + delta + "ms");
         SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
-        peerConnectionClient.setRemoteDescription(sd);
+        peerConnectionClient.setRemoteDescription(sd, token);
         if (!initiator) {
           logAndToast("Creating ANSWER...");
           // Create answer. Answer SDP will be sent to offering client in
@@ -1367,7 +1378,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteIceCandidate(final SerializableIceCandidate candidate) {
+  public void onRemoteIceCandidate(final SerializableIceCandidate candidate, String id) {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -1465,6 +1476,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onChatMessage(String message, String time, String status, String fromId, String roomName) {
+
+  }
+
+  @Override
+  public void onFileMessage(String time, String id, String chunks, String name, String size, String filetype, String mIdFrom, String mRoomName) {
 
   }
 
@@ -1608,9 +1624,22 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           SessionDescription sdp = new SessionDescription(mRemoteSdp.type, mRemoteSdp.description);
           signalingParameters.offerSdp = sdp;
         }
+        if (mToken != null) {
+          signalingParameters.token = mToken;
+        }
         setupCall(signalingParameters);
       }
     });
+
+  }
+
+  @Override
+  public void onPeerConnectionCreated() {
+
+  }
+
+  @Override
+  public void onRemoteSdpSet() {
 
   }
 
@@ -1618,14 +1647,14 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mLocalSdp != null) {
       if (mService != null) {
         mService.sendAnswerSdp(mLocalSdp, to);
-        mService.sendLocalIceCandidate(mIceCandidate, mPeerId);
+        mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
       }
     }
   }
 
   void StartCall(String to) {
     mService.sendOfferSdp(mLocalSdp, to);
-    mService.sendLocalIceCandidate(mIceCandidate, mPeerId);
+    mService.sendLocalIceCandidate(mIceCandidate, mToken, mSdpId, mPeerId);
   }
 
   public String getPeerId() {
