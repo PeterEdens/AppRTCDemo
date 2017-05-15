@@ -213,6 +213,7 @@ public class ThumbnailsCacheManager {
                                         imageView.get().setImageBitmap(response);
                                     }
                                     imageView.get().setContentDescription(displayname);
+
                                 }
 
                             });

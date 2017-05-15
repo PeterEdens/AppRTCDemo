@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import org.appspot.apprtc.service.WebsocketService;
 
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.json.JSONException;

@@ -40,26 +40,6 @@
         android:layout_height="wrap_content">
 
         <Button
-<<<<<<< HEAD
-            android:id="@+id/button_call_connect"
-            android:background="@android:color/holo_green_dark"
-            android:layout_margin="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="96dp"
-            android:focusableInTouchMode="false"
-            android:textColor="@android:color/white"
-            android:text="@string/answer"/>
-
-        <Button
-            android:id="@+id/button_call_disconnect"
-            android:background="@android:color/holo_red_dark"
-            android:layout_margin="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="96dp"
-            android:focusableInTouchMode="false"
-            android:textColor="@android:color/white"
-            android:text="@string/reject_call" />
-=======
             android:id="@+id/button_call_disconnect"
             android:background="@drawable/hangup"
             android:layout_margin="20dp"
@@ -76,7 +56,7 @@
             android:layout_height="wrap_content"
             android:focusableInTouchMode="false"
             android:textColor="@android:color/white"/>
->>>>>>> 5fa66c4... updated UI
+
 
     </LinearLayout>
 

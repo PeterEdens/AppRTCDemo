@@ -70,7 +70,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
     public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
     public static final String ACTION_NEW_CHAT = "org.appspot.apprtc.ACTION_NEW_CHAT";
-    public static final String EXTRA_USER = "org.appspot.apprtc.EXTRA_USER";
     public static final String ACTION_SHARE_FILE = "org.appspot.apprtc.ACTION_SHARE_FILE";
     public static final String ACTION_DOWNLOAD = "org.appspot.apprtc.ACTION_DOWNLOAD";
     public static final String ACTION_CANCEL_DOWNLOAD = "org.appspot.apprtc.ACTION_CANCEL_DOWNLOAD";
@@ -78,6 +77,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_INDEX = "org.appspot.apprtc.EXTRA_INDEX";
     public static final String ACTION_VIEW_CHAT = "org.appspot.apprtc.ACTION_VIEW_CHAT";
     public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
+    public static final String EXTRA_AVATAR_URL = "org.appspot.apprtc.EXTRA_AVATAR_URL";
 
     static final int CHAT_INDEX = 1;
 
@@ -266,9 +266,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
 
-        ThumbnailsCacheManager.ThumbnailsCacheManagerInit(getApplicationContext());
-
-
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
         mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
@@ -310,22 +307,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         
         handleIntent(intent);
 
-    }
-
-    String getEncodedImage() {
-        String encodedImage = "";
-        if (mAvatar == null) {
-            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bm.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
-            byte[] byteArrayImage = baos.toByteArray();
-
-            encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
-        }
-        else {
-            encodedImage = mAvatar;
-        }
-        return encodedImage;
     }
 
     @Override
@@ -393,6 +374,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         else if (action != null && action.equals(ACTION_NEW_CHAT)) {
             viewPager.setCurrentItem(CHAT_INDEX);
             User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+
             mChatFragment.setUser(user);
         }
         else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
@@ -527,6 +509,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         else if (action != null && action.equals(ACTION_NEW_CHAT)) {
             viewPager.setCurrentItem(CHAT_INDEX);
             User user = (User) intent.getSerializableExtra(EXTRA_USER);
+
             mChatFragment.setUser(user);
         }
         else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
@@ -534,7 +517,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mChatFragment.viewChat(key);
         }
         else if (action != null && action.equals(ACTION_SHARE_FILE)) {
-            User user = (User) intent.getSerializableExtra(EXTRA_USER);
+            User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
             mFileRecipient = user.Id;
             mChatFragment.setUser(user);
 
@@ -600,6 +583,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
         }
 
+        if (intent.hasExtra(EXTRA_SERVER_NAME)) {
+            mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
+        }
     }
 
     private String getNextId() {

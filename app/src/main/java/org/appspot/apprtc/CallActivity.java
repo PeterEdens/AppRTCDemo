@@ -286,7 +286,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       return textView;
     }
   }
-  
+
   /** Defines callbacks for service binding, passed to bindService() */
   private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -354,9 +354,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
         if (mAdditionalPeers.containsKey(user.Id)) {
-
           updateRemoteViewList(mAdditionalPeers.get(user.Id).getRemoteViews());
-
           mAdditionalPeers.get(user.Id).close();
           mAdditionalPeers.remove(user.Id);
           updateVideoView();
@@ -835,6 +833,16 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return "";
   }
 
+  String getUrl(String buddyPic) {
+
+    if (buddyPic.length() != 0) {
+      String path = buddyPic.substring(4);
+      String url = "https://" + getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
+      return url;
+    }
+    return "";
+  }
+
   @Override
   protected void onStart() {
     super.onStart();
@@ -1070,14 +1078,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       remoteConnectionViews.getSurfaceViewRenderer().setMirror(false);
     }
 
-    remoteRenderScreen2.setScalingType(scalingType);
-    remoteRenderScreen2.setMirror(false);
-
-    remoteRenderScreen3.setScalingType(scalingType);
-    remoteRenderScreen3.setMirror(false);
-    remoteRenderScreen4.setScalingType(scalingType);
-    remoteRenderScreen4.setMirror(false);
-
     if (iceConnected) {
       localRenderLayout.setPosition(
           LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
@@ -1091,10 +1091,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     localRender.requestLayout();
 
-
     for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
       remoteConnectionViews.getSurfaceViewRenderer().requestLayout();
     }
+
   }
 
   private void startCall() {
@@ -1162,44 +1162,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         if (mService != null) {
           mService.sendBye(entry.getKey());
         }
-      }
-
-      if (peerConnectionClient != null) {
-        peerConnectionClient.close();
-        peerConnectionClient = null;
-      }
-      if (localRender != null) {
-        localRender.release();
-        localRender = null;
-      }
-      if (videoFileRenderer != null) {
-        videoFileRenderer.release();
-        videoFileRenderer = null;
-      }
-      if (remoteRenderScreen != null) {
-        remoteRenderScreen.release();
-        remoteRenderScreen = null;
-      }
-      if (remoteRenderScreen2 != null) {
-        remoteRenderScreen2.release();
-        remoteRenderScreen2 = null;
-      }
-      if (remoteRenderScreen3 != null) {
-        remoteRenderScreen3.release();
-        remoteRenderScreen3 = null;
-      }
-      if (remoteRenderScreen4 != null) {
-        remoteRenderScreen4.release();
-        remoteRenderScreen4 = null;
-      }
-      if (audioManager != null) {
-        audioManager.stop();
-        audioManager = null;
-      }
-      if (iceConnected && !isError) {
-        setResult(RESULT_OK);
-      } else {
-        setResult(RESULT_CANCELED);
       }
 
       if (peerConnectionClient != null) {
@@ -1985,6 +1947,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (mService != null) {
       if (conferenceId != null) {
         mService.sendConferenceOfferSdp(localSdp, remoteId, conferenceId);
+
       }
       else {
         mService.sendOfferSdp(localSdp, remoteId);

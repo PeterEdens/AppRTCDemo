@@ -947,7 +947,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                     if (!message.equals("null")) {
                       user.message = message;
                     }
-					
+
                     events.onUserEnteredRoom(user, mRoomName);
                 }
             }

@@ -36,7 +36,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 
-import static org.appspot.apprtc.ConnectActivity.EXTRA_AVATAR;
 
 
 public class ChatFragment extends Fragment {
@@ -89,7 +88,6 @@ public class ChatFragment extends Fragment {
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
-
         adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
 
         recyclerView.setAdapter(adapter);
@@ -343,9 +341,6 @@ public class ChatFragment extends Fragment {
                 userIdList.put("", new User("", "", mRoomName, ""));
             }
 
-            if (args.containsKey(EXTRA_AVATAR)) {
-                mAvatar = args.getString(EXTRA_AVATAR);
-            }
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
                 mServerName = args.getString(RoomActivity.EXTRA_SERVER_NAME);
             }
@@ -354,7 +349,6 @@ public class ChatFragment extends Fragment {
                 mAvatarUrl = args.getString(RoomActivity.EXTRA_AVATAR_URL);
             }
         }
-
 
         mCurrentId = "";
         if (chatList.get("") == null) {

@@ -75,9 +75,6 @@ public class ConnectActivity extends DrawerActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
-  public static final String EXTRA_SERVERURL = "org.appspot.apprtc.EXTRA_SERVERURL";
-  public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
-  public static final String EXTRA_AVATAR = "org.appspot.apprtc.EXTRA_AVATAR";
   private static boolean commandLineRun = false;
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -333,6 +330,7 @@ public class ConnectActivity extends DrawerActivity {
       getSupportActionBar().setTitle(R.string.spreed_talk);
     }
 
+
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
     roomListView.setOnItemClickListener(roomListClickListener);
@@ -372,16 +370,8 @@ public class ConnectActivity extends DrawerActivity {
       if (mServerName.startsWith("https://")) {
         mServerName = mServerName.substring(8);
       }
-      serverNameEditText.setText(mServerName);
     }
 
-    if (intent.hasExtra(EXTRA_AVATAR)) {
-      mAvatar = intent.getStringExtra(EXTRA_AVATAR);
-    }
-
-    if (intent.hasExtra(EXTRA_DISPLAYNAME)) {
-      mDisplayName = intent.getStringExtra(EXTRA_DISPLAYNAME);
-    }
 
     if ("android.intent.action.VIEW".equals(intent.getAction()) && !commandLineRun) {
       boolean loopback = intent.getBooleanExtra(CallActivity.EXTRA_LOOPBACK, false);
@@ -849,16 +839,6 @@ public class ConnectActivity extends DrawerActivity {
         }
       };
 
-  private final OnClickListener addFavoriteListener = new OnClickListener() {
-    @Override
-    public void onClick(View view) {
-      String newRoom = serverNameEditText.getText().toString();
-      if (newRoom.length() > 0 && !roomList.contains(newRoom)) {
-        adapter.add(newRoom);
-        adapter.notifyDataSetChanged();
-      }
-    }
-  };
 
   private final OnClickListener connectListener = new OnClickListener() {
     @Override

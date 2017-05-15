@@ -15,7 +15,6 @@
         android:textSize="24sp"
         android:layout_margin="8dp"/>
 
-
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/button_call_disconnect"
         android:layout_width="wrap_content"
@@ -56,21 +55,24 @@
             android:layout_marginLeft="10dp"/>
 
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/button_call_disconnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/disconnect"
-            style="@style/MenuButtonsStyle"
-            android:layout_alignParentBottom="true" />
-
-        <com.github.clans.fab.FloatingActionButton
             android:id="@+id/button_call_switch_camera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@android:drawable/ic_menu_camera"
-            style="@style/MenuButtonsStyle"
-            android:layout_toRightOf="@+id/button_call_disconnect"
-            android:layout_alignParentBottom="true" />
+            style="@style/CallActionButtonStyle"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="10dp"/>
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_toggle_video"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_visibility_white_24dp"
+            style="@style/CallActionButtonStyle"
+            android:layout_alignParentBottom="true"
+            android:layout_toRightOf="@+id/button_call_switch_camera"
+            android:layout_marginLeft="10dp"/>
 
         <!--<ImageButton
            android:id="@+id/button_call_scaling_mode"

@@ -26,6 +26,7 @@ public class UserActivity extends AppCompatActivity {
     RelativeLayout shareFileButton;
     private User user;
     private RelativeLayout videocallButton;
+    private String mOwnId;
 
     private String mOwnId;
 
