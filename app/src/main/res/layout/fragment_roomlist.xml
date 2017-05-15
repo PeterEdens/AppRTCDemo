@@ -17,7 +17,7 @@
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
+            android:layout_margin="10dp"
             android:id="@+id/rooms_back_layout">
 
             <ImageView
@@ -66,25 +66,7 @@
         android:id="@+id/emptyRoom"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/roomName"
-        android:text="@string/emptyRoom"
-        android:gravity="center"
-        android:textSize="20sp"/>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingLeft="@dimen/activity_horizontal_margin"
-        android:paddingRight="@dimen/activity_horizontal_margin"
-        android:background="#ECEFF1"
-        android:layout_below="@+id/room_controls_layout"/>
-
-    <TextView
-        android:id="@+id/emptyRoom"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@+id/roomName"
+        android:layout_below="@+id/room_controls_layout"
         android:text="@string/emptyRoom"
         android:gravity="center"
         android:textSize="20sp"/>

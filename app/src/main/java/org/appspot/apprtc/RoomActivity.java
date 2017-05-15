@@ -277,6 +277,12 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             getSupportActionBar().setTitle(R.string.spreed_talk);
         }
 
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+
+        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        setupViewPager(viewPager);
+        setupTabIcons();
+
         Account account = getCurrentOwnCloudAccount(this);
         if (account != null) {
             AccountManager accountMgr = AccountManager.get(this);
@@ -425,9 +431,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             }
         }
 
-        viewPager = (ViewPager) findViewById(R.id.viewpager);
-        setupViewPager(viewPager);
-
         if (intent.hasExtra(EXTRA_SERVER_NAME)) {
             mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
         }
@@ -539,6 +542,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         adapter.addFrag(mChatFragment, getString(R.string.recent));
         adapter.addFrag(new FilesFragment(), getString(R.string.files));
         viewPager.setAdapter(adapter);
+        tabLayout.setupWithViewPager(viewPager);
     }
 
     @Override

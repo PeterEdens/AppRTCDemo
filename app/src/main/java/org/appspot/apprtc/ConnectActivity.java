@@ -48,6 +48,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -91,12 +92,12 @@ public class ConnectActivity extends DrawerActivity {
   String mDisplayName;
   ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
 
-  LinearLayout mConnectionLayout;
   RelativeLayout mRoomListLayout;
 
   FloatingActionButton mAddRoom;
   EditText mAddRoomEditText;
   TextView mConnectionTextView;
+  ProgressBar mConnectingProgress;
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefRoom;
@@ -150,12 +151,10 @@ public class ConnectActivity extends DrawerActivity {
     adapter.setCurrentRoom(mCurrentRoom);
     adapter.notifyDataSetChanged();
 
-    mConnectionLayout.setVisibility(View.GONE);
-
     mConnectionTextView.setText(getString(R.string.connected));
     mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
     mConnectionState = ConnectionState.CONNECTED;
-
+    mConnectingProgress.setVisibility(View.GONE);
     mRoomListLayout.setVisibility(View.VISIBLE);
 
     if (!mStatusSent) {
@@ -213,7 +212,7 @@ public class ConnectActivity extends DrawerActivity {
         mConnectionTextView.setText(getString(R.string.disconnected));
         mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         mConnectionState = ConnectionState.DISCONNECTED;
-        mConnectionLayout.setVisibility(View.VISIBLE);
+        mConnectingProgress.setVisibility(View.VISIBLE);
 
         // try to reconnect
         mService.connectToServer(mServerName);
@@ -336,6 +335,7 @@ public class ConnectActivity extends DrawerActivity {
     roomListView.setOnItemClickListener(roomListClickListener);
     registerForContextMenu(roomListView);
     mConnectionTextView = (TextView) findViewById(R.id.connected_state);
+    mConnectingProgress = (ProgressBar) findViewById(R.id.connecting_progress);
     mAddRoom = (FloatingActionButton) findViewById(R.id.add_room_button);
     mAddRoom.setOnClickListener(addRoomListener);
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
