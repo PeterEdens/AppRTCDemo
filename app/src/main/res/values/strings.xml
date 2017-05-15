@@ -244,7 +244,6 @@
     <string name="mode_video_chat"></string>
     <string name="mode_share_files"></string>
     <string name="drawer_chat">SecureIM</string>
-
     <string name="drawer_video_chat">SecureMeet</string>
     <string name="drawer_share_files">SecureFileShare</string>
     <string name="prefs_add_account">Add account</string>
@@ -268,6 +267,7 @@
     <string name="room_chat_button">Room Chat</string>
     <string name="all">All</string>
     <string name="no_activity">There is no application available to open the file.</string>
+
     <string name="unshare">Unshare</string>
     <string name="action_status">Status</string>
     <string name="incoming_call_from">Incoming call from</string>

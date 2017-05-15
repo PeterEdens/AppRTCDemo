@@ -38,7 +38,6 @@ import java.util.TimeZone;
 
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
-
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {

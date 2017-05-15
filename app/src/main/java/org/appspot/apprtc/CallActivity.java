@@ -146,13 +146,15 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int LOCAL_HEIGHT_CONNECTING = 100;
   // Local preview screen position after call is connected.
   private static final int LOCAL_X_CONNECTED = 72;
-  private static final int LOCAL_Y_CONNECTED = 72;
+  private static final int LOCAL_Y_CONNECTED = 62;
   private static final int LOCAL_WIDTH_CONNECTED = 25;
   private static final int LOCAL_HEIGHT_CONNECTED = 25;
   // Remote video screen position
   private static final int REMOTE_X = 0;
+  private static final int REMOTE_X2 = 50;
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
+  private static final int REMOTE_WIDTH2 = 50;
   private static final int REMOTE_HEIGHT = 100;
   private static final int REMOTE_HEIGHT2 = 50;
   private PeerConnectionClient peerConnectionClient = null;
@@ -189,6 +191,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       new ArrayList<VideoRenderer.Callbacks>();
   private PercentFrameLayout localRenderLayout;
   private PercentFrameLayout remoteRenderLayout;
+  private PercentFrameLayout remoteRenderLayout2;
+  private PercentFrameLayout remoteRenderLayout3;
+  private PercentFrameLayout remoteRenderLayout4;
   private ScalingType scalingType;
   private Toast logToast;
   private boolean commandLineRun;
@@ -292,6 +297,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+      mOwnId = mService.getId();
       signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
     }
 
@@ -348,7 +354,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
         if (mAdditionalPeers.containsKey(user.Id)) {
+
           updateRemoteViewList(mAdditionalPeers.get(user.Id).getRemoteViews());
+
           mAdditionalPeers.get(user.Id).close();
           mAdditionalPeers.remove(user.Id);
           updateVideoView();
@@ -479,9 +487,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     remoteUserImage2 = (ImageView) findViewById(R.id.remote_user_image2);
     remoteUserImage3 = (ImageView) findViewById(R.id.remote_user_image3);
     remoteUserImage4 = (ImageView) findViewById(R.id.remote_user_image4);
-
     localRenderLayout = (PercentFrameLayout) findViewById(R.id.local_video_layout);
     remoteRenderLayout = (PercentFrameLayout) findViewById(R.id.remote_video_layout);
+    remoteRenderLayout2 = (PercentFrameLayout) findViewById(R.id.remote_video_layout2);
+    remoteRenderLayout3 = (PercentFrameLayout) findViewById(R.id.remote_video_layout3);
+    remoteRenderLayout4 = (PercentFrameLayout) findViewById(R.id.remote_video_layout4);
     initiateCallFragment = new InitiateCallFragment();
     callFragment = new CallFragment();
     hudFragment = new HudFragment();
@@ -524,10 +534,16 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       }
     }
     remoteRenderScreen.init(rootEglBase.getEglBaseContext(), null);
+    remoteRenderScreen2.init(rootEglBase.getEglBaseContext(), null);
+    remoteRenderScreen3.init(rootEglBase.getEglBaseContext(), null);
+    remoteRenderScreen4.init(rootEglBase.getEglBaseContext(), null);
 
     localRender.setZOrderMediaOverlay(true);
     localRender.setEnableHardwareScaler(true /* enabled */);
     remoteRenderScreen.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen2.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen3.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen4.setEnableHardwareScaler(true /* enabled */);
     updateVideoView();
 
 
@@ -682,6 +698,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         if (!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (mOwnId.compareTo(user.Id) < 0)) {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
                   localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
           updateVideoView();
           added = true;
@@ -798,6 +815,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         else {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, false, sdp.from, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
                   localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+
           additionalPeerConnection.setRemoteDescription(new SessionDescription(sdp.type, sdp.description));
           mAdditionalPeers.put(sdp.from, additionalPeerConnection);
           updateVideoView();
@@ -956,6 +974,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (peerConnectionClient != null) {
       micEnabled = !micEnabled;
       peerConnectionClient.setAudioEnabled(micEnabled);
+      // mute additionals
+      for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
+        AdditionalPeerConnection peer = entry.getValue();
+        peer.setAudioEnabled(micEnabled);
+      }
     }
     return micEnabled;
   }
@@ -996,6 +1019,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private void updateVideoView() {
 
     int remoteHeight = REMOTE_HEIGHT;
+
     if (remoteViewsInUseList.size() == 2) {
       remoteHeight = REMOTE_HEIGHT2;
       remoteViewsInUseList.get(0).getFrameLayout().setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
@@ -1045,6 +1069,14 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       remoteConnectionViews.getSurfaceViewRenderer().setScalingType(scalingType);
       remoteConnectionViews.getSurfaceViewRenderer().setMirror(false);
     }
+
+    remoteRenderScreen2.setScalingType(scalingType);
+    remoteRenderScreen2.setMirror(false);
+
+    remoteRenderScreen3.setScalingType(scalingType);
+    remoteRenderScreen3.setMirror(false);
+    remoteRenderScreen4.setScalingType(scalingType);
+    remoteRenderScreen4.setMirror(false);
 
     if (iceConnected) {
       localRenderLayout.setPosition(
@@ -1185,6 +1217,18 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       if (remoteRenderScreen != null) {
         remoteRenderScreen.release();
         remoteRenderScreen = null;
+      }
+      if (remoteRenderScreen2 != null) {
+        remoteRenderScreen2.release();
+        remoteRenderScreen2 = null;
+      }
+      if (remoteRenderScreen3 != null) {
+        remoteRenderScreen3.release();
+        remoteRenderScreen3 = null;
+      }
+      if (remoteRenderScreen4 != null) {
+        remoteRenderScreen4.release();
+        remoteRenderScreen4 = null;
       }
       if (audioManager != null) {
         audioManager.stop();
@@ -1346,7 +1390,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteDescription(final SerializableSessionDescription sdp, final String token, String id, String fromId, String roomName) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp, final String token, String id, String conferenceId, String fromId, String roomName) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -1499,6 +1543,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onTurnTtl(int ttl) {
+
+  }
+
+  @Override
+  public void onConferenceUser(String roomName, String conferenceId, String id) {
 
   }
 

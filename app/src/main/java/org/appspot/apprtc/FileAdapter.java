@@ -87,6 +87,7 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.FileViewHolder
                     Uri fileURI = FileProvider.getUriForFile(context, "spreedbox.me.app.files", file);
                     intent.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
                     intent.setDataAndType(fileURI, mime);
+
                     try {
                         context.startActivity(intent);
                     }

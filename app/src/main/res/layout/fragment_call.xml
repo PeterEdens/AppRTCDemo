@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <TextView
         android:id="@+id/contact_name_call"
@@ -14,9 +15,7 @@
         android:textSize="24sp"
         android:layout_margin="8dp"/>
 
-<<<<<<< HEAD
-    <LinearLayout
-=======
+
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/button_call_disconnect"
         android:layout_width="wrap_content"
@@ -28,7 +27,6 @@
         android:layout_marginBottom="90dp"/>
 
     <RelativeLayout
->>>>>>> 5fa66c4... updated UI
            android:id="@+id/buttons_call_container"
            android:orientation="horizontal"
            android:layout_alignWithParentIfMissing="true"
@@ -37,25 +35,6 @@
            android:layout_width="wrap_content"
            android:layout_height="wrap_content">
 
-       <ImageButton
-           android:id="@+id/button_call_disconnect"
-           android:background="@drawable/disconnect"
-           android:contentDescription="@string/disconnect_call"
-           android:focusableInTouchMode="false"
-           android:layout_marginEnd="16dp"
-           android:layout_width="48dp"
-           android:layout_height="48dp"/>
-
-<<<<<<< HEAD
-       <ImageButton
-           android:id="@+id/button_call_switch_camera"
-           android:background="@android:drawable/ic_menu_camera"
-           android:contentDescription="@string/switch_camera"
-           android:focusableInTouchMode="false"
-           android:layout_marginEnd="8dp"
-           android:layout_width="48dp"
-           android:layout_height="48dp"/>
-=======
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/button_call_switch_camera"
             android:layout_width="wrap_content"
@@ -75,27 +54,33 @@
             android:layout_alignParentBottom="true"
             android:layout_toRightOf="@+id/button_call_switch_camera"
             android:layout_marginLeft="10dp"/>
->>>>>>> 5fa66c4... updated UI
 
-        <ImageButton
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_disconnect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/disconnect"
+            style="@style/MenuButtonsStyle"
+            android:layout_alignParentBottom="true" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/button_call_switch_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_camera"
+            style="@style/MenuButtonsStyle"
+            android:layout_toRightOf="@+id/button_call_disconnect"
+            android:layout_alignParentBottom="true" />
+
+        <!--<ImageButton
            android:id="@+id/button_call_scaling_mode"
            android:background="@drawable/ic_action_return_from_full_screen"
            android:contentDescription="@string/disconnect_call"
             android:focusableInTouchMode="false"
            android:layout_width="48dp"
-           android:layout_height="48dp"/>
 
-<<<<<<< HEAD
-       <ImageButton
-           android:id="@+id/button_call_toggle_mic"
-           android:background="@android:drawable/ic_btn_speak_now"
-           android:contentDescription="@string/toggle_mic"
-           android:focusableInTouchMode="false"
-           android:layout_marginEnd="8dp"
-           android:layout_width="48dp"
-           android:layout_height="48dp"/>
-    </LinearLayout>
-=======
+           android:layout_height="48dp"/>-->
+
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/button_call_toggle_mic"
             android:layout_width="wrap_content"
@@ -104,6 +89,7 @@
             style="@style/CallActionButtonStyle"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true" />
+
 
         <com.github.clans.fab.FloatingActionMenu
             android:id="@+id/add_to_call"
@@ -133,7 +119,6 @@
         </com.github.clans.fab.FloatingActionMenu>
 
     </RelativeLayout>
->>>>>>> 5fa66c4... updated UI
 
     <!-- <TextView
          android:id="@+id/capture_format_text_call"

@@ -132,6 +132,8 @@ public class PeerConnectionClient {
   private DataChannel dataChannel;
   private boolean dataChannelEnabled;
   private String peerToken;
+  private boolean mediaStreamShared;
+
   public interface DataChannelCallback {
     void onBinaryMessage(DataChannel.Buffer buffer);
     void onTextMessage(String text);
@@ -654,12 +656,15 @@ public class PeerConnectionClient {
     Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO);
 
     if (!signalingParameters.dataonly) {
-      mediaStream = factory.createLocalMediaStream("ARDAMS");
-      if (videoCallEnabled) {
-        mediaStream.addTrack(createVideoTrack(videoCapturer));
+      if (mediaStream == null) {
+        mediaStream = factory.createLocalMediaStream("ARDAMS");
+        if (videoCallEnabled) {
+          mediaStream.addTrack(createVideoTrack(videoCapturer));
+        }
+
+        mediaStream.addTrack(createAudioTrack());
       }
 
-      mediaStream.addTrack(createAudioTrack());
       peerConnection.addStream(mediaStream);
       if (videoCallEnabled) {
         findVideoSender();
@@ -1393,7 +1398,6 @@ public class PeerConnectionClient {
       reportError("setSDP error: " + error);
     }
   }
-
 
   public void setMediaStream(MediaStream ms) {
     mediaStream = ms;

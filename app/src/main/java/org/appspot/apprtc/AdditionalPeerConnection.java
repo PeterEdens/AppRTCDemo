@@ -17,9 +17,7 @@ import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
-
 import org.webrtc.MediaStream;
-
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
@@ -101,9 +99,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-
     AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId) {
-
         mRemoteId = remoteId;
         mContext = context;
         mIceServers = iceServers;

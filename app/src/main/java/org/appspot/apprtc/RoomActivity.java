@@ -255,6 +255,22 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
         Intent intent = getIntent();
 
+        // Bind to LocalService
+        Intent serviceIntent = new Intent(this, WebsocketService.class);
+        startService(serviceIntent);
+        bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE);
+
+        registerReceiver(mReceiver, mIntentFilter);
+
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
+            setupDrawer();
+            getSupportActionBar().setTitle(R.string.spreed_talk);
+        }
+
         Account account = getCurrentOwnCloudAccount(this);
         if (account != null) {
             AccountManager accountMgr = AccountManager.get(this);
@@ -601,17 +617,11 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     @Override
     protected void onStart() {
         super.onStart();
-        // Bind to LocalService
-        Intent intent = new Intent(this, WebsocketService.class);
-        startService(intent);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-
-        registerReceiver(mReceiver, mIntentFilter);
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy() {
+        super.onDestroy();
         // Unbind from the service
         if (mWebsocketServiceBound) {
             unbindService(mConnection);

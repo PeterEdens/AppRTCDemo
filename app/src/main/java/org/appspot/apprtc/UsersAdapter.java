@@ -61,10 +61,9 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
             String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
 
             ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true, true);
-
         }
         else {
-            holder.image.setImageResource(R.drawable.user_icon);
+            holder.image.setImageResource(R.drawable.user_icon_round);
         }
         holder.text.setText(user.displayName);
         if (user.message != null) {

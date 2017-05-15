@@ -36,6 +36,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
 
+import static org.appspot.apprtc.ConnectActivity.EXTRA_AVATAR;
 
 
 public class ChatFragment extends Fragment {
@@ -83,6 +84,7 @@ public class ChatFragment extends Fragment {
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
+
         adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
 
         recyclerView.setAdapter(adapter);
@@ -297,11 +299,11 @@ public class ChatFragment extends Fragment {
                 editChat.setText("");
                 String to = mCurrentId;
 
-
                 SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
                 String time = fmt.format(new Date());
                 chatEvents.onSendChatMessage(time, "Me", "self", message, to);
+
                 ChatItem item = new ChatItem(time, "Me", message, "self", "", to);
                 item.setOutgoing();
                 addOutgoingMessage(item);
@@ -336,6 +338,9 @@ public class ChatFragment extends Fragment {
                 userIdList.put("", new User("", "", mRoomName, ""));
             }
 
+            if (args.containsKey(EXTRA_AVATAR)) {
+                mAvatar = args.getString(EXTRA_AVATAR);
+            }
             if (args.containsKey(RoomActivity.EXTRA_SERVER_NAME)) {
                 mServerName = args.getString(RoomActivity.EXTRA_SERVER_NAME);
             }

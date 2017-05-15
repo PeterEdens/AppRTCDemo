@@ -15,6 +15,7 @@ import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,7 +23,11 @@ import java.util.List;
  */
 public interface AppRTCClient {
 
-  /**
+  String getRoomName();
+
+    String getId();
+
+    /**
    * Struct holding the connection parameters of an AppRTC room.
    */
   class RoomConnectionParameters {
@@ -55,12 +60,15 @@ public interface AppRTCClient {
 
   void sendTokenOffer(final SessionDescription sdp, final String token, final String id, final String to);
 
+  void sendConferenceOffer(final SessionDescription sdp, String to, String conferenceId);
   /**
    * Send answer SDP to the other participant.
    */
   void sendAnswerSdp(final SessionDescription sdp, String to);
 
   void sendTokenAnswer(final SessionDescription sdp, final String token, final String id, final String to);
+
+  void sendConference(final String conferenceId, final ArrayList<String> userIds);
 
   /**
    * Send Ice candidate to the other participant.
@@ -135,7 +143,7 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote SDP is received.
      */
-    void onRemoteDescription(final SerializableSessionDescription sdp, String token, String id, String fromId, String roomName);
+    void onRemoteDescription(final SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName);
 
     /**
      * Callback fired once remote Ice candidate is received.
@@ -188,5 +196,7 @@ public interface AppRTCClient {
     void onSelf();
 
     void onTurnTtl(int ttl);
+
+      void onConferenceUser(String roomName, String conferenceId, String id);
   }
 }

@@ -79,7 +79,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
         return null;
     }
-	
+
     public void disconnectFromServer() {
         if (appRtcClient != null) {
             appRtcClient.disconnectFromRoom();
@@ -87,6 +87,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             mUsers.clear();
         }
     }
+
+
 
 
     enum ConnectionState {
@@ -120,6 +122,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         return mServer;
     }
 
+    public String getId() {
+        if (appRtcClient != null) {
+            return appRtcClient.getId();
+        }
+        return "";
+    }
+
     public void connectToRoom(String roomName) {
         if (appRtcClient != null) {
             appRtcClient.connectToRoom(roomName);
@@ -135,6 +144,18 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void sendOfferSdp(SessionDescription sdp, String to) {
         if (appRtcClient != null) {
             appRtcClient.sendOfferSdp(sdp, to);
+        }
+    }
+
+    public void sendConferenceOfferSdp(SessionDescription sdp, String to, String conferenceId) {
+        if (appRtcClient != null) {
+            appRtcClient.sendConferenceOffer(sdp, to, conferenceId);
+        }
+    }
+
+    public void sendConference(String conferenceId, ArrayList<String> userIds) {
+        if (appRtcClient != null) {
+            appRtcClient.sendConference(conferenceId, userIds);
         }
     }
 
@@ -401,13 +422,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String fromId, String roomName) {
+    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
         broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
         broadcastIntent.putExtra(EXTRA_TOKEN, token);
         broadcastIntent.putExtra(EXTRA_ID, id);
-
         broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
         broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
         broadcastIntent.putExtra(EXTRA_ADDRESS, mServer);

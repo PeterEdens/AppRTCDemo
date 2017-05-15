@@ -40,6 +40,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -49,6 +50,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.github.clans.fab.FloatingActionButton;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -307,9 +310,7 @@ public class ConnectActivity extends DrawerActivity {
     roomListView.setOnItemClickListener(roomListClickListener);
     registerForContextMenu(roomListView);
     mConnectionTextView = (TextView) findViewById(R.id.connected_state);
-
     mAddRoom = (FloatingActionButton) findViewById(R.id.add_room_button);
-
     mAddRoom.setOnClickListener(addRoomListener);
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
     mConnectionLayout = (LinearLayout) findViewById(R.id.connect_layout);
@@ -393,11 +394,6 @@ public class ConnectActivity extends DrawerActivity {
     unregisterReceiver(mReceiver);
   }
 
-  @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    getMenuInflater().inflate(R.menu.connect_menu, menu);
-    return true;
-  }
 
   @Override
   public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
@@ -842,6 +838,15 @@ public class ConnectActivity extends DrawerActivity {
     public void onClick(View view) {
       if (mAddRoomEditText.getVisibility() == View.GONE) {
         mAddRoomEditText.setVisibility(View.VISIBLE);
+        mAddRoomEditText.requestFocus();
+        mAddRoomEditText.postDelayed(new Runnable() {
+          @Override
+          public void run() {
+            InputMethodManager keyboard = (InputMethodManager)
+                    getSystemService(Context.INPUT_METHOD_SERVICE);
+            keyboard.showSoftInput(mAddRoomEditText, 0);
+          }
+        },200);
         mAddRoom.setImageResource(R.drawable.ic_input_white_24dp);
       }
       else {
@@ -849,6 +854,7 @@ public class ConnectActivity extends DrawerActivity {
         adapter.setCurrentRoom(mCurrentRoom);
         adapter.notifyDataSetChanged();
         mService.connectToRoom(mAddRoomEditText.getText().toString());
+        mWaitingToEnterRoom = true;
         mAddRoomEditText.setVisibility(View.GONE);
         mAddRoom.setImageResource(R.drawable.ic_add_white_24dp);
       }

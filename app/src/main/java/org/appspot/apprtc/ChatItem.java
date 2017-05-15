@@ -46,6 +46,7 @@ public class ChatItem implements Serializable{
         this.fileinfo = fileinfo;
         this.buddyPicture = buddyPicture;
         this.Id = Id;
+        this.to = Id;
     }
 
     public void setDownloadPath(String path) {

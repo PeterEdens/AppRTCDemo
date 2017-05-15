@@ -218,7 +218,7 @@ public class AsyncHttpURLConnection {
       String responseType = connection.getContentType();
       if (responseType.startsWith("image/")) {
         Bitmap bitmap = BitmapFactory.decodeStream(responseStream);
-        if (mIsBitmap) {
+        if (mIsBitmap && bitmap != null) {
           ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
         }
         events.onHttpComplete(bitmap);

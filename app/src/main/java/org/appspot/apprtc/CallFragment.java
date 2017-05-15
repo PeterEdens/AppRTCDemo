@@ -13,7 +13,9 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,8 +23,15 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
+
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
+import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
+
+import java.util.ArrayList;
 
 /**
  * Fragment for call control.
@@ -30,33 +39,21 @@ import org.webrtc.RendererCommon.ScalingType;
 public class CallFragment extends Fragment {
   private View controlView;
   private TextView contactView;
-<<<<<<< HEAD
-  private ImageButton disconnectButton;
-  private ImageButton cameraSwitchButton;
-  private ImageButton videoScalingButton;
-  private ImageButton toggleMuteButton;
-  private TextView captureFormatText;
-  private SeekBar captureFormatSlider;
-=======
   private FloatingActionButton disconnectButton;
   private FloatingActionButton cameraSwitchButton;
   private FloatingActionButton videoScalingButton;
   private FloatingActionButton toggleMuteButton;
 
->>>>>>> 5fa66c4... updated UI
   private OnCallEvents callEvents;
   private ScalingType scalingType;
   private boolean videoCallEnabled = true;
   private SoundPlayer mSoundPlayer;
   private Context mContext;
-<<<<<<< HEAD
-=======
   private FloatingActionMenu addToCallButton;
   private CallActivity parentActivity;
   private FloatingActionButton addAllButton;
     private String mOwnId;
     private FloatingActionButton toggleVideoButton;
->>>>>>> 5fa66c4... updated UI
 
     /**
    * Call control interface for container activity.
@@ -81,9 +78,6 @@ public class CallFragment extends Fragment {
       }
   }
 
-<<<<<<< HEAD
-  @Override
-=======
   void addUsers() {
     ArrayList<User> users = parentActivity.getUsers();
     for (final User user: users) {
@@ -127,7 +121,6 @@ public class CallFragment extends Fragment {
     }
 
     @Override
->>>>>>> 5fa66c4... updated UI
   public View onCreateView(
       LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     controlView = inflater.inflate(R.layout.fragment_call, container, false);
@@ -135,14 +128,6 @@ public class CallFragment extends Fragment {
 
     // Create UI controls.
     contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
-<<<<<<< HEAD
-    disconnectButton = (ImageButton) controlView.findViewById(R.id.button_call_disconnect);
-    cameraSwitchButton = (ImageButton) controlView.findViewById(R.id.button_call_switch_camera);
-    videoScalingButton = (ImageButton) controlView.findViewById(R.id.button_call_scaling_mode);
-    toggleMuteButton = (ImageButton) controlView.findViewById(R.id.button_call_toggle_mic);
-    captureFormatText = (TextView) controlView.findViewById(R.id.capture_format_text_call);
-    captureFormatSlider = (SeekBar) controlView.findViewById(R.id.capture_format_slider_call);
-=======
     disconnectButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_disconnect);
     cameraSwitchButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_switch_camera);
     toggleVideoButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_video);
@@ -151,8 +136,17 @@ public class CallFragment extends Fragment {
 
     addToCallButton = (FloatingActionMenu)  controlView.findViewById(R.id.add_to_call);
     addAllButton = (FloatingActionButton) controlView.findViewById(R.id.add_all);
->>>>>>> 5fa66c4... updated UI
 
+    addAllButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        Intent intent = new Intent(mContext, CallActivity.class);
+        intent.setAction(WebsocketService.ACTION_ADD_ALL_CONFERENCE);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+        addToCallButton.close(true);
+      }
+    });
     // Add buttons click events.
     disconnectButton.setOnClickListener(new View.OnClickListener() {
       @Override
@@ -168,7 +162,7 @@ public class CallFragment extends Fragment {
       }
     });
 
-    videoScalingButton.setOnClickListener(new View.OnClickListener() {
+    /*videoScalingButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
         if (scalingType == ScalingType.SCALE_ASPECT_FILL) {
@@ -180,7 +174,7 @@ public class CallFragment extends Fragment {
         }
         callEvents.onVideoScalingSwitch(scalingType);
       }
-    });
+    });*/
     scalingType = ScalingType.SCALE_ASPECT_FILL;
 
     toggleMuteButton.setOnClickListener(new View.OnClickListener() {
@@ -241,6 +235,7 @@ public class CallFragment extends Fragment {
   @Override
   public void onAttach(Activity activity) {
     super.onAttach(activity);
+    parentActivity = (CallActivity)activity;
     callEvents = (OnCallEvents) activity;
   }
 }

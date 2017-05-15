@@ -194,6 +194,7 @@ public class ThumbnailsCacheManager {
                         final String trimmedName = name == null ? "" : name.trim();
                         drawTile(canvas, trimmedName, 0, 0, size, size);
                         ThumbnailsCacheManager.addBitmapToCache(url, bitmap);
+
                         onHttpComplete(bitmap);
                     }
 

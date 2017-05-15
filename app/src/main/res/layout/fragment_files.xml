@@ -10,16 +10,18 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="org.appspot.apprtc.RoomActivity">
 
-    <TextView
-        android:id="@+id/roomName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Room Name"/>
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+
+    <TextView
+        android:id="@+id/emptyFiles"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/roomName"/>
+        android:text="@string/emptyFiles"
+        android:gravity="center"
+        android:textSize="20sp"/>
 
 </RelativeLayout>

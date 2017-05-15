@@ -496,6 +496,22 @@ public abstract class DrawerActivity extends AppCompatActivity {
      */
     protected abstract void restart();
 
+    private Class<?> getActivityClass(int classStringId) {
+        String className = getString(classStringId);
+
+        if (className.length() != 0) {
+            Class<?> c = null;
+            try {
+                c = Class.forName(className);
+            }
+            catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            return c;
+        }
+        return null;
+    }
     /**
      * checks if the drawer exists and is opened.
      *
