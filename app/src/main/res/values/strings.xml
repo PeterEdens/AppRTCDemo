@@ -235,6 +235,7 @@
 
     <string name="recent">Recent</string>
     <string name="recent_button">Recent</string>
+
     <string name="files">Files</string>
 
     <string name="chooser_class"></string>
@@ -269,4 +270,5 @@
     <string name="action_status">Status</string>
     <string name="incoming_call_from">Incoming call from</string>
     <string name="calling">Calling</string>
+
 </resources>

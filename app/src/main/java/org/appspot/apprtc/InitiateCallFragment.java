@@ -159,9 +159,6 @@ public class InitiateCallFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        if (mSoundPlayer != null) {
-            mSoundPlayer.Stop();
-        }
     }
 
     @Override

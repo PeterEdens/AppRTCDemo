@@ -6,7 +6,7 @@ import java.io.Serializable;
 public class User implements Serializable{
     String userId;
     String buddyPicture;
-    String displayName;
+    public String displayName;
     public String Id;
     public String message;
 

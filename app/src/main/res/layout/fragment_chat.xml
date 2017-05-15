@@ -78,11 +78,12 @@
         android:gravity="center"
         android:textSize="20sp"/>
 
+
     <TextView
         android:id="@+id/emptyChat"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/roomName"
+        android:layout_below="@+id/recent_controls_layout"
         android:layout_above="@+id/chatEdit"
         android:text="@string/emptyChat"
         android:gravity="center"

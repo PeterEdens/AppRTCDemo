@@ -168,9 +168,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         try {
             mDownloadStream.write(bytes);
             mDownloadedBytes += length;
-
             events.onDownloadedBytes(mDownloadIndex, mDownloadedBytes, mRemoteId);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -189,8 +187,6 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         else {
             try {
                 mDownloadStream.close();
-
-
                 events.onDownloadComplete(mDownloadIndex, mRemoteId);
 
                 JSONObject json = new JSONObject();
@@ -394,9 +390,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     @Override
     public void onPeerConnectionError(String description) {
         Log.d(TAG, "onPeerConnectionError(" + description + ")");
-
         events.onError(description, mDownloadIndex, mRemoteId);
-
         mConnectionState = ConnectionState.PEERDISCONNECTED;
     }
 

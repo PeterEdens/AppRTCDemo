@@ -58,6 +58,7 @@ public class ChatFragment extends Fragment {
     private SoundPlayer mSoundPlayer;
     private String mCurrentId;
     private HashMap<String, User> userIdList = new HashMap<String, User>();
+
     private RelativeLayout recentButton;
     private RelativeLayout recentControlsLayout;
     private TextView roomChatButton;
@@ -66,7 +67,6 @@ public class ChatFragment extends Fragment {
     public void clearMessages() {
         chatList.clear();
     }
-
 
     public enum ChatMode {
         TOPLEVEL,
@@ -78,10 +78,12 @@ public class ChatFragment extends Fragment {
     public void viewChat(String key) {
         mode = ChatMode.CONTENTS;
         mCurrentId = key;
+
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
         adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
+
         recyclerView.setAdapter(adapter);
         User user = userIdList.get(key);
         mUserNameTextView.setText(user.displayName);
@@ -160,12 +162,12 @@ public class ChatFragment extends Fragment {
         });
     }
 
-    public void setDownloadedBytes(final int index, final long downloaded) {
+    public void setDownloadedBytes(final int index, final long downloaded, final String to) {
         uiUpdateHandler.post(new Runnable() {
 
             @Override
             public void run() {
-                ChatItem item = chatList.get(index);
+                ChatItem item = chatList.get(to).get(index);
                 long filesize = item.getFilesize();
                 item.setPercentDownloaded((int) ((float)((float)downloaded / (float)filesize) * 100.0f));
                 adapter.notifyDataSetChanged();
@@ -173,30 +175,30 @@ public class ChatFragment extends Fragment {
         });
     }
 
-    public void setDownloadPath(int index, String path) {
-        ChatItem item = chatList.get(index);
+    public void setDownloadPath(int index, String path, String to) {
+        ChatItem item = chatList.get(to).get(index);
         item.setDownloadPath(path);
     }
 
-    public void setDownloadComplete(final int index) {
+    public void setDownloadComplete(final int index, final String to) {
         uiUpdateHandler.post(new Runnable() {
 
             @Override
             public void run() {
-                ChatItem item = chatList.get(index);
+                ChatItem item = chatList.get(to).get(index);
                 item.setDownloadComplete();
                 adapter.notifyDataSetChanged();
             }
         });
     }
 
-    public void onDownloadError(final String description, final int index) {
+    public void onDownloadError(final String description, final int index, final String to) {
         uiUpdateHandler.post(new Runnable() {
 
             @Override
             public void run() {
                 if (index < chatList.size()) {
-                    ChatItem item = chatList.get(index);
+                    ChatItem item = chatList.get(to).get(index);
                     item.setDownloadFailed(description);
                     adapter.notifyDataSetChanged();
                 }
@@ -242,7 +244,9 @@ public class ChatFragment extends Fragment {
 
         mUserNameTextView = (TextView) controlView.findViewById(R.id.userName);
         recentControlsLayout = (RelativeLayout) controlView.findViewById(R.id.recent_controls_layout);
+
         recentButton = (RelativeLayout) controlView.findViewById(R.id.recent_back_layout);
+
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyChat = (TextView) controlView.findViewById(R.id.emptyChat);
         sendButton = (ImageButton) controlView.findViewById(R.id.sendButton);
@@ -267,12 +271,25 @@ public class ChatFragment extends Fragment {
             }
         });
 
+        recentButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mode = ChatMode.TOPLEVEL;
+                mCurrentId = "";
+                adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
+                recyclerView.setAdapter(adapter);
+                mUserNameTextView.setText(getString(R.string.recent));
+                recentControlsLayout.setVisibility(View.GONE);
+            }
+        });
+
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String message = editChat.getText().toString();
                 editChat.setText("");
                 String to = mCurrentId;
+
 
                 SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
                 fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -321,6 +338,7 @@ public class ChatFragment extends Fragment {
             }
         }
 
+
         mCurrentId = "";
         if (chatList.get("") == null) {
             chatList.put("", new ArrayList<ChatItem>());
@@ -330,18 +348,23 @@ public class ChatFragment extends Fragment {
         recyclerView.setLayoutManager(layoutManager);
 
         if (mode == ChatMode.TOPLEVEL) {
+
             recentControlsLayout.setVisibility(View.INVISIBLE);
+
             adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
             mUserNameTextView.setText(getString(R.string.recent));
         }
         else {
             recentControlsLayout.setVisibility(View.VISIBLE);
+
             adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
+
             mUserNameTextView.setText(userIdList.get(mCurrentId).displayName);
         }
         recyclerView.setAdapter(adapter);
 
     }
+
 
     public void addOutgoingMessage(ChatItem item) {
         addMessage(item, mUser);
@@ -359,6 +382,7 @@ public class ChatFragment extends Fragment {
         }
 
         chatList.get(chatItem.getRecipient()).add(chatItem);
+
         if (adapter != null) {
             adapter.notifyDataSetChanged();
             emptyChat.setVisibility(View.GONE);
