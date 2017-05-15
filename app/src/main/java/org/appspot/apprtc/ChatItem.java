@@ -1,9 +1,11 @@
 package org.appspot.apprtc;
 
+import java.io.Serializable;
+
 /**
  * Created by petere on 3/7/2017.
  */
-public class ChatItem {
+public class ChatItem implements Serializable{
     String time;
     public String displayName;
     String text;

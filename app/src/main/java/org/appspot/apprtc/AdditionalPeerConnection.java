@@ -17,7 +17,9 @@ import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
+
 import org.webrtc.MediaStream;
+
 import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
@@ -69,6 +71,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     private SessionDescription mRemoteSdp;
     private final List<VideoRenderer.Callbacks> remoteRenderers =
             new ArrayList<VideoRenderer.Callbacks>();
+
     private String mConferenceId;
 
     public CallActivity.RemoteConnectionViews getRemoteViews() {
@@ -85,6 +88,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     interface AdditionalPeerConnectionEvents {
 
+
         void sendOfferSdp(SessionDescription localSdp, String remoteId, String conferenceId);
 
         void sendAnswerSdp(SessionDescription localSdp, String remoteId);
@@ -97,7 +101,9 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
+
     AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId) {
+
         mRemoteId = remoteId;
         mContext = context;
         mIceServers = iceServers;
@@ -115,6 +121,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         
         this.mediaStream = mediaStream;
         this.mConferenceId = conferenceId;
+
         mLocalSdpSent = false;
 
         dataChannelParameters = new PeerConnectionClient.DataChannelParameters(true,

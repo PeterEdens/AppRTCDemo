@@ -14,6 +14,7 @@ import org.appspot.apprtc.util.ThumbnailsCacheManager;
 
 import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
 
+
 public class UserActivity extends AppCompatActivity {
 
     private String mServer;
@@ -25,6 +26,7 @@ public class UserActivity extends AppCompatActivity {
     RelativeLayout shareFileButton;
     private User user;
     private RelativeLayout videocallButton;
+
     private String mOwnId;
 
     @Override

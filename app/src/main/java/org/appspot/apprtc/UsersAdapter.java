@@ -27,6 +27,8 @@ import java.lang.ref.WeakReference;
 
 import java.util.ArrayList;
 
+import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
+
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder> {
 
     private final String mOwnId;
@@ -82,9 +84,9 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
 
     public static class UsersViewHolder extends RecyclerView.ViewHolder {
 
-        ImageButton callButton;
+        /*ImageButton callButton;
         ImageButton chatButton;
-        ImageButton shareFileButton;
+        ImageButton shareFileButton;*/
         protected ImageView image;
         protected TextView text;
         protected TextView message;
@@ -149,7 +151,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
                         v.getContext().startActivity(intent);
                     }
                 }
-            });
+            });*/
         }
 
     }

@@ -244,9 +244,11 @@
     <string name="mode_video_chat"></string>
     <string name="mode_share_files"></string>
     <string name="drawer_chat">SecureIM</string>
+
     <string name="drawer_video_chat">SecureMeet</string>
     <string name="drawer_share_files">SecureFileShare</string>
     <string name="prefs_add_account">Add account</string>
+
     <string name="drawer_item_settings">Settings</string>
     <string name="drawer_close">Close</string>
     <string name="drawer_open">Open</string>

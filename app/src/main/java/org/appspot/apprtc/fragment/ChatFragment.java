@@ -61,6 +61,7 @@ public class ChatFragment extends Fragment {
 
     private RelativeLayout recentButton;
     private RelativeLayout recentControlsLayout;
+
     private TextView roomChatButton;
     private String mAvatarUrl;
 
@@ -271,6 +272,12 @@ public class ChatFragment extends Fragment {
             }
         });
 
+        roomChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                viewChat("");
+            }
+        });
         recentButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

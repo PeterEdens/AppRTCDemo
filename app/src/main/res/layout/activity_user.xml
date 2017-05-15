@@ -11,7 +11,6 @@
     tools:context="org.appspot.apprtc.UserActivity"
     android:background="@color/white">
 
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -93,6 +92,7 @@
             android:layout_margin="10dp"
             android:tint="#666666"
             android:src="@drawable/ic_call_black_48dp"/>
+
 
         <TextView
             android:layout_width="wrap_content"

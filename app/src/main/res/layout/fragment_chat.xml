@@ -125,4 +125,5 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:src="@drawable/ic_send_white_48dp"/>
+
 </RelativeLayout>

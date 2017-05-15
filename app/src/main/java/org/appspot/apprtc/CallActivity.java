@@ -87,7 +87,7 @@ import java.util.Set;
 public class CallActivity extends AppCompatActivity implements AppRTCClient.SignalingEvents,
                                                       PeerConnectionClient.PeerConnectionEvents,
                                                       CallFragment.OnCallEvents,
-                                                      InitiateCallFragment.OnInitiateCallEvents {
+                                                      InitiateCallFragment.OnInitiateCallEvents, AdditionalPeerConnection.AdditionalPeerConnectionEvents {
   public static final String ACTION_NEW_CALL = "org.appspot.apprtc.ACTION_NEW_CALL";
   public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
   public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
@@ -154,6 +154,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private static final int REMOTE_Y = 0;
   private static final int REMOTE_WIDTH = 100;
   private static final int REMOTE_HEIGHT = 100;
+  private static final int REMOTE_HEIGHT2 = 50;
   private PeerConnectionClient peerConnectionClient = null;
 
   //private AppRTCClient appRtcClient;
@@ -782,6 +783,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         mPeerId = sdp.from;
         mPeerName = user.displayName;
         ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
+
         if (peerConnectionClient.isConnected()) {
           onRemoteDescription(sdp, token, id, conferenceId, "", "");
         } else {
@@ -1124,6 +1126,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       for (HashMap.Entry<String, AdditionalPeerConnection> entry: mAdditionalPeers.entrySet()) {
         AdditionalPeerConnection additionalPeerConnection = entry.getValue();
         additionalPeerConnection.close();
+
         if (mService != null) {
           mService.sendBye(entry.getKey());
         }
@@ -1244,7 +1247,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     });
   }
 
-  private VideoCapturer createVideoCapturer() {
+  protected VideoCapturer createVideoCapturer() {
     VideoCapturer videoCapturer = null;
     String videoFileAsCamera = getIntent().getStringExtra(EXTRA_VIDEO_FILE_AS_CAMERA);
     if (videoFileAsCamera != null) {
