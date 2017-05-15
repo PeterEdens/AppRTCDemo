@@ -3,6 +3,7 @@ package org.appspot.apprtc.service;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 
 import org.appspot.apprtc.AppRTCClient;
@@ -76,6 +77,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
         return null;
     }
+	
     public void disconnectFromServer() {
         if (appRtcClient != null) {
             appRtcClient.disconnectFromRoom();
@@ -98,14 +100,18 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     private AppRTCClient appRtcClient;
     private HashMap<String, ArrayList<User>> mUsers = new HashMap<String, ArrayList<User>>();
-    private List<PeerConnection.IceServer> mIceServers = new ArrayList<PeerConnection.IceServer>();
+    static private List<PeerConnection.IceServer> mIceServers = new ArrayList<PeerConnection.IceServer>();
 
     public ArrayList<User> getUsersInRoom(String roomName) {
         return mUsers.get(roomName);
     }
 
-    public List<PeerConnection.IceServer> getIceServers() {
+    public static List<PeerConnection.IceServer> getIceServers() {
         return mIceServers;
+    }
+
+    public static void clearIceServers() {
+        mIceServers.clear();
     }
 
     public String getServerAddress() {
@@ -167,15 +173,21 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
+    public void leaveRoom() {
+        if (appRtcClient != null) {
+            appRtcClient.sendLeave();
+        }
+    }
+
     public void sendChatMessage(String message, String to) {
         if (appRtcClient != null) {
             appRtcClient.sendChatMessage(message, to);
         }
     }
 
-    public void sendFileMessage(String message, String to) {
+    public void sendFileMessage(String message, long size, String name, String mime, String to) {
         if (appRtcClient != null) {
-            appRtcClient.sendFileMessage(message, to);
+            appRtcClient.sendFileMessage(message, size, name, mime, to);
         }
     }
 
@@ -290,7 +302,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void onConfigResponse(String response) {
-        try {
+       /* try {
             JSONObject json = new JSONObject(response);
             String username = json.getString("TurnUsername");
             String password = json.getString("TurnPassword");
@@ -308,8 +320,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             }
         } catch (JSONException e) {
             e.printStackTrace();
-        }
-
+        }*/
     }
 
     @Override
@@ -348,6 +359,40 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
+    public void onAddTurnServer(String url, String username, String password) {
+
+        boolean found = false;
+        for (PeerConnection.IceServer server: mIceServers) {
+            if (server.uri.equals(url) && server.username.equals(username) && server.password.equals(password)) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            PeerConnection.IceServer iceServer = new PeerConnection.IceServer(url, username, password);
+            mIceServers.add(iceServer);
+        }
+    }
+
+    @Override
+    public void onAddStunServer(String url, String username, String password) {
+
+        boolean found = false;
+        for (PeerConnection.IceServer server: mIceServers) {
+            if (server.uri.equals(url) && server.username.equals(username) && server.password.equals(password)) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            PeerConnection.IceServer iceServer = new PeerConnection.IceServer(url, username, password);
+            mIceServers.add(iceServer);
+        }
+    }
+
+    @Override
     public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String fromId, String roomName) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
@@ -371,11 +416,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteIceCandidate(SerializableIceCandidate candidate, String id) {
+    public void onRemoteIceCandidate(SerializableIceCandidate candidate, String id, String token) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
         broadcastIntent.putExtra(EXTRA_CANDIDATE, candidate);
         broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_TOKEN, token);
         sendBroadcast(broadcastIntent);
     }
 

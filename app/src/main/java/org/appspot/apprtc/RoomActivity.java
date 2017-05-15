@@ -6,6 +6,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -17,16 +18,19 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
+import android.provider.OpenableColumns;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
 import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ListView;
@@ -55,11 +59,12 @@ import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static android.R.id.message;
 
-public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatEvents, PeerConnectionClient.PeerConnectionEvents, PeerConnectionClient.DataChannelCallback {
+public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatEvents, PeerConnectionClient.PeerConnectionEvents, PeerConnectionClient.DataChannelCallback, TokenPeerConnection.TokenPeerConnectionEvents {
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
     public static final String EXTRA_SERVER_NAME = "org.appspot.apprtc.EXTRA_SERVER_NAME";
     public static final String ACTION_NEW_CHAT = "org.appspot.apprtc.ACTION_NEW_CHAT";
@@ -104,7 +109,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private ViewPager viewPager;
     private int mTokenId = 1;
 
-    private PeerConnectionClient peerConnectionClient = null;
+    private HashMap<String, TokenPeerConnection> mPeerConnections = new HashMap<String, TokenPeerConnection>();
+    //private PeerConnectionClient peerConnectionClient = null;
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -208,6 +214,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id) {
         mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id));
+        tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
     private void AddUser(User userEntered) {
@@ -458,11 +465,21 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         else if (action != null && action.equals(ACTION_DOWNLOAD)) {
             initiator = true;
 
-            mRemoteId = intent.getStringExtra(EXTRA_TO);
-            mDownloadFile = (FileInfo) intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
-            mToken = mDownloadFile.id;
-            mDownloadIndex = intent.getIntExtra(EXTRA_INDEX, -1);
-            setupPeerConnection();
+            String remoteId = intent.getStringExtra(EXTRA_TO);
+            FileInfo downloadFile = (FileInfo) intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
+            String token = downloadFile.id;
+            int downloadIndex = intent.getIntExtra(EXTRA_INDEX, -1);
+
+            String connectionId = "1";
+            String peerConnectionId = remoteId + token + connectionId;
+            if (mPeerConnections.containsKey(peerConnectionId)) {
+                mPeerConnections.get(peerConnectionId).close();
+                mPeerConnections.remove(peerConnectionId);
+            }
+
+            TokenPeerConnection connection = new TokenPeerConnection(this, this, true, token, remoteId, connectionId, mService.getIceServers());
+            connection.setFileInfo(downloadFile);
+            mPeerConnections.put(peerConnectionId, connection);
         }
         else if (action != null && action.equals(ACTION_NEW_CHAT)) {
             viewPager.setCurrentItem(CHAT_INDEX);
@@ -473,29 +490,39 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             User user = (User) intent.getSerializableExtra(EXTRA_USER);
             mFileRecipient = user.Id;
 
-            Intent i = new Intent();
-            i.setAction(Intent.ACTION_GET_CONTENT);
-            i.setType("image/*");
+            Intent i;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                i = new Intent();
+                i.setAction(Intent.ACTION_GET_CONTENT);
+                i.setType("*/*");
+            } else {
+                i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                i.setType("*/*");
+            }
             startActivityForResult(i, FILE_CODE);
         }
         else if (action != null && action.equals(WebsocketService.ACTION_REMOTE_ICE_CANDIDATE)) {
             SerializableIceCandidate candidate = (SerializableIceCandidate)intent.getParcelableExtra(WebsocketService.EXTRA_CANDIDATE);
             String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
+            String remoteId = candidate.from;
+            String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
 
-            if (peerConnectionClient == null) {
-                Log.e("RoomActivity", "Received ICE candidate for a non-initialized peer connection.");
-
-                setupPeerConnection();
+            String peerConnectionId = remoteId + token + id;
+            if (!mPeerConnections.containsKey(peerConnectionId)) {
+                Log.e("RoomActivity", "Received remote ice candidate for non-initilized peer connection.");
+                return;
             }
 
-            if (mSdpId.equals(id)) {
-                IceCandidate ic = new IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
-                peerConnectionClient.addRemoteIceCandidate(ic);
-            }
+            IceCandidate ic = new IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
+            mPeerConnections.get(peerConnectionId).addRemoteIceCandidate(ic);
+
         }
         else if (action != null && action.equals(WebsocketService.ACTION_REMOTE_DESCRIPTION)) {
             SerializableSessionDescription sdp = (SerializableSessionDescription) intent.getSerializableExtra(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
-            mPeerId = sdp.from;
+            String remoteId = sdp.from;
             String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
             String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
 
@@ -505,17 +532,19 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
             mToken = token;
 
-            if (!mRemoteSdpSet) {
-                mRemoteSdpSet = true;
-                if (peerConnectionClient == null) {
-                    Log.e("RoomActivity", "Received remote SDP for non-initilized peer connection.");
-                    setupPeerConnection();
-                }
+            String peerConnectionId = remoteId + token + id;
+            if (mPeerConnections.containsKey(peerConnectionId)) {
+                // an existing connection
                 SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
-                peerConnectionClient.setRemoteDescription(sd, token);
-                if (!initiator) {
-                    mSdpId = id;
-                }
+                mPeerConnections.get(peerConnectionId).setRemoteDescription(sd);
+            }
+            else {
+                // does not exist, create the new connection
+                TokenPeerConnection connection = new TokenPeerConnection(this, this, false, token, remoteId, id, mService.getIceServers());
+                SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
+                connection.setRemoteDescription(sd);
+                mPeerConnections.put(peerConnectionId, connection);
+
             }
         }
 
@@ -528,10 +557,30 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {
                 Uri path = intent.getData();
+            long size = 0;
+            String name = "";
+            ContentResolver cr = this.getContentResolver();
+            String mime = cr.getType(path);
 
-                // Do something with the result...
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                size = TokenPeerConnection.getContentSize(path, this);
+                name = TokenPeerConnection.getContentName(path, this);
+
+                final int takeFlags = intent.getFlags()
+                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                // Check for the freshest data.
+                getContentResolver().takePersistableUriPermission(path, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            }
+            else {
+                size = TokenPeerConnection.getContentSize(path, this);
+                name = TokenPeerConnection.getContentName(path, this);
+            }
+
+            // Do something with the result...
                 if (mService != null) {
-                    mService.sendFileMessage(path.toString(), mFileRecipient);
+                    mService.sendFileMessage(path.toString(), size, name, mime, mFileRecipient);
                 }
 
         }
@@ -707,7 +756,6 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
 
        /* signalingParameters = new AppRTCClient.SignalingParameters(mService.getIceServers(), false, "", "", "", null, null);
-
         signalingParameters.dataonly = true;
         if (peerConnectionClient != null) {
             peerConnectionClient.createPeerConnection(signalingParameters);

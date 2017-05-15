@@ -237,6 +237,8 @@
             android:title="@string/pref_force_relay_title"
             android:dialogTitle="@string/pref_force_relay_dlg"
             android:defaultValue="@string/pref_force_relay_default" />
+
     </PreferenceCategory>-->
+
 
 </PreferenceScreen>

@@ -15,6 +15,12 @@ public class FileInfo implements Serializable {
     String type;
     int percentDownloaded;
     String downloadPath;
+    String errorMessage;
+
+    public void setErrorMessage(String description) {
+        errorMessage = description;
+        downloadState = DownloadState.FAILED;
+    }
 
     public enum DownloadState {
         IDLE,

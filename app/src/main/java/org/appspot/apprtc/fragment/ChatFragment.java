@@ -190,6 +190,20 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    public void onDownloadError(final String description, final int index) {
+        uiUpdateHandler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                if (index < chatList.size()) {
+                    ChatItem item = chatList.get(index);
+                    item.setDownloadFailed(description);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
 
     /**
      * Call control interface for container activity.

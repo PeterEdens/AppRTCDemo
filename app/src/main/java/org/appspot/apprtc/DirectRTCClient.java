@@ -69,6 +69,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void sendSelf() {
+
+  }
+
+  @Override
   public void connectToServer(String address) {
 
   }
@@ -139,7 +144,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendFileMessage(String message, String to) {
+  public void sendFileMessage(String message, long size, String name, String mime, String to) {
 
   }
 
@@ -306,7 +311,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       JSONObject json = new JSONObject(msg);
       String type = json.optString("type");
       if (type.equals("candidate")) {
-        events.onRemoteIceCandidate(toJavaCandidate(json), "");
+        events.onRemoteIceCandidate(toJavaCandidate(json), "", "");
       } else if (type.equals("remove-candidates")) {
         JSONArray candidateArray = json.getJSONArray("candidates");
         SerializableIceCandidate[] candidates = new SerializableIceCandidate[candidateArray.length()];

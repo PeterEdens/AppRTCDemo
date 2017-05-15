@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -73,6 +74,13 @@ public class ConnectActivity extends DrawerActivity {
   public static final String EXTRA_DISPLAYNAME = "org.appspot.apprtc.EXTRA_DISPLAYNAME";
   public static final String EXTRA_AVATAR = "org.appspot.apprtc.EXTRA_AVATAR";
   private static boolean commandLineRun = false;
+
+  private static final int PERMISSIONS_REQUEST = 1;
+
+  // List of mandatory application permissions.
+  private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
+          "android.permission.RECORD_AUDIO", "android.permission.INTERNET", "android.permission.CAMERA",
+          "android.permission.WRITE_EXTERNAL_STORAGE"};
 
   WebsocketService mService;
   boolean mWebsocketServiceBound = false;
@@ -352,6 +360,14 @@ public class ConnectActivity extends DrawerActivity {
       String room = sharedPref.getString(keyprefRoom, "");
 
       connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
+    }
+
+
+    // Check for mandatory permissions.
+    for (String permission : MANDATORY_PERMISSIONS) {
+      if (checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+        requestPermission(permission);
+      }
     }
   }
 

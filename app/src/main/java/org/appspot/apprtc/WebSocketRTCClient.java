@@ -18,6 +18,8 @@ import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
 
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Base64;
@@ -33,6 +35,7 @@ import org.webrtc.SessionDescription;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.text.DateFormat;
@@ -127,7 +130,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       @Override
       public void run() {
         disconnectFromRoomInternal();
-        handler.getLooper().quit();
       }
     });
   }
@@ -138,7 +140,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       @Override
       public void run() {
         LeaveRoomInternal();
-        handler.getLooper().quit();
       }
     });
   }
@@ -586,18 +587,18 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Send Ice candidate to the other participant.
   @Override
-  public void sendFileMessage(final String message, final String to) {
+  public void sendFileMessage(final String message, final long size, final String name, final String mime, final String to) {
     handler.post(new Runnable() {
       @Override
       public void run() {
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
         String time = fmt.format(new Date());
-        File f = new File(message);
-        long size = f.length();
-        long chunks = size / 60000;
 
-        if (chunks == 0) {
-          chunks = 1;
+        long chunks = size / TokenPeerConnection.CHUNK_SIZE;
+
+        // add 1 for the remainder
+        if (size % TokenPeerConnection.CHUNK_SIZE != 0) {
+          chunks++;
         }
 
         JSONObject jsonChatWrap = new JSONObject();
@@ -606,9 +607,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         JSONObject fileinfo = new JSONObject();
         jsonPut(fileinfo, "chunks", chunks);
         jsonPut(fileinfo, "id", "file_" + Base64.encodeToString(message.getBytes(), Base64.NO_WRAP));
-        jsonPut(fileinfo, "name", f.getName());
+        jsonPut(fileinfo, "name", URLDecoder.decode(name));
         jsonPut(fileinfo, "size", size);
-        jsonPut(fileinfo, "type", getMimeType(message));
+        jsonPut(fileinfo, "type", mime);
 
         JSONObject fileinfoWrap = new JSONObject();
         jsonPut(fileinfoWrap, "FileInfo", fileinfo);
@@ -725,7 +726,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
     }
   }
-  
+
   // --------------------------------------------------------------------
   // WebSocketChannelEvents interface implementation.
   // All events are called by WebSocketChannelClient on a local looper thread
@@ -745,11 +746,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
           String typeText = json.getString("Type");
           if (typeText.equals("Self")) {
-            String id = json.getString("Id");
             String oldId = mId;
-            mId = id;
-            String sid = json.getString("Sid");
-            mSid = sid;
+            handleSelf(json);
+
             JSONObject hello;
 
             if (oldId.length() != 0) {
@@ -825,6 +824,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 }
               }
 
+            }
           }
         }
         else if (type.equals("Self")) {
@@ -856,7 +856,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                   events.onUserEnteredRoom(user, mRoomName);
                 }
               }
-
         }
         else if (type.equals("Joined")) {
           //{"Type":"Joined","Id":"bktktUup1ReVkLdrrN7cw4iev1ewPKbD4XTZNh5MEFN8PT1nRER5UTFQZ3RtR3FSLUpxZHVFSTU4dXJDbFlsbzBfZGU2ajhBSmdwR2k4d0lRSGQ2SE11QUkxY0c3MmhjZHp2SGJlRWYxfDQ1MDAyNzc4NDE=","Userid":"admin","Ua":"Chrome 56","Prio":100,"Status":{"buddyPicture":"img:NfDqvZdFAyD9EhgwL6vq\/sZjrk6Kw3NIU\/picture.png","displayName":"admin","message":null}}
@@ -881,6 +880,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                     if (!message.equals("null")) {
                       user.message = message;
                     }
+					
                     events.onUserEnteredRoom(user, mRoomName);
                 }
             }
@@ -935,12 +935,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           String candidateTxt = json.optString("Candidate");
           JSONObject candidateJson = new JSONObject(candidateTxt);
           String id = candidateJson.optString("_id");
-          events.onRemoteIceCandidate(toJavaCandidate(candidateJson), id);
+          String token = candidateJson.optString("_token");
+          events.onRemoteIceCandidate(toJavaCandidate(candidateJson, mIdFrom), id, token);
         } else if (type.equals("remove-candidates")) {
           JSONArray candidateArray = json.getJSONArray("candidates");
           SerializableIceCandidate[] candidates = new SerializableIceCandidate[candidateArray.length()];
           for (int i = 0; i < candidateArray.length(); ++i) {
-            candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i));
+            candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i), mIdFrom);
           }
           events.onRemoteIceCandidatesRemoved(candidates);
         } else if (type.equals("Answer")) {
@@ -1137,8 +1138,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   // Converts a JSON candidate to a Java object.
-  SerializableIceCandidate toJavaCandidate(JSONObject json) throws JSONException {
+  SerializableIceCandidate toJavaCandidate(JSONObject json, String from) throws JSONException {
     return new SerializableIceCandidate(
-        json.getString("sdpMid"), json.getInt("sdpMLineIndex"), json.getString("candidate"));
+        json.getString("sdpMid"), json.getInt("sdpMLineIndex"), json.getString("candidate"), from);
   }
 }
