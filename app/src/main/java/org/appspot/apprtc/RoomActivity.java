@@ -124,7 +124,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
             ArrayList<ChatItem> messages = mService.getMessages(mRoomName);
 
-            if (messages != null) {
+            if (messages != null && users != null) {
                 HashMap<String, User> userMap = new HashMap<>();
                 for (User user : users) {
                     userMap.put(user.Id, user);
@@ -433,6 +433,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
         if (intent.hasExtra(EXTRA_SERVER_NAME)) {
             mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
+        }
+        if (intent.hasExtra(EXTRA_ROOM_NAME)) {
+            mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
         }
     }
 

@@ -78,17 +78,6 @@
         android:gravity="center"
         android:textSize="20sp"/>
 
-
-    <TextView
-        android:id="@+id/emptyChat"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/recent_controls_layout"
-        android:layout_above="@+id/chatEdit"
-        android:text="@string/emptyChat"
-        android:gravity="center"
-        android:textSize="20sp"/>
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
@@ -110,20 +99,5 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:src="@drawable/ic_send_white_24dp"/>
-
-    <EditText
-        android:id="@+id/chatEdit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toLeftOf="@+id/sendButton"/>
-
-    <ImageButton
-        android:id="@+id/sendButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:src="@drawable/ic_send_white_48dp"/>
 
 </RelativeLayout>

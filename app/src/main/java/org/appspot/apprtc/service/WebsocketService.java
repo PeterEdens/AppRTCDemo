@@ -198,6 +198,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     public void connectToServer(String address) {
         mServer = address;
+        if (mState == null) {
+            appRtcClient = new WebSocketRTCClient(this);
+        }
+
         if (appRtcClient != null) {
             appRtcClient.connectToServer(address);
         }

@@ -87,7 +87,7 @@ public class PeerConnectionClient {
   //private PeerConnectionClient instance = new PeerConnectionClient();
   private final PCObserver pcObserver = new PCObserver();
   private final SDPObserver sdpObserver = new SDPObserver();
-  private final ScheduledExecutorService executor;
+  private static ScheduledExecutorService executor;
 
   private Context context;
   private PeerConnectionFactory factory;
@@ -296,7 +296,9 @@ public class PeerConnectionClient {
     // Executor thread is started once in private ctor and is used for all
     // peer connection API calls to ensure new peer connection factory is
     // created on the same thread as previously destroyed factory.
-    executor = Executors.newSingleThreadScheduledExecutor();
+      if (executor == null) {
+          executor = Executors.newSingleThreadScheduledExecutor();
+      }
   }
 
   public static PeerConnectionClient getInstance() {

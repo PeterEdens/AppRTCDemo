@@ -39,22 +39,26 @@
         android:gravity="center"
         android:layout_height="wrap_content">
 
-        <Button
+        <ImageView
             android:id="@+id/button_call_disconnect"
-            android:background="@drawable/hangup"
+            android:src="@drawable/hangup"
             android:layout_margin="20dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:focusableInTouchMode="false"
+            android:focusable="true"
+            android:clickable="true"
             android:textColor="@android:color/white"/>
 
-        <Button
+        <ImageView
             android:id="@+id/button_call_connect"
-            android:background="@drawable/answer"
+            android:src="@drawable/answer"
             android:layout_margin="20dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:focusableInTouchMode="false"
+            android:focusable="true"
+            android:clickable="true"
             android:textColor="@android:color/white"/>
 
 

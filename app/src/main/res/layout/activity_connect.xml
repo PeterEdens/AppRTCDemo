@@ -33,35 +33,39 @@
         </android.support.design.widget.AppBarLayout>
 
 
-        <TextView
-            android:id="@+id/connected_state"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:id="@+id/connected_state_layout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:lines="1"
-            android:maxLines="1"
-            android:textColor="@android:color/holo_red_dark"
-            android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_below="@+id/appbar"
-            android:text="@string/disconnected"/>
+            android:background="@color/room_item">
+            <TextView
+                android:id="@+id/connected_state"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:lines="1"
+                android:maxLines="1"
+                android:textColor="@android:color/holo_red_dark"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/disconnected"/>
 
-        <ProgressBar
-            android:id="@+id/connecting_progress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:layout_below="@+id/appbar"
-            android:layout_alignTop="@+id/connected_state"
-            android:layout_alignBottom="@+id/connected_state"
-            android:layout_toRightOf="@+id/connected_state"/>
-
+            <ProgressBar
+                android:id="@+id/connecting_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:layout_alignTop="@+id/connected_state"
+                android:layout_alignBottom="@+id/connected_state"
+                android:layout_toRightOf="@+id/connected_state"/>
+        </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/room_list_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_below="@id/connected_state"
+            android:layout_below="@id/connected_state_layout"
             android:visibility="visible">
 
             <TextView

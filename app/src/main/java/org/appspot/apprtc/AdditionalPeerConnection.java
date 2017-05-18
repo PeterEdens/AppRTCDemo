@@ -19,6 +19,7 @@ import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
+import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
 import org.webrtc.SurfaceViewRenderer;
@@ -93,6 +94,10 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         void sendLocalIceCandidate(SerializableIceCandidate candidate, String remoteId);
 
         void onError(String description, String to);
+
+        void onConnected(String remoteId);
+
+        void onConnectionClosed(String mRemoteId);
     }
 
     AdditionalPeerConnectionEvents events;
@@ -137,6 +142,11 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         }
 
         peerConnectionClient = PeerConnectionClient.getInstance();
+
+        PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
+        options.disableNetworkMonitor = true;
+        peerConnectionClient.setPeerConnectionFactoryOptions(options);
+
         peerConnectionClient.createPeerConnectionFactory(
                 mContext, peerConnectionParameters, this);
 
@@ -144,6 +154,10 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     public void setAudioEnabled(boolean micEnabled) {
         peerConnectionClient.setAudioEnabled(micEnabled);
+    }
+
+    public void setVideoEnabled(boolean videoEnabled) {
+        peerConnectionClient.setVideoEnabled(videoEnabled);
     }
 
     public void close() {
@@ -212,7 +226,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         Log.d(TAG, "onIceConnected()");
         mConnectionState = ConnectionState.ICECONNECTED;
 
-
+        events.onConnected(mRemoteId);
     }
 
     @Override
@@ -225,6 +239,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     public void onPeerConnectionClosed() {
         Log.d(TAG, "onPeerConnectionClosed()");
         mConnectionState = ConnectionState.PEERDISCONNECTED;
+        events.onConnectionClosed(mRemoteId);
     }
 
     @Override

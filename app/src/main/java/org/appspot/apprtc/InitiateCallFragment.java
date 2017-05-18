@@ -36,8 +36,8 @@ import org.webrtc.RendererCommon.ScalingType;
 public class InitiateCallFragment extends Fragment {
     private View controlView;
     private TextView contactView;
-    private Button disconnectButton;
-    private Button connectButton;
+    private ImageView disconnectButton;
+    private ImageView connectButton;
     private ScalingType scalingType;
     private boolean videoCallEnabled = true;
     private ImageView contactImageView;
@@ -46,9 +46,11 @@ public class InitiateCallFragment extends Fragment {
 
     private OnInitiateCallEvents callEvents;
     private Context mContext;
+    private boolean conferenceCall;
+    private User mUser;
 
     public void enableCallButtons() {
-        if (incomingCall) {
+        if (incomingCall || conferenceCall) {
             connectButton.setVisibility(View.VISIBLE);
         }
         disconnectButton.setVisibility(View.VISIBLE);
@@ -62,6 +64,7 @@ public class InitiateCallFragment extends Fragment {
         void onRejectCall();
         void onAnswerCall();
         void onStartCall();
+        void onStartConferenceCall(User user);
     }
 
     @Override
@@ -74,8 +77,8 @@ public class InitiateCallFragment extends Fragment {
         // Create UI controls.
         contactImageView = (ImageView) controlView.findViewById(R.id.contact_image);
         contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
-        connectButton = (Button) controlView.findViewById(R.id.button_call_connect);
-        disconnectButton = (Button) controlView.findViewById(R.id.button_call_disconnect);
+        connectButton = (ImageView) controlView.findViewById(R.id.button_call_connect);
+        disconnectButton = (ImageView) controlView.findViewById(R.id.button_call_disconnect);
 
         // Add buttons click events.
         disconnectButton.setOnClickListener(new View.OnClickListener() {
@@ -89,15 +92,17 @@ public class InitiateCallFragment extends Fragment {
             @Override
             public void onClick(View view) {
 
-                if (incomingCall) {
-                    callEvents.onAnswerCall();
-                }
+            if (incomingCall) {
+                callEvents.onAnswerCall();
+            }
+            else if (conferenceCall) {
+                callEvents.onStartConferenceCall(mUser);
+            }
             }
         });
 
         connectButton.setVisibility(View.GONE);
         disconnectButton.setVisibility(View.GONE);
-
 
         return controlView;
     }
@@ -110,26 +115,27 @@ public class InitiateCallFragment extends Fragment {
         Bundle args = getArguments();
         if (args != null) {
             if (args.containsKey(WebsocketService.EXTRA_USER)) {
-                User user = (User) args.getSerializable(WebsocketService.EXTRA_USER);
+                mUser = (User) args.getSerializable(WebsocketService.EXTRA_USER);
                 String server = args.getString(WebsocketService.EXTRA_ADDRESS);
                 String contactText = "";
 
                 incomingCall = args.containsKey(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
+                conferenceCall = args.containsKey(WebsocketService.EXTRA_CONFERENCE_ID);
 
-                if (incomingCall) {
-                    contactText = getString(R.string.incoming_call_from) + " " + user.displayName;
+                if (incomingCall || conferenceCall) {
+                    contactText = getString(R.string.incoming_call_from) + " " + mUser.displayName;
                 }
                 else {
-                    contactText = getString(R.string.calling) + " " + user.displayName;
+                    contactText = getString(R.string.calling) + " " + mUser.displayName;
                 }
 
                 contactView.setText(contactText);
 
-                String buddyPic = user.buddyPicture;
+                String buddyPic = mUser.buddyPicture;
                 if (buddyPic.length() != 0) {
                     String path = buddyPic.substring(4);
                     String url = "https://" + server + RoomActivity.BUDDY_IMG_PATH + path;
-                    ThumbnailsCacheManager.LoadImage(url, contactImageView, user.displayName, true, true);
+                    ThumbnailsCacheManager.LoadImage(url, contactImageView, mUser.displayName, true, true);
                 }
                 else {
                     contactImageView.setImageResource(R.drawable.user_icon);
@@ -142,12 +148,11 @@ public class InitiateCallFragment extends Fragment {
             mSoundPlayer.Stop();
         }
 
-        if (!incomingCall) {
+        if (!incomingCall && !conferenceCall) {
             // initiate call when not incoming
             callEvents.onStartCall();
             mSoundPlayer = new SoundPlayer(mContext, R.raw.ringtone1);
             mSoundPlayer.Play(true);
-            callEvents.onStartCall();
         }
         else {
 

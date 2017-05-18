@@ -103,7 +103,7 @@ public class CallFragment extends Fragment {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(mContext, CallActivity.class);
-                    intent.setAction(WebsocketService.ACTION_ADD_CONFERENCE_USER);
+                    intent.setAction(CallActivity.ACTION_NEW_CALL);
                     intent.putExtra(WebsocketService.EXTRA_USER, user);
                     intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                     intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
@@ -192,6 +192,8 @@ public class CallFragment extends Fragment {
             toggleVideoButton.setImageResource(enabled ? R.drawable.ic_visibility_white_24dp :R.drawable.ic_visibility_off_white_24dp);
         }
     });
+
+    addUsers();
 
     return controlView;
   }
