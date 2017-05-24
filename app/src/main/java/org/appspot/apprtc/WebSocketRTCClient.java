@@ -114,6 +114,21 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // Asynchronously connect to an AppRTC room URL using supplied connection
   // parameters, retrieves room parameters and connect to WebSocket server.
   @Override
+  public void connectToRoom(final String roomName, final String pin) {
+    ;
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        connectToRoomInternal(roomName, pin);
+      }
+    });
+  }
+
+  // --------------------------------------------------------------------
+  // AppRTCClient interface implementation.
+  // Asynchronously connect to an AppRTC room URL using supplied connection
+  // parameters, retrieves room parameters and connect to WebSocket server.
+  @Override
   public void connectToRoom(final String roomName) {
     ;
     handler.post(new Runnable() {
@@ -244,6 +259,36 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(json, "Ua", "Spreedbox Android 1.0");
         jsonPut(json, "Type", "");
         jsonPut(json, "Iid", mId);
+
+        JSONObject jsonRoom = new JSONObject();
+        jsonPut(jsonRoom, "Hello", json);
+        jsonPut(jsonRoom, "Type", "Hello");
+
+        wsClient.send(jsonRoom.toString());
+
+
+
+      }
+    });
+  }
+
+  // Connects to room - function runs on a local looper thread.
+  private void connectToRoomInternal(final String roomName, final String pin) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject roomCredentials = new JSONObject();
+        jsonPut(roomCredentials, "PIN", pin);
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Name", roomName);
+        jsonPut(json, "Id", roomName); // obsolete may not be needed
+        jsonPut(json, "Version", "1.0.0");
+        jsonPut(json, "Ua", "Spreedbox Android 1.0");
+        jsonPut(json, "Type", "");
+        jsonPut(json, "Iid", mId);
+        jsonPut(json, "Credentials", roomCredentials);
 
         JSONObject jsonRoom = new JSONObject();
         jsonPut(jsonRoom, "Hello", json);
@@ -1077,7 +1122,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             events.onChatMessage(message, time, status, to, mIdFrom, mRoomName);
           }
         }
-      } else {
+        else if (type.equals("Error")) {
+          events.onError(json.optString("Code"), json.optString("Message"), mRoomName);
+        }
+      }
+      else {
         if (errorText != null && errorText.length() > 0) {
           reportError("WebSocket error message: " + errorText);
         } else {

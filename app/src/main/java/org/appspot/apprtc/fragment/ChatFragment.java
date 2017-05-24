@@ -56,7 +56,7 @@ public class ChatFragment extends Fragment {
     private User mUser;
     Handler uiUpdateHandler;
     private SoundPlayer mSoundPlayer;
-    private String mCurrentId;
+    private String mCurrentId = "";
     private HashMap<String, User> userIdList = new HashMap<String, User>();
 
     private RelativeLayout recentButton;
@@ -229,24 +229,6 @@ public class ChatFragment extends Fragment {
             }
         });
 
-        roomChatButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                viewChat("");
-            }
-        });
-        recentButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mode = ChatMode.TOPLEVEL;
-                mCurrentId = "";
-                adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
-                recyclerView.setAdapter(adapter);
-                mUserNameTextView.setText(getString(R.string.recent));
-                recentControlsLayout.setVisibility(View.INVISIBLE);
-            }
-        });
-
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -302,7 +284,6 @@ public class ChatFragment extends Fragment {
             }
         }
 
-        mCurrentId = "";
         if (chatList.get("") == null) {
             chatList.put("", new ArrayList<ChatItem>());
         }
@@ -327,10 +308,10 @@ public class ChatFragment extends Fragment {
     }
 
     public void addOutgoingMessage(ChatItem item) {
-        addMessage(item, mUser);
+        addMessage(item, mUser, false);
     }
 
-    public void addMessage(ChatItem chatItem, User user) {
+    public void addMessage(ChatItem chatItem, User user, boolean playSound) {
         if (user != null) {
             if (!userIdList.containsKey(user.Id)) {
                 userIdList.put(user.Id, user);
@@ -346,8 +327,10 @@ public class ChatFragment extends Fragment {
         if (adapter != null) {
             adapter.notifyDataSetChanged();
             emptyChat.setVisibility(View.GONE);
-            mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
-            mSoundPlayer.Play(false);
+            if (playSound) {
+                mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
+                mSoundPlayer.Play(false);
+            }
             recyclerView.scrollToPosition(chatList.size() - 1);
         }
     }

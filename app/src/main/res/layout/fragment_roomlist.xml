@@ -16,8 +16,7 @@
 
         <RelativeLayout
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
+            android:layout_height="48dp"
             android:id="@+id/rooms_back_layout">
 
             <ImageView
@@ -30,7 +29,7 @@
             <TextView
                 android:id="@+id/roomsButton"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:text="@string/rooms_button"
                 android:gravity="left|center_vertical"
                 android:layout_toRightOf="@+id/back_arrow"

@@ -257,8 +257,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   String mConferenceId = null;
   ArrayList<String> connectedUserIds = new ArrayList<String>();
+  private boolean mSentAnswer;
+    private boolean mAnswerPressed;
 
-  public class RemoteConnection {
+    public class RemoteConnection {
     SerializableSessionDescription sdp;
     User user;
 
@@ -269,12 +271,14 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   public class RemoteConnectionViews {
+    String mName = "";
     PercentFrameLayout frameLayout;
     SurfaceViewRenderer surfaceViewRenderer;
     ImageView imageView;
     TextView textView;
 
-    public RemoteConnectionViews(PercentFrameLayout frameLayout, SurfaceViewRenderer surfaceViewRenderer, ImageView imageView, TextView textView) {
+    public RemoteConnectionViews(String name, PercentFrameLayout frameLayout, SurfaceViewRenderer surfaceViewRenderer, ImageView imageView, TextView textView) {
+      this.mName = name;
       this.frameLayout = frameLayout;
       this.surfaceViewRenderer = surfaceViewRenderer;
       this.imageView = imageView;
@@ -299,6 +303,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     public void setPosition(int remoteX, int remoteY, int remoteWidth, int remoteHeight) {
       getFrameLayout().setPosition(remoteX, remoteY, remoteWidth, remoteHeight);
+    }
+
+    public String getName() {
+      return mName;
     }
   }
 
@@ -413,7 +421,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private void updateRemoteViewList(RemoteConnectionViews remoteViews) {
     remoteViewsInUseList.remove(remoteViews);
     remoteViewsList.add(remoteViews);
+
     updateVideoView();
+    Log.i(TAG, "remove view " + remoteViews.getName());
   }
 
   private String mToken;
@@ -510,10 +520,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     callFragment = new CallFragment();
     hudFragment = new HudFragment();
 
-    remoteViewsInUseList.add(new RemoteConnectionViews(remoteRenderLayout, remoteRenderScreen, remoteUserImage, remoteVideoLabel)); // first one is always in use
-    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout2, remoteRenderScreen2, remoteUserImage2, remoteVideoLabel2));
-    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout3, remoteRenderScreen3, remoteUserImage3, remoteVideoLabel3));
-    remoteViewsList.add(new RemoteConnectionViews(remoteRenderLayout4, remoteRenderScreen4, remoteUserImage4, remoteVideoLabel4));
+    remoteViewsInUseList.add(new RemoteConnectionViews("remote 1", remoteRenderLayout, remoteRenderScreen, remoteUserImage, remoteVideoLabel)); // first one is always in use
+    remoteViewsList.add(new RemoteConnectionViews("remote 2", remoteRenderLayout2, remoteRenderScreen2, remoteUserImage2, remoteVideoLabel2));
+    remoteViewsList.add(new RemoteConnectionViews("remote 3", remoteRenderLayout3, remoteRenderScreen3, remoteUserImage3, remoteVideoLabel3));
+    remoteViewsList.add(new RemoteConnectionViews("remote 4", remoteRenderLayout4, remoteRenderScreen4, remoteUserImage4, remoteVideoLabel4));
 
     // Show/hide call control fragment on view click.
     View.OnClickListener listener = new View.OnClickListener() {
@@ -556,8 +566,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     localRender.setEnableHardwareScaler(true /* enabled */);
     remoteRenderScreen.setEnableHardwareScaler(true /* enabled */);
     remoteRenderScreen2.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen2.setZOrderMediaOverlay(true);
     remoteRenderScreen3.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen3.setZOrderMediaOverlay(true);
     remoteRenderScreen4.setEnableHardwareScaler(true /* enabled */);
+    remoteRenderScreen4.setZOrderMediaOverlay(true);
     updateVideoView();
 
 
@@ -1005,6 +1018,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   // Helper functions.
   private void toggleCallControlFragmentVisibility() {
+
+    updateVideoView();
+
     if (!iceConnected || !callFragment.isAdded()) {
       return;
     }
@@ -1024,20 +1040,23 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   private void updateVideoView() {
 
+    if (disconnected || mFinishCalled) {
+      return;
+    }
+
     int remoteHeight = REMOTE_HEIGHT;
 
     if (remoteViewsInUseList.size() == 2) {
       remoteHeight = REMOTE_HEIGHT2;
       remoteViewsInUseList.get(0).setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, remoteHeight);
       remoteViewsInUseList.get(1).setPosition(REMOTE_X, remoteHeight, REMOTE_WIDTH, remoteHeight);
-
-      for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
-        remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
-      }
+      remoteViewsInUseList.get(1).getFrameLayout().setVisibility(View.VISIBLE);
+      remoteViewsInUseList.get(1).getSurfaceViewRenderer().setVisibility(View.VISIBLE);
 
       for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
-        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+        remoteConnectionViews.getFrameLayout().setVisibility(View.INVISIBLE);
       }
+      Log.i(TAG, "Showing 2 video windows");
     }
     else if (remoteViewsInUseList.size() == 3) {
       remoteHeight = REMOTE_HEIGHT2;
@@ -1047,11 +1066,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
       for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
         remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
+        remoteConnectionViews.getSurfaceViewRenderer().setVisibility(View.VISIBLE);
       }
 
       for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
-        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+        remoteConnectionViews.getFrameLayout().setVisibility(View.INVISIBLE);
       }
+      Log.i(TAG, "Showing 3 video windows");
     }
     else if (remoteViewsInUseList.size() == 4) {
       remoteHeight = REMOTE_HEIGHT2;
@@ -1062,13 +1083,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
       for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
         remoteConnectionViews.getFrameLayout().setVisibility(View.VISIBLE);
+        remoteConnectionViews.getSurfaceViewRenderer().setVisibility(View.VISIBLE);
       }
+      Log.i(TAG, "Showing 4 video windows");
     }
     else {
       remoteViewsInUseList.get(0).setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
       for (RemoteConnectionViews remoteConnectionViews: remoteViewsList) {
-        remoteConnectionViews.getFrameLayout().setVisibility(View.GONE);
+        remoteConnectionViews.getFrameLayout().setVisibility(View.INVISIBLE);
+        remoteConnectionViews.getSurfaceViewRenderer().setVisibility(View.INVISIBLE);
       }
+      Log.i(TAG, "Showing 1 video windows");
     }
 
     for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
@@ -1080,17 +1105,19 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       localRenderLayout.setPosition(
           LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
       localRender.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+      Log.i(TAG, "Showing small local video window");
     } else {
       localRenderLayout.setPosition(
           LOCAL_X_CONNECTING, LOCAL_Y_CONNECTING, LOCAL_WIDTH_CONNECTING, LOCAL_HEIGHT_CONNECTING);
       localRender.setScalingType(scalingType);
+      Log.i(TAG, "Showing large local video window");
     }
     localRender.setMirror(true);
 
     localRender.requestLayout();
 
     for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
-      remoteConnectionViews.getFrameLayout().requestLayout();
+      remoteConnectionViews.getSurfaceViewRenderer().requestLayout();
     }
 
   }
@@ -1181,6 +1208,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         peerConnectionClient.close();
         peerConnectionClient = null;
       }
+
+      remoteViewsList.clear();
+      remoteViewsInUseList.clear();
+
       if (localRender != null) {
         localRender.release();
         localRender = null;
@@ -1530,6 +1561,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   }
 
+  @Override
+  public void onError(String code, String message, String roomName) {
+
+  }
+
   // -----Implementation of PeerConnectionClient.PeerConnectionEvents.---------
   // Send local peer connection SDP and ICE candidates to remote party.
   // All callbacks are invoked from peer connection client looper thread and
@@ -1546,7 +1582,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           if (initiator) {
            // mService.sendOfferSdp(sdp);
           } else {
-            //mService.sendAnswerSdp(sdp, to);
+            if (mAnswerPressed && !mSentAnswer) {
+                AnswerIncomingCall(mPeerId);
+            }
           }
         }
 
@@ -1604,7 +1642,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onVideoEnabled() {
-    remoteUserImage.setVisibility(View.GONE);
+    remoteUserImage.setVisibility(View.INVISIBLE);
   }
 
   @Override
@@ -1713,6 +1751,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   void AnswerIncomingCall(String to) {
+    mAnswerPressed = true;
+
     if (mLocalSdp != null) {
       if (mService != null) {
         mService.sendAnswerSdp(mLocalSdp, to);
@@ -1721,6 +1761,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           mService.sendLocalIceCandidate(candidate, mToken, mSdpId, mPeerId);
         }
         mIceCandidates.clear();
+        mSentAnswer = true;
       }
     }
   }
@@ -2027,7 +2068,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   @Override
   public void onConnectionClosed(String remoteId) {
     connectedUserIds.remove(remoteId);
-    updateVideoView();
+    runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+        updateVideoView();
+      }
+    });
   }
 
   public ArrayList<User> getUsers() {

@@ -1,14 +1,24 @@
 package org.appspot.apprtc.service;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 
 import org.appspot.apprtc.AppRTCClient;
 import org.appspot.apprtc.ChatItem;
 import org.appspot.apprtc.FileInfo;
+import org.appspot.apprtc.R;
+import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
@@ -60,6 +70,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_CONFERENCE_ID = "org.appspot.apprtc.service.EXTRA_CONFERENCE_ID";
     public static final String ACTION_ADD_ALL_CONFERENCE = "org.appspot.apprtc.service.ACTION_ADD_ALL_CONFERENCE";
     public static final String EXTRA_USERACTION = "org.appspot.apprtc.service.EXTRA_USERACTION";
+    public static final String ACTION_ERROR = "org.appspot.apprtc.service.ACTION_ERROR";
+    public static final String EXTRA_CODE = "org.appspot.apprtc.service.EXTRA_CODE";
 
     private String mServer = "";
 
@@ -139,6 +151,12 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void connectToRoom(String roomName) {
         if (appRtcClient != null) {
             appRtcClient.connectToRoom(roomName);
+        }
+    }
+
+    public void connectToRoom(String roomName, String pin) {
+        if (appRtcClient != null) {
+            appRtcClient.connectToRoom(roomName, pin);
         }
     }
 
@@ -378,6 +396,17 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
+    public void onError(String code, String message, String roomName) {
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_ERROR);
+        broadcastIntent.putExtra(EXTRA_CODE, code);
+        broadcastIntent.putExtra(EXTRA_MESSAGE, message);
+        broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
     public void onChatMessage(String message, String time, String status, String to, String fromId, String roomName) {
         if (!mMessages.containsKey(roomName)) {
             mMessages.put(roomName, new ArrayList<ChatItem>());
@@ -399,6 +428,50 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             }
         }
         sendBroadcast(broadcastIntent);
+
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_textsms_white_24dp)
+                        .setContentTitle(getString(R.string.drawer_video_chat))
+                        .setContentText(message);
+        Intent roomIntent = new Intent(this, RoomActivity.class);
+
+        roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, getId());
+        roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
+        roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServer);
+        roomIntent.putExtra(RoomActivity.EXTRA_ACTIVE_TAB, RoomActivity.CHAT_INDEX);
+
+        Account account = getCurrentOwnCloudAccount(getApplicationContext());
+        if (account != null) {
+            AccountManager accountMgr = AccountManager.get(getApplicationContext());
+            String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+
+            String name = account.name.substring(0, account.name.indexOf('@'));
+            int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            roomIntent.putExtra(RoomActivity.EXTRA_AVATAR_URL, url);
+        }
+
+        // Because clicking the notification opens a new ("special") activity, there's
+        // no need to create an artificial back stack.
+        PendingIntent resultPendingIntent =
+                PendingIntent.getActivity(
+                        this,
+                        0,
+                        roomIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+        mBuilder.setContentIntent(resultPendingIntent);
+
+        // Sets an ID for the notification
+        int mNotificationId = 001;
+
+        // Gets an instance of the NotificationManager service
+        NotificationManager mNotifyMgr =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        // Builds the notification and issues it.
+        mNotifyMgr.notify(mNotificationId, mBuilder.build());
     }
 
     @Override
@@ -610,4 +683,46 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public boolean getIsConnected() {
         return mState == ConnectionState.CONNECTED;
     }
+
+    public Account[] getAccounts(Context context) {
+        AccountManager accountManager = AccountManager.get(context);
+        return accountManager.getAccountsByType(getResources().getString(R.string.account_type));
+    }
+
+    /**
+     * Can be used to get the currently selected ownCloud {@link Account} in the
+     * application preferences.
+     *
+     * @param   context     The current application {@link Context}
+     * @return              The ownCloud {@link Account} currently saved in preferences, or the first
+     *                      {@link Account} available, if valid (still registered in the system as ownCloud
+     *                      account). If none is available and valid, returns null.
+     */
+    public Account getCurrentOwnCloudAccount(Context context) {
+        Account[] ocAccounts = getAccounts(context);
+        Account defaultAccount = null;
+
+        SharedPreferences appPreferences = PreferenceManager
+                .getDefaultSharedPreferences(context);
+        String accountName = appPreferences
+                .getString("select_oc_account", null);
+
+        // account validation: the saved account MUST be in the list of ownCloud Accounts known by the AccountManager
+        if (accountName != null) {
+            for (Account account : ocAccounts) {
+                if (account.name.equals(accountName)) {
+                    defaultAccount = account;
+                    break;
+                }
+            }
+        }
+
+        if (defaultAccount == null && ocAccounts.length != 0) {
+            // take first account as fallback
+            defaultAccount = ocAccounts[0];
+        }
+
+        return defaultAccount;
+    }
+
 }

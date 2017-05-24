@@ -31,6 +31,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -296,8 +297,42 @@ public class ConnectActivity extends DrawerActivity {
           adapter.notifyDataSetChanged();
         }
       }
+      else if (intent.getAction().equals(WebsocketService.ACTION_ERROR)) {
+        String code = intent.getStringExtra(WebsocketService.EXTRA_CODE);
+        String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+
+        if (code.equals("authorization_required")) {
+          PromptPin();
+        }
+      }
     }
   };
+
+  void PromptPin() {
+    AlertDialog.Builder alert = new AlertDialog.Builder(this);
+    final EditText edittext = new EditText(this);
+    alert.setMessage(String.format(getString(R.string.enter_pin), mCurrentRoom));
+    alert.setTitle(R.string.pin);
+
+    alert.setView(edittext);
+
+    alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+      public void onClick(DialogInterface dialog, int whichButton) {
+        String pin = edittext.getText().toString();
+        if (mService != null) {
+          mService.connectToRoom(mCurrentRoom, pin);
+        }
+      }
+    });
+
+    alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+      public void onClick(DialogInterface dialog, int whichButton) {
+        // what ever you want to do with No option.
+      }
+    });
+
+    alert.show();
+  }
 
   @Override
   protected void restart() {
@@ -349,6 +384,7 @@ public class ConnectActivity extends DrawerActivity {
     mIntentFilter.addAction(WebsocketService.ACTION_POST_RESPONSE);
     mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
     mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
+    mIntentFilter.addAction(WebsocketService.ACTION_ERROR);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();

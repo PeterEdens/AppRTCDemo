@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.util.Log;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RunnableFuture;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
@@ -50,6 +52,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     private static final String TAG = "AdditPeerConnection";
     private final Context mContext;
+    private final Handler uiHandler;
     private CallActivity.RemoteConnectionViews mRemoteConnectionViews = null;
     private ImageView remoteUserImage;
     private final EglBase rootEglBase;
@@ -104,6 +107,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
     AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId) {
+        uiHandler = new Handler();
         mRemoteId = remoteId;
         mContext = context;
         mIceServers = iceServers;
@@ -301,7 +305,12 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     @Override
     public void onVideoEnabled() {
         if (remoteUserImage != null) {
-            remoteUserImage.setVisibility(View.GONE);
+            uiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    remoteUserImage.setVisibility(View.GONE);
+                }
+            });
         }
     }
 

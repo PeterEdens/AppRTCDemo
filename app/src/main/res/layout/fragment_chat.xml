@@ -11,19 +11,20 @@
     <RelativeLayout
         android:id="@+id/recent_controls_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:background="@color/primary"
         android:layout_marginBottom="2dp">
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
+            android:layout_centerVertical="true"
             android:id="@+id/recent_back_layout">
 
             <ImageView
                 android:id="@+id/back_arrow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:src="@drawable/ic_arrow_back_white_24dp"/>
             <TextView
                 android:id="@+id/recentButton"

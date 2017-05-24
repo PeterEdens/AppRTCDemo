@@ -82,8 +82,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String ACTION_VIEW_CHAT = "org.appspot.apprtc.ACTION_VIEW_CHAT";
     public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
     public static final String EXTRA_AVATAR_URL = "org.appspot.apprtc.EXTRA_AVATAR_URL";
+    public static final String EXTRA_ACTIVE_TAB = "org.appspot.apprtc.EXTRA_ACTIVE_TAB";
     private static final int FILE_CODE = 1;
-    private static final int CHAT_INDEX = 1;
+    public static final int CHAT_INDEX = 1;
 
     static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
 
@@ -134,12 +135,12 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 for (ChatItem chatItem : messages) {
                     User user = userMap.get(chatItem.Id);
                     if (user != null) {
-                        mChatFragment.addMessage(chatItem, user);
+                        mChatFragment.addMessage(chatItem, user, false);
                     }
                     else {
                         // self
                         user = userMap.get(chatItem.getRecipient());
-                        mChatFragment.addMessage(chatItem, user);
+                        mChatFragment.addMessage(chatItem, user, false);
                     }
 
                 }
@@ -171,13 +172,19 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 String time = intent.getStringExtra(WebsocketService.EXTRA_TIME);
                 String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+                String to = intent.getStringExtra(EXTRA_TO);
 
                 if (user != null && message.length() == 0) {
                     // status message
                     message = user.displayName + status;
                 }
                 else if (user != null) {
-                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, user.Id, user);
+                    String toId = user.Id;
+                    if (!to.equals(mOwnId)) {
+                        toId = to;
+                    }
+
+                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, toId, user);
                 }
             } else if (intent.getAction().equals(WebsocketService.ACTION_FILE_MESSAGE)) {
                 FileInfo fileinfo = (FileInfo)intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
@@ -218,14 +225,15 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private String mAvatar;
     private String mDisplayName;
     private String mServerName;
+    private String mOwnId = "";
 
     private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user);
+        mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
     private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id, Id), user);
+        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id, Id), user, true);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
@@ -431,11 +439,18 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             }
         }
 
+        if (intent.hasExtra(EXTRA_ACTIVE_TAB)) {
+            viewPager.setCurrentItem(intent.getIntExtra(EXTRA_ACTIVE_TAB, 0));
+        }
+
         if (intent.hasExtra(EXTRA_SERVER_NAME)) {
             mServerName = intent.getStringExtra(EXTRA_SERVER_NAME);
         }
         if (intent.hasExtra(EXTRA_ROOM_NAME)) {
             mRoomName = intent.getStringExtra(EXTRA_ROOM_NAME);
+        }
+        if (intent.hasExtra(WebsocketService.EXTRA_OWN_ID)) {
+            mOwnId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
         }
     }
 

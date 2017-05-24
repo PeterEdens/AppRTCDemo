@@ -11,20 +11,26 @@
 package org.appspot.apprtc;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.RelativeLayout;
 
 /**
  * Simple container that confines the children to a subrectangle specified as percentage values of
  * the container size. The children are centered horizontally and vertically inside the confined
  * space.
  */
-public class PercentFrameLayout extends ViewGroup {
+public class PercentFrameLayout extends RelativeLayout {
   private int xPercent = 0;
   private int yPercent = 0;
   private int widthPercent = 100;
   private int heightPercent = 100;
+  private int mWidth = 0;
+  private int mHeight = 0;
 
   public PercentFrameLayout(Context context) {
     super(context);
@@ -43,6 +49,14 @@ public class PercentFrameLayout extends ViewGroup {
     this.yPercent = yPercent;
     this.widthPercent = widthPercent;
     this.heightPercent = heightPercent;
+    reLayoutChildren();
+  }
+
+  private void reLayoutChildren() {
+    measure(
+            View.MeasureSpec.makeMeasureSpec(getMeasuredWidth(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), View.MeasureSpec.EXACTLY));
+    layout(getLeft(), getTop(), getRight(), getBottom());
   }
 
   @Override
@@ -52,15 +66,15 @@ public class PercentFrameLayout extends ViewGroup {
 
   @Override
   protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-    final int width = getDefaultSize(Integer.MAX_VALUE, widthMeasureSpec);
-    final int height = getDefaultSize(Integer.MAX_VALUE, heightMeasureSpec);
-    setMeasuredDimension(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-        MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    mWidth = getDefaultSize(Integer.MAX_VALUE, widthMeasureSpec);
+    mHeight = getDefaultSize(Integer.MAX_VALUE, heightMeasureSpec);
+    setMeasuredDimension(MeasureSpec.makeMeasureSpec(mWidth, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(mHeight, MeasureSpec.EXACTLY));
 
     final int childWidthMeasureSpec =
-        MeasureSpec.makeMeasureSpec(width * widthPercent / 100, MeasureSpec.AT_MOST);
+        MeasureSpec.makeMeasureSpec(mWidth * widthPercent / 100, MeasureSpec.AT_MOST);
     final int childHeightMeasureSpec =
-        MeasureSpec.makeMeasureSpec(height * heightPercent / 100, MeasureSpec.AT_MOST);
+        MeasureSpec.makeMeasureSpec(mHeight * heightPercent / 100, MeasureSpec.AT_MOST);
     for (int i = 0; i < getChildCount(); ++i) {
       final View child = getChildAt(i);
       if (child.getVisibility() != GONE) {

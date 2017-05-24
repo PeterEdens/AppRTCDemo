@@ -53,6 +53,8 @@ public interface AppRTCClient {
    */
   void connectToRoom(String roomName);
 
+  void connectToRoom(String roomName, String pin);
+
   /**
    * Send offer SDP to the other participant.
    */
@@ -200,5 +202,7 @@ public interface AppRTCClient {
     void onTurnTtl(int ttl);
 
       void onConferenceUser(String roomName, String conferenceId, String id);
+
+      void onError(String code, String message, String roomName);
   }
 }

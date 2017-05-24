@@ -122,6 +122,7 @@ public class UserActivity extends AppCompatActivity {
                     Intent intent = new Intent(v.getContext(), RoomActivity.class);
                     intent.setAction(RoomActivity.ACTION_NEW_CHAT);
                     intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                     v.getContext().startActivity(intent);
                 }
             }

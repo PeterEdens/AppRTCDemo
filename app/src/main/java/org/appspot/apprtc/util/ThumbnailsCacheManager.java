@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.Locale;
+import java.util.concurrent.RejectedExecutionException;
 
 
 /**
@@ -76,7 +77,12 @@ public class ThumbnailsCacheManager {
 
             if (mThumbnailCacheStarting) {
                 // initialise thumbnails cache on background thread
-                new InitDiskCacheTask().execute();
+                try {
+                    new InitDiskCacheTask().execute();
+                }
+                catch (RejectedExecutionException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

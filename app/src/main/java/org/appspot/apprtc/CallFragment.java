@@ -31,6 +31,7 @@ import org.appspot.apprtc.sound.SoundPlayer;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 /**
@@ -50,7 +51,7 @@ public class CallFragment extends Fragment {
   private SoundPlayer mSoundPlayer;
   private Context mContext;
   private FloatingActionMenu addToCallButton;
-  private CallActivity parentActivity;
+  private WeakReference<CallActivity> parentActivity;
   private FloatingActionButton addAllButton;
     private String mOwnId;
     private FloatingActionButton toggleVideoButton;
@@ -79,21 +80,23 @@ public class CallFragment extends Fragment {
   }
 
   void addUsers() {
-    ArrayList<User> users = parentActivity.getUsers();
-    for (final User user: users) {
-      addCallButtonForUser(user);
-    }
+      if (parentActivity.get() != null) {
+          ArrayList<User> users = parentActivity.get().getUsers();
+          for (final User user : users) {
+              addCallButtonForUser(user);
+          }
+      }
   }
 
     private void addCallButtonForUser(final User user) {
         final ContextThemeWrapper context = new ContextThemeWrapper(getActivity(), R.style.MenuButtonsStyle);
-        if (!parentActivity.callHasId(user.Id)) {
+        if (parentActivity != null && parentActivity.get() != null && !parentActivity.get().callHasId(user.Id)) {
             com.github.clans.fab.FloatingActionButton programFab2 = new com.github.clans.fab.FloatingActionButton(context);
             programFab2.setLabelText(user.displayName);
 
             if (user.buddyPicture.length() != 0) {
                 String path = user.buddyPicture.substring(4);
-                String url = "https://" + parentActivity.getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
+                String url = "https://" + parentActivity.get().getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
                 ThumbnailsCacheManager.LoadImage(url, programFab2, user.displayName, true, true);
             } else {
                 programFab2.setImageResource(R.drawable.user_icon_round);
@@ -237,7 +240,7 @@ public class CallFragment extends Fragment {
   @Override
   public void onAttach(Activity activity) {
     super.onAttach(activity);
-    parentActivity = (CallActivity)activity;
+    parentActivity = new WeakReference<CallActivity>((CallActivity)activity);
     callEvents = (OnCallEvents) activity;
   }
 }
