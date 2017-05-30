@@ -12,13 +12,14 @@
         android:id="@+id/recent_controls_layout"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="@color/primary"
+        android:background="#302e2f"
         android:layout_marginBottom="2dp">
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:id="@+id/recent_back_layout">
+            android:id="@+id/recent_back_layout"
+            style="@style/Widget.AppCompat.Button.Colored">
 
             <ImageView
                 android:id="@+id/back_arrow"
@@ -36,8 +37,7 @@
                 android:layout_alignBottom="@+id/back_arrow"
                 android:textSize="16sp"
                 android:layout_toRightOf="@+id/back_arrow"
-                android:textColor="@color/white"
-                android:background="@color/primary"/>
+                android:textColor="@color/white"/>
         
         </RelativeLayout>
         
@@ -61,10 +61,11 @@
             android:layout_alignParentRight="true"
             android:layout_marginRight="5dp"
             android:textSize="16sp"
+            android:textAllCaps="false"
             android:layout_alignTop="@+id/recent_back_layout"
             android:layout_alignBottom="@+id/recent_back_layout"
             android:textColor="@color/white"
-            android:background="@color/primary"/>
+            style="@style/Widget.AppCompat.Button.Colored"/>
 
     </RelativeLayout>
 

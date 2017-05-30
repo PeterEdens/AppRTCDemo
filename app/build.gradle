@@ -62,4 +62,5 @@ dependencies {
     compile 'com.android.support:design:24.2.1'
     compile 'com.jakewharton:disklrucache:2.0.2'
     compile 'com.github.clans:fab:1.6.4'
+    compile 'com.github.ybq:Android-SpinKit:1.1.0'
 }

@@ -58,7 +58,7 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.FileViewHolder
 
     @Override
     public int getItemCount() {
-        return files.length;
+        return files != null ? files.length : 0;
     }
 
     public static class FileViewHolder extends RecyclerView.ViewHolder {

@@ -47,6 +47,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -54,6 +55,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.github.clans.fab.FloatingActionButton;
+import com.github.ybq.android.spinkit.SpinKitView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -98,7 +100,7 @@ public class ConnectActivity extends DrawerActivity {
   FloatingActionButton mAddRoom;
   EditText mAddRoomEditText;
   TextView mConnectionTextView;
-  ProgressBar mConnectingProgress;
+  SpinKitView mConnectingProgress;
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefRoom;
@@ -111,6 +113,7 @@ public class ConnectActivity extends DrawerActivity {
   private String mCurrentRoom = "";
   private Toolbar toolbar;
   private String mOwnId;
+  private ImageView mConnectedImage;
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -153,10 +156,10 @@ public class ConnectActivity extends DrawerActivity {
     adapter.notifyDataSetChanged();
 
     mConnectionTextView.setText(getString(R.string.connected));
-    mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
     mConnectionState = ConnectionState.CONNECTED;
-    mConnectingProgress.setVisibility(View.GONE);
+    mConnectingProgress.setVisibility(View.INVISIBLE);
     mRoomListLayout.setVisibility(View.VISIBLE);
+    mConnectedImage.setVisibility(View.VISIBLE);
 
     if (!mStatusSent) {
       sendAccountBitmap();
@@ -211,9 +214,9 @@ public class ConnectActivity extends DrawerActivity {
       } else if (intent.getAction().equals(WebsocketService.ACTION_DISCONNECTED)) {
         mStatusSent = false;
         mConnectionTextView.setText(getString(R.string.disconnected));
-        mConnectionTextView.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
         mConnectionState = ConnectionState.DISCONNECTED;
         mConnectingProgress.setVisibility(View.VISIBLE);
+        mConnectedImage.setVisibility(View.INVISIBLE);
 
         // try to reconnect
         mService.connectToServer(mServerName);
@@ -370,7 +373,8 @@ public class ConnectActivity extends DrawerActivity {
     roomListView.setOnItemClickListener(roomListClickListener);
     registerForContextMenu(roomListView);
     mConnectionTextView = (TextView) findViewById(R.id.connected_state);
-    mConnectingProgress = (ProgressBar) findViewById(R.id.connecting_progress);
+    mConnectingProgress = (SpinKitView) findViewById(R.id.connecting_progress);
+    mConnectedImage = (ImageView) findViewById(R.id.connected_image);
     mAddRoom = (FloatingActionButton) findViewById(R.id.add_room_button);
     mAddRoom.setOnClickListener(addRoomListener);
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
@@ -928,22 +932,11 @@ public class ConnectActivity extends DrawerActivity {
 
   private void requestPermission(String permission) {
 
-    // Should we show an explanation?
-    if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-            permission)) {
-
-      // Show an explanation to the user *asynchronously* -- don't block
-      // this thread waiting for the user's response! After the user
-      // sees the explanation, try again to request the permission.
-
-    } else {
-
       // No explanation needed, we can request the permission.
-
       ActivityCompat.requestPermissions(this,
               MANDATORY_PERMISSIONS,
               PERMISSIONS_REQUEST);
-    }
+
   }
 
   @Override

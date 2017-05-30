@@ -62,7 +62,7 @@ public class FilesFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        if (files.length != 0) {
+        if (files != null && files.length != 0) {
             emptyFiles.setVisibility(View.GONE);
         }
     }
