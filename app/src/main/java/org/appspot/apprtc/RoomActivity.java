@@ -37,6 +37,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.appspot.apprtc.entities.Presence;
 import org.appspot.apprtc.fragment.ChatFragment;
 import org.appspot.apprtc.fragment.FilesFragment;
 import org.appspot.apprtc.fragment.RoomFragment;
@@ -118,6 +119,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
             mService = binder.getService();
             mWebsocketServiceBound = true;
+
+            Presence.Status presence = mService.getPresence();
+            updateStatus(presence);
 
             ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
 

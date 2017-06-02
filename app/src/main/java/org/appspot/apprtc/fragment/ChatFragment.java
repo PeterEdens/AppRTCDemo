@@ -59,7 +59,7 @@ public class ChatFragment extends Fragment {
     private String mCurrentId = "";
     private HashMap<String, User> userIdList = new HashMap<String, User>();
 
-    private RelativeLayout recentButton;
+    private TextView recentButton;
     private RelativeLayout recentControlsLayout;
 
     private TextView roomChatButton;
@@ -89,7 +89,7 @@ public class ChatFragment extends Fragment {
         recyclerView.setAdapter(adapter);
         User user = userIdList.get(key);
         mUserNameTextView.setText(user.displayName);
-        recentControlsLayout.setVisibility(View.VISIBLE);
+        recentButton.setVisibility(View.VISIBLE);
     }
 
     public void setUser(User user) {
@@ -203,7 +203,7 @@ public class ChatFragment extends Fragment {
         mUserNameTextView = (TextView) controlView.findViewById(R.id.userName);
         recentControlsLayout = (RelativeLayout) controlView.findViewById(R.id.recent_controls_layout);
 
-        recentButton = (RelativeLayout) controlView.findViewById(R.id.recent_back_layout);
+        recentButton = (TextView) controlView.findViewById(R.id.recentButton);
 
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyChat = (TextView) controlView.findViewById(R.id.emptyChat);
@@ -224,8 +224,8 @@ public class ChatFragment extends Fragment {
                 mCurrentId = "";
                 adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
                 recyclerView.setAdapter(adapter);
-                mUserNameTextView.setText(getString(R.string.recent));
-                recentControlsLayout.setVisibility(View.GONE);
+                mUserNameTextView.setText("");
+                recentButton.setVisibility(View.GONE);
             }
         });
 
@@ -292,12 +292,12 @@ public class ChatFragment extends Fragment {
         recyclerView.setLayoutManager(layoutManager);
 
         if (mode == ChatMode.TOPLEVEL) {
-            recentControlsLayout.setVisibility(View.GONE);
+            recentButton.setVisibility(View.GONE);
             adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
             mUserNameTextView.setText(getString(R.string.recent));
         }
         else {
-            recentControlsLayout.setVisibility(View.VISIBLE);
+            recentButton.setVisibility(View.VISIBLE);
 
             adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
 

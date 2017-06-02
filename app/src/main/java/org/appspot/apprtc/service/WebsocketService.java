@@ -5,8 +5,10 @@ import android.accounts.AccountManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Handler;
@@ -23,6 +25,7 @@ import org.appspot.apprtc.SerializableIceCandidate;
 import org.appspot.apprtc.SerializableSessionDescription;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.WebSocketRTCClient;
+import org.appspot.apprtc.entities.Presence;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,10 +34,16 @@ import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_ACCOUNT_NAME;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_PRESENCE;
+import static org.appspot.apprtc.RoomActivity.ACTION_VIEW_CHAT;
 import static org.appspot.apprtc.RoomActivity.EXTRA_TO;
 
 public class WebsocketService extends Service implements AppRTCClient.SignalingEvents{
@@ -86,6 +95,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     };
 
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            handleBroadcast(intent);
+        }
+    };
+    private Presence.Status mPresence = Presence.Status.ONLINE;
+    private IntentFilter mIntentFilter;
+
     public String getCurrentRoomName() {
         if (appRtcClient != null) {
             return appRtcClient.getRoomName();
@@ -118,6 +136,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     private AppRTCClient appRtcClient;
     private HashMap<String, ArrayList<User>> mUsers = new HashMap<String, ArrayList<User>>();
     private HashMap<String, ArrayList<ChatItem>> mMessages = new HashMap<>();
+    private HashMap<String, String> sentOffers = new HashMap<>();
 
     static private List<PeerConnection.IceServer> mIceServers = new ArrayList<PeerConnection.IceServer>();
 
@@ -167,12 +186,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     public void sendOfferSdp(SessionDescription sdp, String to) {
+        sentOffers.put(to, to);
         if (appRtcClient != null) {
             appRtcClient.sendOfferSdp(sdp, to);
         }
     }
 
     public void sendConferenceOfferSdp(SessionDescription sdp, String to, String conferenceId) {
+        sentOffers.put(to, to);
         if (appRtcClient != null) {
             appRtcClient.sendConferenceOffer(sdp, to, conferenceId);
         }
@@ -185,6 +206,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     public void sendTokenOfferSdp(SessionDescription sdp, String token, String id, String to) {
+        sentOffers.put(to, to);
         if (appRtcClient != null) {
             appRtcClient.sendTokenOffer(sdp, token, id, to);
         }
@@ -351,8 +373,17 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     @Override
     public void sendBye(String to) {
+        sentOffers.remove(to);
         if (appRtcClient != null) {
             appRtcClient.sendBye(to);
+        }
+    }
+
+    @Override
+    public void sendBye(String to, String reason) {
+        sentOffers.remove(to);
+        if (appRtcClient != null) {
+            appRtcClient.sendBye(to, reason);
         }
     }
 
@@ -433,13 +464,16 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_textsms_white_24dp)
                         .setContentTitle(getString(R.string.drawer_video_chat))
+                        .setAutoCancel(true)
                         .setContentText(message);
         Intent roomIntent = new Intent(this, RoomActivity.class);
 
+        roomIntent.setAction(ACTION_VIEW_CHAT);
         roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, getId());
         roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
         roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServer);
         roomIntent.putExtra(RoomActivity.EXTRA_ACTIVE_TAB, RoomActivity.CHAT_INDEX);
+        roomIntent.putExtra(RoomActivity.EXTRA_CHAT_ID, fromId);
 
         Account account = getCurrentOwnCloudAccount(getApplicationContext());
         if (account != null) {
@@ -534,35 +568,67 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     }
 
     @Override
-    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName) {
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
-        broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
-        broadcastIntent.putExtra(EXTRA_TOKEN, token);
-        broadcastIntent.putExtra(EXTRA_ID, id);
-        broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
-        broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
-        broadcastIntent.putExtra(EXTRA_ADDRESS, mServer);
-
-        ArrayList<User> users = mUsers.get(roomName);
-        if (users != null) {
-            for (User user : users) {
-                if (user.Id.equals(fromId)) {
-                    broadcastIntent.putExtra(EXTRA_USER, user);
+    public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName, String type) {
+        if (type.equals("Offer") && !(mPresence == Presence.Status.ONLINE || mPresence == Presence.Status.CHAT)) {
+            // tried to call
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+            String time = fmt.format(new Date());
+            String missedCall = getString(R.string.missed_call);
+            ArrayList<User> users = mUsers.get(roomName);
+            if (users != null) {
+                for (User user : users) {
+                    if (user.Id.equals(fromId)) {
+                        missedCall = String.format(getString(R.string.missed_call), user.displayName);
+                    }
                 }
             }
+            onChatMessage(missedCall, time, "", appRtcClient.getId(), fromId, roomName);
+            sendBye(fromId, "busy");
         }
-        sendBroadcast(broadcastIntent);
+        else {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_REMOTE_DESCRIPTION);
+            broadcastIntent.putExtra(EXTRA_REMOTE_DESCRIPTION, sdp);
+            broadcastIntent.putExtra(EXTRA_TOKEN, token);
+            broadcastIntent.putExtra(EXTRA_ID, id);
+            broadcastIntent.putExtra(EXTRA_OWN_ID, appRtcClient.getId());
+            broadcastIntent.putExtra(EXTRA_CONFERENCE_ID, conferenceId);
+            broadcastIntent.putExtra(EXTRA_ADDRESS, mServer);
+
+            ArrayList<User> users = mUsers.get(roomName);
+            if (users != null) {
+                for (User user : users) {
+                    if (user.Id.equals(fromId)) {
+                        broadcastIntent.putExtra(EXTRA_USER, user);
+                    }
+                }
+            }
+            sendBroadcast(broadcastIntent);
+        }
+    }
+
+    private boolean sentOffer(String userId) {
+        boolean ret = false;
+
+        if (sentOffers.containsKey(userId)) {
+            return true;
+        }
+        return ret;
     }
 
     @Override
     public void onRemoteIceCandidate(SerializableIceCandidate candidate, String id, String token) {
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
-        broadcastIntent.putExtra(EXTRA_CANDIDATE, candidate);
-        broadcastIntent.putExtra(EXTRA_ID, id);
-        broadcastIntent.putExtra(EXTRA_TOKEN, token);
-        sendBroadcast(broadcastIntent);
+        if (!sentOffer(candidate.from) && !(mPresence == Presence.Status.ONLINE || mPresence == Presence.Status.CHAT)) {
+            // ignore
+        }
+        else {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_REMOTE_ICE_CANDIDATE);
+            broadcastIntent.putExtra(EXTRA_CANDIDATE, candidate);
+            broadcastIntent.putExtra(EXTRA_ID, id);
+            broadcastIntent.putExtra(EXTRA_TOKEN, token);
+            sendBroadcast(broadcastIntent);
+        }
     }
 
     @Override
@@ -669,6 +735,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         // stopped, so return sticky.
         return START_STICKY;
     }
+    @Override
+    public void onCreate() {
+      super.onCreate();
+
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction(ACTION_PRESENCE_CHANGED);
+        registerReceiver(mReceiver, mIntentFilter);
+    }
 
     @Override
     public void onDestroy() {
@@ -676,6 +750,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             appRtcClient.disconnectFromRoom();
             appRtcClient = null;
         }
+
+        unregisterReceiver(mReceiver);
 
         super.onDestroy();
     }
@@ -725,4 +801,24 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         return defaultAccount;
     }
 
+    private void handleBroadcast(Intent intent) {
+        if (intent.getAction().equals(ACTION_PRESENCE_CHANGED)) {
+            Presence.Status status = Presence.Status.ONLINE;
+            status = status.fromShowString(intent.getStringExtra(EXTRA_PRESENCE));
+            String accountName = intent.getStringExtra(EXTRA_ACCOUNT_NAME);
+
+            setStatus(status);
+
+
+
+        }
+    }
+
+    private void setStatus(Presence.Status status) {
+        mPresence = status;
+    }
+
+    public Presence.Status getPresence() {
+        return mPresence;
+    }
 }

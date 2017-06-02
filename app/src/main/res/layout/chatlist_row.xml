@@ -12,7 +12,7 @@
         android:layout_margin="5dp"
         android:layout_centerVertical="true"
         android:layout_alignParentLeft="true"
-        android:src="@drawable/user_icon"/>
+        android:src="@drawable/ic_supervisor_account_white_48dp"/>
 
     <TextView
         android:layout_width="wrap_content"
@@ -23,7 +23,6 @@
         android:layout_toRightOf="@+id/image_id"
         android:layout_toLeftOf="@+id/call_button"
         android:layout_centerVertical="true"
-        android:textStyle="bold"
         android:textSize="20sp"
         android:id="@+id/text_id"/>
 

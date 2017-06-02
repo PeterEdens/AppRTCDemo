@@ -8,14 +8,11 @@
     tools:context="org.appspot.apprtc.UserActivity"
     android:background="@color/white">
 
-    <ImageView
+    <include
+        layout="@layout/spreedbox_header"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/videocall_layout"
-        android:scaleType="fitXY"
-        android:src="@drawable/secure_header_solid"
-        android:tintMode="src_over"
-        android:tint="#cc302e2f"/>
+        android:layout_above="@+id/videocall_layout"/>
 
     <RelativeLayout
         android:layout_width="match_parent"

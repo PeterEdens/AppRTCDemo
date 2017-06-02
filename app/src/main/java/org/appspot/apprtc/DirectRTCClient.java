@@ -135,6 +135,11 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void sendBye(String to, String reason) {
+
+  }
+
+  @Override
   public void sendPostMessage(String username, String password, String url) {
 
   }
@@ -348,7 +353,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       } else if (type.equals("answer")) {
         SerializableSessionDescription sdp = new SerializableSessionDescription(
                 SerializableSessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"), "");
-        events.onRemoteDescription(sdp, "", "", "", "", "");
+        events.onRemoteDescription(sdp, "", "", "", "", "", "");
       } else if (type.equals("offer")) {
         SessionDescription sdp = new SessionDescription(
             SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));

@@ -60,6 +60,7 @@ import com.github.ybq.android.spinkit.SpinKitView;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
+import org.appspot.apprtc.entities.Presence;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
@@ -130,6 +131,10 @@ public class ConnectActivity extends DrawerActivity {
       WebsocketService.WebsocketBinder binder = (WebsocketService.WebsocketBinder) service;
       mService = binder.getService();
       mWebsocketServiceBound = true;
+
+      Presence.Status presence = mService.getPresence();
+      updateStatus(presence);
+
 
       if (mService.getIsConnected() && !mServerName.equals(mService.getServerAddress())) {
           mService.disconnectFromServer();

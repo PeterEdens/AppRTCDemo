@@ -31,17 +31,25 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
+import org.appspot.apprtc.entities.Presence;
+import org.appspot.apprtc.entities.Presence.Status;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 
 import java.io.ByteArrayOutputStream;
-
+import com.example.sharedresourceslib.BroadcastTypes;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
+import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_ACCOUNT_NAME;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_PRESENCE;
 
 
 /**
@@ -146,6 +154,7 @@ public abstract class DrawerActivity extends AppCompatActivity {
      */
     private TextView mQuotaTextView;
     private Account mCurrentAccount;
+    private Spinner statusSpinner;
 
     public String getStatusText() {
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -245,17 +254,108 @@ public abstract class DrawerActivity extends AppCompatActivity {
 
     }
 
+    private void executeChangePresence(Spinner spinner, int position) {
+        Status status = getStatusFromSpinner(spinner);
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_PRESENCE_CHANGED);
+        broadcastIntent.putExtra(EXTRA_PRESENCE, status.toShowString());
+        broadcastIntent.putExtra(EXTRA_ACCOUNT_NAME, mCurrentAccount.name);
+        sendBroadcast(broadcastIntent);
+    }
+
+    private Status getStatusFromSpinner(Spinner spinner) {
+        switch (spinner.getSelectedItemPosition()) {
+            case 0:
+                return Status.CHAT;
+            case 2:
+                return Status.AWAY;
+            case 3:
+                return Status.XA;
+            case 4:
+                return Status.DND;
+            default:
+                return Status.ONLINE;
+        }
+    }
+
+    private void setStatusInSpinner(Spinner spinner, Status status) {
+        switch(status) {
+            case AWAY:
+                spinner.setSelection(2);
+                break;
+            case XA:
+                spinner.setSelection(3);
+                break;
+            case CHAT:
+                spinner.setSelection(0);
+                break;
+            case DND:
+                spinner.setSelection(4);
+                break;
+            default:
+                spinner.setSelection(1);
+                break;
+        }
+    }
+
+    protected void updateStatus(Presence.Status status) {
+        setStatusInSpinner(statusSpinner, status);
+    }
+
+    protected void setupStatus(Spinner spinner) {
+        Intent intent = getIntent();
+        Status presence = Status.ONLINE;
+
+        if (intent.hasExtra(EXTRA_PRESENCE)) {
+            presence = presence.fromShowString(intent.getStringExtra(EXTRA_PRESENCE));
+            setStatusInSpinner(spinner, presence);
+        }
+    }
+
     /**
      * setup drawer content, basically setting the item selected listener.
      *
      * @param navigationView the drawers navigation view
      */
-    protected void setupDrawerMenu(NavigationView navigationView) {
+    protected void setupDrawerMenu(final NavigationView navigationView) {
         // on pre lollipop the light theme adds a black tint to icons with white coloring
         // ruining the generic avatars, so tinting for icons is deactivated pre lollipop
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             //navigationView.setItemIconTintList(null);
         }
+
+        LinearLayout layout = (LinearLayout) navigationView.getMenu().findItem(R.id.action_change_presence).getActionView();
+        statusSpinner = (Spinner) layout.findViewById(R.id.online_status);
+        final int[] icons = {
+                R.drawable.ic_chat_black_24dp, // free to chat
+                R.drawable.ic_check_circle_black_24dp, // online
+                R.drawable.ic_schedule_black_24dp, // away
+                R.drawable.ic_cancel_black_24dp, // not available
+                R.drawable.ic_do_not_disturb_on_black_24dp // do not disturb
+        };
+
+        ArrayAdapter adapter = ArrayAdapter.createFromResource(this,
+                R.array.presence_show_options,
+                R.layout.simple_list_item);
+        statusSpinner.setAdapter(adapter);
+        statusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                //
+                try {
+                    navigationView.getMenu().findItem(R.id.action_change_presence).setIcon(icons[position]);
+                }
+                catch (IllegalStateException e) {
+                    e.printStackTrace();
+                }
+                executeChangePresence(statusSpinner, position);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        setupStatus(statusSpinner);
 
         // setup actions for drawer menu items
         navigationView.setNavigationItemSelectedListener(

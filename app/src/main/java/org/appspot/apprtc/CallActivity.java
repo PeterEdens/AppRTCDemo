@@ -821,7 +821,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
 
         if (peerConnectionClient.isConnected()) {
-          onRemoteDescription(sdp, token, id, conferenceId, "", "");
+          onRemoteDescription(sdp, token, id, conferenceId, "", "", "");
         } else {
           mRemoteSdp = sdp;
           mToken = token;
@@ -1395,7 +1395,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
-  public void onRemoteDescription(final SerializableSessionDescription sdp, final String token, String id, String conferenceId, String fromId, String roomName) {
+  public void onRemoteDescription(final SerializableSessionDescription sdp, final String token, String id, String conferenceId, String fromId, String roomName, String type) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
       @Override
@@ -1508,6 +1508,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void sendBye(String mPeerId) {
+
+  }
+
+  @Override
+  public void sendBye(String mPeerId, String reason) {
 
   }
 

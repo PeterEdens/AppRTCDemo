@@ -273,4 +273,5 @@
     <string name="calling">Calling</string>
     <string name="enter_pin">Enter the PIN for room %1$s</string>
     <string name="pin">Enter PIN</string>
+    <string name="missed_call">Missed call from %s</string>
 </resources>

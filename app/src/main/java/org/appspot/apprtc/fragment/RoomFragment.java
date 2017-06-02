@@ -35,7 +35,7 @@ public class RoomFragment extends Fragment {
     TextView mRoomNameTextView;
     private Context mContext;
     private TextView emptyRoom;
-    private RelativeLayout roomsButton;
+    private TextView roomsButton;
     private Activity mParentActivity;
     private String mOwnId;
 
@@ -68,7 +68,7 @@ public class RoomFragment extends Fragment {
         mRoomNameTextView = (TextView) controlView.findViewById(R.id.roomName);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyRoom = (TextView) controlView.findViewById(R.id.emptyRoom);
-        roomsButton = (RelativeLayout) controlView.findViewById(R.id.rooms_back_layout);
+        roomsButton = (TextView) controlView.findViewById(R.id.roomsButton);
 
         roomsButton.setOnClickListener(new View.OnClickListener() {
             @Override

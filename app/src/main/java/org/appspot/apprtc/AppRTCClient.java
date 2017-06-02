@@ -91,6 +91,8 @@ public interface AppRTCClient {
 
   void sendBye(String to);
 
+  void sendBye(String to, String reason);
+
   void sendPostMessage(String username, String password, final String url);
 
   void sendPatchMessage(String username, String password, final String url);
@@ -145,7 +147,7 @@ public interface AppRTCClient {
     /**
      * Callback fired once remote SDP is received.
      */
-    void onRemoteDescription(final SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName);
+    void onRemoteDescription(final SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName, String type);
 
     /**
      * Callback fired once remote Ice candidate is received.
@@ -181,6 +183,8 @@ public interface AppRTCClient {
     void onBye(final String reason, String fromId, String roomName);
 
     void sendBye(String mPeerId);
+
+    void sendBye(String mPeerId, String reason);
 
 
     void onPatchResponse(String response);

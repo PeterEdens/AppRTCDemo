@@ -11,18 +11,23 @@
 package org.appspot.apprtc;
 
 import android.app.Activity;
+import android.app.FragmentManager;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.voiceengine.WebRtcAudioUtils;
 
 /**
  * Settings activity for AppRTC.
  */
-public class SettingsActivity extends Activity implements OnSharedPreferenceChangeListener {
+public class SettingsActivity extends AppCompatActivity implements OnSharedPreferenceChangeListener {
   private SettingsFragment settingsFragment;
   private String keyprefVideoCall;
   private String keyprefScreencapture;
@@ -60,6 +65,7 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
   private String keyprefDataProtocol;
   private String keyprefNegotiated;
   private String keyprefDataId;
+  private Toolbar toolbar;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -101,12 +107,26 @@ public class SettingsActivity extends Activity implements OnSharedPreferenceChan
     keyPrefDisplayHud = getString(R.string.pref_displayhud_key);
     keyPrefTracing = getString(R.string.pref_tracing_key);
 
-    // Display the fragment as the main content.
-    settingsFragment = new SettingsFragment();
-    getFragmentManager()
-        .beginTransaction()
-        .replace(android.R.id.content, settingsFragment)
-        .commit();
+    setContentView(R.layout.securemeet_settings_layout);
+
+
+    toolbar = (Toolbar) findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+    toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        finish();
+      }
+    });
+
+    FragmentManager fm = getFragmentManager();
+    settingsFragment = (SettingsFragment) fm.findFragmentById(android.R.id.content);
+    if (settingsFragment == null || !settingsFragment.getClass().equals(SettingsFragment.class)) {
+      settingsFragment = new SettingsFragment();
+      fm.beginTransaction().replace(R.id.content, settingsFragment).commit();
+    }
   }
 
   @Override

@@ -187,6 +187,34 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     }
 
   @Override
+  public void sendBye(final String to, final String reason) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject jsonByeWrap = new JSONObject();
+        jsonPut(jsonByeWrap, "Type", "Bye");
+
+        JSONObject json = new JSONObject();
+
+        JSONObject jsonBye = new JSONObject();
+        jsonPut(jsonBye, "To", to);
+        jsonPut(jsonBye, "Type", "Bye");
+        jsonPut(jsonBye, "Reason", reason);
+        jsonPut(jsonBye, "Bye", json);
+
+        jsonPut(jsonByeWrap, "Bye", jsonBye);
+        jsonPut(jsonBye, "Type", "Bye");
+
+        wsClient.send(jsonByeWrap.toString());
+
+
+
+      }
+    });
+  }
+
+  @Override
   public void sendPostMessage(String username, String password, String url) {
     String message = "Basic " + Base64.encode(new String(username + ":" + password).getBytes(), Base64.NO_WRAP).toString();
 
@@ -1076,7 +1104,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           String token = answerJson.optString("_token");
           String id = answerJson.optString("_id");
           String conferenceId = answerJson.optString("_conference");
-            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName);
+            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName, type);
 
         } else if (type.equals("Offer")) {
           if (!initiator) {
@@ -1087,7 +1115,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
             String token = offerJson.optString("_token");
             String id = offerJson.optString("_id");
             String conferenceId = offerJson.optString("_conference");
-            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName);
+            events.onRemoteDescription(sdp, token, id, conferenceId, mIdFrom, mRoomName, type);
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
