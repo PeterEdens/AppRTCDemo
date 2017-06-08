@@ -104,7 +104,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     handler.post(new Runnable() {
       @Override
       public void run() {
-        connectToServerInternal(address);
+        try {
+          connectToServerInternal(address);
+        }
+        catch (OutOfMemoryError oom) {
+          oom.printStackTrace();
+          events.onChannelClose();
+        }
       }
     });
   }

@@ -3,6 +3,7 @@ package org.appspot.apprtc;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.Formatter;
@@ -64,8 +65,10 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
                 ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true, true);
+                holder.image.setColorFilter(null);
             } else {
-                holder.image.setImageResource(R.drawable.user_icon);
+                holder.image.setImageResource(R.drawable.ic_supervisor_account_white_48dp);
+                holder.image.setColorFilter(ContextCompat.getColor(mContext,R.color.grey_tint));;
             }/*
             holder.time.setText(chatItem.time);
             holder.displayName.setText(chatItem.displayName);

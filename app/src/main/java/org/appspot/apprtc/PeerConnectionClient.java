@@ -799,9 +799,9 @@ public class PeerConnectionClient {
         if (localVideoTrack != null) {
           localVideoTrack.setEnabled(renderVideo);
         }
-        if (remoteVideoTrack != null) {
+        /*if (remoteVideoTrack != null) {
           remoteVideoTrack.setEnabled(renderVideo);
-        }
+        }*/
       }
     });
   }

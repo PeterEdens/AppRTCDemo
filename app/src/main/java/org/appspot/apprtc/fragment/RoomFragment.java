@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -38,6 +39,7 @@ public class RoomFragment extends Fragment {
     private TextView roomsButton;
     private Activity mParentActivity;
     private String mOwnId;
+    private ImageView shareRoom;
 
     public RoomFragment() {
         // Required empty public constructor
@@ -68,12 +70,34 @@ public class RoomFragment extends Fragment {
         mRoomNameTextView = (TextView) controlView.findViewById(R.id.roomName);
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         emptyRoom = (TextView) controlView.findViewById(R.id.emptyRoom);
+        shareRoom = (ImageView) controlView.findViewById(R.id.share_room);
         roomsButton = (TextView) controlView.findViewById(R.id.roomsButton);
 
         roomsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 mParentActivity.finish();
+            }
+        });
+
+        shareRoom.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Class<?> c = null;
+                try {
+                    c = Class.forName(getString(R.string.share_with_activity) );
+                } catch (ClassNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                Intent intent = new Intent(mContext, c);
+                intent.setAction(Intent.ACTION_SEND);
+                String link = "https://" + mServerName + "/apps/spreedme";
+                if (mRoomName.length() != 0 && !mRoomName.equals(getString(R.string.default_room))) {
+                    link += "#" + mRoomName;
+                }
+                intent.putExtra(Intent.EXTRA_TEXT, link);
+                mParentActivity.startActivity(intent);
             }
         });
         return controlView;
@@ -111,8 +135,10 @@ public class RoomFragment extends Fragment {
         if (emptyRoom != null) {
             if (userList.size() == 0) {
                 emptyRoom.setVisibility(View.VISIBLE);
+                shareRoom.setVisibility(View.VISIBLE);
             } else if (userList.size() != 0 && emptyRoom.getVisibility() == View.VISIBLE) {
                 emptyRoom.setVisibility(View.GONE);
+                shareRoom.setVisibility(View.GONE);
             }
         }
     }
@@ -129,6 +155,7 @@ public class RoomFragment extends Fragment {
 
         if (userList.size() != 0 && emptyRoom != null && emptyRoom.getVisibility() == View.VISIBLE) {
             emptyRoom.setVisibility(View.GONE);
+            shareRoom.setVisibility(View.GONE);
         }
     }
 
@@ -150,6 +177,7 @@ public class RoomFragment extends Fragment {
 
                 if (userList.size() != 0 && emptyRoom != null && emptyRoom.getVisibility() == View.VISIBLE) {
                     emptyRoom.setVisibility(View.GONE);
+                    shareRoom.setVisibility(View.GONE);
                 }
             }
         }
@@ -169,6 +197,7 @@ public class RoomFragment extends Fragment {
 
         if (userList.size() == 0 && emptyRoom.getVisibility() != View.VISIBLE) {
             emptyRoom.setVisibility(View.VISIBLE);
+            shareRoom.setVisibility(View.VISIBLE);
         }
     }
 

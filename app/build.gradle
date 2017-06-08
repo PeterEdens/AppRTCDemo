@@ -63,4 +63,5 @@ dependencies {
     compile 'com.jakewharton:disklrucache:2.0.2'
     compile 'com.github.clans:fab:1.6.4'
     compile 'com.github.ybq:Android-SpinKit:1.1.0'
+    compile 'com.makeramen:roundedimageview:2.2.0'
 }

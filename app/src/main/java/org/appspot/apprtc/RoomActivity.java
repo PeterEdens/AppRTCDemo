@@ -349,6 +349,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 if (key.startsWith(peerConnectionId)) {
                     entry.getValue().close();
                     mPeerConnections.remove(key);
+                    break;
                 }
             }
         }
@@ -367,7 +368,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 mPeerConnections.remove(peerConnectionId);
             }
 
-            TokenPeerConnection connection = new TokenPeerConnection(this, this, true, token, remoteId, connectionId, mService.getIceServers());
+            TokenPeerConnection connection = new TokenPeerConnection(this, this, true, token, remoteId, connectionId, mService.getIceServers(), downloadIndex);
             connection.setFileInfo(downloadFile);
             mPeerConnections.put(peerConnectionId, connection);
         }
@@ -435,7 +436,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 mPeerConnections.get(peerConnectionId).setRemoteDescription(sd);
             } else {
                 // does not exist, create the new connection
-                TokenPeerConnection connection = new TokenPeerConnection(this, this, false, token, remoteId, id, mService.getIceServers());
+                TokenPeerConnection connection = new TokenPeerConnection(this, this, false, token, remoteId, id, mService.getIceServers(), -1);
                 SessionDescription sd = new SessionDescription(sdp.type, sdp.description);
                 connection.setRemoteDescription(sd);
                 mPeerConnections.put(peerConnectionId, connection);

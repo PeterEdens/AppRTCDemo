@@ -115,6 +115,7 @@ public class ConnectActivity extends DrawerActivity {
   private Toolbar toolbar;
   private String mOwnId;
   private ImageView mConnectedImage;
+  private boolean mConnectManual;
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -141,7 +142,9 @@ public class ConnectActivity extends DrawerActivity {
       }
 
       if (!mService.getIsConnected()) {
-        mService.connectToServer(mServerName);
+        if (!mConnectManual) {
+          mService.connectToServer(mServerName);
+        }
       }
       else {
         onConnected();
@@ -170,6 +173,10 @@ public class ConnectActivity extends DrawerActivity {
       sendAccountBitmap();
       mStatusSent = true;
     }
+
+    if (mWaitingToEnterRoom) {
+      mService.connectToRoom(mCurrentRoom);
+    }
   }
 
   void sendAccountBitmap() {
@@ -180,7 +187,7 @@ public class ConnectActivity extends DrawerActivity {
       mDisplayName = accountMgr.getUserData(account, "oc_display_name");
 
       String name = account.name.substring(0, account.name.indexOf('@'));
-      int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+      int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
       String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
       Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
 
@@ -224,7 +231,9 @@ public class ConnectActivity extends DrawerActivity {
         mConnectedImage.setVisibility(View.INVISIBLE);
 
         // try to reconnect
-        mService.connectToServer(mServerName);
+        if (!mConnectManual) {
+          mService.connectToServer(mServerName);
+        }
 
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
@@ -251,7 +260,7 @@ public class ConnectActivity extends DrawerActivity {
             mDisplayName = accountMgr.getUserData(account, "oc_display_name");
 
             String name = account.name.substring(0, account.name.indexOf('@'));
-            int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+            int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
             String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
             roomIntent.putExtra(RoomActivity.EXTRA_AVATAR_URL, url);
           }
@@ -385,6 +394,26 @@ public class ConnectActivity extends DrawerActivity {
     mAddRoomEditText = (EditText) findViewById(R.id.addroom_edittext);
     mRoomListLayout = (RelativeLayout) findViewById(R.id.room_list_layout);
 
+    mConnectedImage.setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        mConnectManual = true;
+        if (mService.getIsConnected()) {
+          mService.disconnectFromServer();
+          mStatusSent = false;
+          mConnectionTextView.setText(getString(R.string.disconnected));
+          mConnectionState = ConnectionState.DISCONNECTED;
+          mConnectedImage.setImageResource(R.drawable.ic_cancel_white_48dp);
+        }
+        else {
+          mService.connectToServer(mServerName);
+          mConnectedImage.setImageResource(R.drawable.ic_lock_white_48dp);
+          mConnectedImage.setVisibility(View.INVISIBLE);
+          mConnectingProgress.setVisibility(View.VISIBLE);
+        }
+      }
+    });
+
     mIntentFilter = new IntentFilter();
     mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
     mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
@@ -399,20 +428,28 @@ public class ConnectActivity extends DrawerActivity {
     final Intent intent = getIntent();
 
     Account account = getCurrentOwnCloudAccount(this);
+
     if (account != null) {
       AccountManager accountMgr = AccountManager.get(this);
       String serverUrl = accountMgr.getUserData(account, "oc_base_url");
       mDisplayName = accountMgr.getUserData(account, "oc_display_name");
 
       String name = account.name.substring(0, account.name.indexOf('@'));
-      int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+      int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
       String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
       Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
 
-      mServerName = serverUrl;
+      if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME)) {
+        mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
+        mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
+        mWaitingToEnterRoom = true;
+      }
+      else {
+        mServerName = serverUrl;
 
-      if (mServerName.startsWith("https://")) {
-        mServerName = mServerName.substring(8);
+        if (mServerName.startsWith("https://")) {
+          mServerName = mServerName.substring(8);
+        }
       }
     }
 

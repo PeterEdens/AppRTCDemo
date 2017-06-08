@@ -210,15 +210,16 @@ public class ThumbnailsCacheManager {
                             uiHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (rounded) {
-                                        RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(imageView.get().getResources(), response);
-                                        roundedBitmap.setCircular(true);
-                                        imageView.get().setImageDrawable(roundedBitmap);
+                                    if (imageView.get() != null) {
+                                        if (rounded) {
+                                            RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(imageView.get().getResources(), response);
+                                            roundedBitmap.setCircular(true);
+                                            imageView.get().setImageDrawable(roundedBitmap);
+                                        } else {
+                                            imageView.get().setImageBitmap(response);
+                                        }
+                                        imageView.get().setContentDescription(displayname);
                                     }
-                                    else {
-                                        imageView.get().setImageBitmap(response);
-                                    }
-                                    imageView.get().setContentDescription(displayname);
 
                                 }
 

@@ -240,4 +240,5 @@
 
     </PreferenceCategory>-->
 
+    <Preference android:title="@string/about_title" android:id="@+id/about_app" android:key="about_app" />
 </PreferenceScreen>

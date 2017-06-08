@@ -91,7 +91,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     TokenPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-    TokenPeerConnection(Context context, TokenPeerConnectionEvents events, boolean initiator, String token, String remoteId, String connectionId, List<PeerConnection.IceServer> iceServers) {
+    TokenPeerConnection(Context context, TokenPeerConnectionEvents events, boolean initiator, String token, String remoteId, String connectionId, List<PeerConnection.IceServer> iceServers, int downloadIndex) {
         mToken = token;
         mRemoteId = remoteId;
         mConnectionId = connectionId;
@@ -99,6 +99,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         mIceServers = iceServers;
         this.initiator = initiator;
         this.events = events;
+        mDownloadIndex = downloadIndex;
 
         mLocalSdpSent = false;
 
@@ -390,7 +391,9 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     @Override
     public void onPeerConnectionError(String description) {
         Log.d(TAG, "onPeerConnectionError(" + description + ")");
-        events.onError(description, mDownloadIndex, mRemoteId);
+        if (mDownloadIndex != -1) {
+            events.onError(description, mDownloadIndex, mRemoteId);
+        }
         mConnectionState = ConnectionState.PEERDISCONNECTED;
     }
 

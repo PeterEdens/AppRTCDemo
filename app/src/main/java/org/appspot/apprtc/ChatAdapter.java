@@ -98,7 +98,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.image.setImageResource(R.drawable.user_icon);
         }
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        SimpleDateFormat format = chatItem.time.endsWith("Z") ? new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'") : new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ");
         format.setTimeZone(TimeZone.getTimeZone("GMT"));
         String dateString = "";
         try {

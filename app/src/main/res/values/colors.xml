@@ -14,4 +14,5 @@
     <color name="drawer_icon_tint">#888888</color>
     <color name="buttonColor">#00afce</color>
     <color name="black">#000000</color>
+    <color name="grey_tint">#888</color>
 </resources>

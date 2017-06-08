@@ -1,43 +1,43 @@
-<RelativeLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:layout_margin="5dp">
 
-    <ImageView
+    <com.makeramen.roundedimageview.RoundedImageView
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:id="@+id/image_id"
         android:layout_margin="5dp"
         android:layout_alignParentLeft="true"
-        android:src="@drawable/user_icon"/>
+        android:src="@drawable/user_icon"
+        app:riv_corner_radius="2dp"/>
 
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@+id/image_id"
-        android:background="@drawable/incoming_bubble">
+        android:background="@drawable/message_bubble_received">
 
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingLeft="20dp"
             android:id="@+id/message_content_layout">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center"
+                android:gravity="left"
                 android:text="Message"
                 android:textColor="@color/white"
-                android:layout_margin="5dp"
+                android:padding="5dp"
                 android:id="@+id/msgtext"/>
 
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:layout_toRightOf="@+id/displayName"
                 android:id="@+id/fileLayout">
 
                 <Button
@@ -98,11 +98,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:gravity="left"
             android:text="message time"
             android:textColor="@color/white"
-            android:layout_margin="2dp"
-            android:paddingLeft="20dp"
+            android:padding="2dp"
             android:layout_below="@+id/message_content_layout"
             android:id="@+id/msgtime"/>
 

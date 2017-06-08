@@ -46,6 +46,8 @@ import org.appspot.apprtc.util.ThumbnailsCacheManager;
 
 import java.io.ByteArrayOutputStream;
 import com.example.sharedresourceslib.BroadcastTypes;
+import com.example.sharedresourceslib.IconSpinnerAdapter;
+
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
 import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_ACCOUNT_NAME;
@@ -334,16 +336,17 @@ public abstract class DrawerActivity extends AppCompatActivity {
                 R.drawable.ic_do_not_disturb_on_black_24dp // do not disturb
         };
 
-        ArrayAdapter adapter = ArrayAdapter.createFromResource(this,
+        IconSpinnerAdapter adapter = new IconSpinnerAdapter(this, icons, getResources().getStringArray(R.array.presence_show_options));
+        /*ArrayAdapter.createFromResource(this,
                 R.array.presence_show_options,
-                R.layout.simple_list_item);
+                R.layout.simple_list_item);*/
         statusSpinner.setAdapter(adapter);
         statusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 //
                 try {
-                    navigationView.getMenu().findItem(R.id.action_change_presence).setIcon(icons[position]);
+                    navigationView.getMenu().findItem(R.id.action_change_presence).setIcon(null);
                 }
                 catch (IllegalStateException e) {
                     e.printStackTrace();
@@ -746,7 +749,8 @@ public abstract class DrawerActivity extends AppCompatActivity {
         AccountManager ama = AccountManager.get(context);
         String baseurl = ama.getUserData(account, "oc_base_url");
         String name = account.name.substring(0, account.name.indexOf('@'));
-        String url = baseurl + "/index.php/avatar/" + name + "/" + size;
+        int px = (int) resources.getDimension(R.dimen.file_avatar_size);
+        String url = baseurl + "/index.php/avatar/" + name + "/" + px;
         ThumbnailsCacheManager.LoadMenuImage(url, accountMenuItem, account.name, true, getResources(), fromCache);
     }
 
@@ -754,7 +758,8 @@ public abstract class DrawerActivity extends AppCompatActivity {
         AccountManager ama = AccountManager.get(context);
         String baseurl = ama.getUserData(account, "oc_base_url");
         String name = account.name.substring(0, account.name.indexOf('@'));
-        String url = baseurl + "/index.php/avatar/" + name + "/" + size;
+        int px = (int) resources.getDimension(R.dimen.file_avatar_size);
+        String url = baseurl + "/index.php/avatar/" + name + "/" + px;
         ThumbnailsCacheManager.LoadImage(url, accountMenuItem, account.name, true, fromCache);
     }
     /**
@@ -777,8 +782,8 @@ public abstract class DrawerActivity extends AppCompatActivity {
             String displayName = accountMgr.getUserData(account, "oc_display_name");
 
             String name = account.name.substring(0, account.name.indexOf('@'));
-            int size = (int) mMenuAccountAvatarRadiusDimension * 2;
-            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            int px = (int) getResources().getDimension(R.dimen.file_avatar_size);
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + px;
             ThumbnailsCacheManager.LoadImage(url, im, displayName, true, true);
 
         }

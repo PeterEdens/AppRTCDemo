@@ -14,6 +14,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -55,6 +56,7 @@ public class CallFragment extends Fragment {
   private FloatingActionButton addAllButton;
     private String mOwnId;
     private FloatingActionButton toggleVideoButton;
+    private FloatingActionButton toggleSpeakerPhoneButton;
 
     /**
    * Call control interface for container activity.
@@ -66,6 +68,7 @@ public class CallFragment extends Fragment {
     void onCaptureFormatChange(int width, int height, int framerate);
     boolean onToggleMic();
     boolean onToggleVideo();
+    boolean onToggleSpeakerPhone();
   }
 
   public void onUserEntered(User user) {
@@ -134,6 +137,7 @@ public class CallFragment extends Fragment {
     disconnectButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_disconnect);
     cameraSwitchButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_switch_camera);
     toggleVideoButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_video);
+        toggleSpeakerPhoneButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_speakerphone);
     //videoScalingButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_scaling_mode);
     toggleMuteButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_mic);
 
@@ -195,6 +199,14 @@ public class CallFragment extends Fragment {
             toggleVideoButton.setImageResource(enabled ? R.drawable.ic_visibility_white_24dp :R.drawable.ic_visibility_off_white_24dp);
         }
     });
+
+   toggleSpeakerPhoneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+           boolean enabled = callEvents.onToggleSpeakerPhone();
+                toggleSpeakerPhoneButton.setAlpha(enabled ? 1.0f : 0.3f);
+        }
+        });
 
     addUsers();
 

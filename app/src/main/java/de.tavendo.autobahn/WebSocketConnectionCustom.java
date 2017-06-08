@@ -121,7 +121,10 @@ public class WebSocketConnectionCustom  extends WebSocketConnection implements W
     }
 
     public void connect(URI webSocketURI, WebSocketConnectionObserver connectionObserver) throws WebSocketException {
-        this.connect(webSocketURI, connectionObserver, new WebSocketOptions());
+        WebSocketOptions webSocketOptions = new WebSocketOptions();
+        webSocketOptions.setMaxMessagePayloadSize(4*1024*1024);
+        webSocketOptions.setMaxFramePayloadSize(4*1024*1024);
+        this.connect(webSocketURI, connectionObserver, webSocketOptions);
     }
 
     public void connect(URI webSocketURI, WebSocketConnectionObserver connectionObserver, WebSocketOptions options) throws WebSocketException {

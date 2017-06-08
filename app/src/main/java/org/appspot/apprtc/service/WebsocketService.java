@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
 import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_ACCOUNT_NAME;
@@ -340,11 +341,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     @Override
     public void onUserLeftRoom(User user, String room) {
         ArrayList<User> users = mUsers.get(room);
-        for (User u : users) {
-            if (u.Id.equals(user.Id)) {
-                users.remove(u);
-                mUsers.put(room, users);
-                break;
+        if (users != null) {
+            for (User u : users) {
+                if (u.Id.equals(user.Id)) {
+                    users.remove(u);
+                    mUsers.put(room, users);
+                    break;
+                }
             }
         }
 
@@ -571,7 +574,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void onRemoteDescription(SerializableSessionDescription sdp, String token, String id, String conferenceId, String fromId, String roomName, String type) {
         if (type.equals("Offer") && !(mPresence == Presence.Status.ONLINE || mPresence == Presence.Status.CHAT)) {
             // tried to call
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
             String time = fmt.format(new Date());
             String missedCall = getString(R.string.missed_call);
             ArrayList<User> users = mUsers.get(roomName);

@@ -259,8 +259,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   ArrayList<String> connectedUserIds = new ArrayList<String>();
   private boolean mSentAnswer;
     private boolean mAnswerPressed;
+  private boolean speakerPhoneEnabled = true;
 
-    public class RemoteConnection {
+  public class RemoteConnection {
     SerializableSessionDescription sdp;
     User user;
 
@@ -1016,6 +1017,20 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return videoEnabled;
   }
 
+  @Override
+  public boolean onToggleSpeakerPhone() {
+    if (audioManager != null) {
+      speakerPhoneEnabled = !speakerPhoneEnabled;
+      if (speakerPhoneEnabled) {
+        audioManager.selectAudioDevice(AudioDevice.SPEAKER_PHONE);
+      }
+      else {
+        audioManager.selectAudioDevice(AudioDevice.EARPIECE);
+      }
+    }
+    return speakerPhoneEnabled;
+  }
+
   // Helper functions.
   private void toggleCallControlFragmentVisibility() {
 
@@ -1101,20 +1116,27 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       remoteConnectionViews.getSurfaceViewRenderer().setMirror(false);
     }
 
-    if (iceConnected) {
-      localRenderLayout.setPosition(
-          LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
-      localRender.setScalingType(ScalingType.SCALE_ASPECT_FIT);
-      Log.i(TAG, "Showing small local video window");
-    } else {
-      localRenderLayout.setPosition(
-          LOCAL_X_CONNECTING, LOCAL_Y_CONNECTING, LOCAL_WIDTH_CONNECTING, LOCAL_HEIGHT_CONNECTING);
-      localRender.setScalingType(scalingType);
-      Log.i(TAG, "Showing large local video window");
-    }
-    localRender.setMirror(true);
+    if (mVideoCallEnabled) {
+      if (iceConnected) {
+        //localRenderLayout.setVisibility(View.GONE);
+        localRenderLayout.setPosition(
+                LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
+        localRender.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+        Log.i(TAG, "Showing small local video window");
+      } else {
+        localRenderLayout.setVisibility(View.VISIBLE);
+        localRenderLayout.setPosition(
+                LOCAL_X_CONNECTING, LOCAL_Y_CONNECTING, LOCAL_WIDTH_CONNECTING, LOCAL_HEIGHT_CONNECTING);
+        localRender.setScalingType(scalingType);
+        Log.i(TAG, "Showing large local video window");
+      }
+      localRender.setMirror(true);
 
-    localRender.requestLayout();
+      localRender.requestLayout();
+    }
+    else {
+      localRenderLayout.setVisibility(View.GONE);
+    }
 
     for (RemoteConnectionViews remoteConnectionViews: remoteViewsInUseList) {
       remoteConnectionViews.getSurfaceViewRenderer().requestLayout();

@@ -86,10 +86,27 @@ public class ChatFragment extends Fragment {
         }
         adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
 
-        recyclerView.setAdapter(adapter);
+        if (recyclerView != null) {
+            recyclerView.setAdapter(adapter);
+        }
+
         User user = userIdList.get(key);
-        mUserNameTextView.setText(user.displayName);
-        recentButton.setVisibility(View.VISIBLE);
+
+        if (mUserNameTextView != null) {
+            mUserNameTextView.setText(user.displayName);
+        }
+
+        if (recentButton != null) {
+            recentButton.setVisibility(View.VISIBLE);
+        }
+
+        if (editChat != null) {
+            editChat.setVisibility(View.VISIBLE);
+        }
+
+        if (sendButton != null) {
+            sendButton.setVisibility(View.VISIBLE);
+        }
     }
 
     public void setUser(User user) {
@@ -226,6 +243,8 @@ public class ChatFragment extends Fragment {
                 recyclerView.setAdapter(adapter);
                 mUserNameTextView.setText("");
                 recentButton.setVisibility(View.GONE);
+                editChat.setVisibility(View.GONE);
+                sendButton.setVisibility(View.GONE);
             }
         });
 
@@ -289,21 +308,28 @@ public class ChatFragment extends Fragment {
         }
 
         layoutManager=new LinearLayoutManager(mContext);
+        ((LinearLayoutManager)layoutManager).setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
 
         if (mode == ChatMode.TOPLEVEL) {
             recentButton.setVisibility(View.GONE);
             adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
-            mUserNameTextView.setText(getString(R.string.recent));
+            mUserNameTextView.setText("");
+            editChat.setVisibility(View.GONE);
+            sendButton.setVisibility(View.GONE);
         }
         else {
             recentButton.setVisibility(View.VISIBLE);
 
+            editChat.setVisibility(View.VISIBLE);
+            sendButton.setVisibility(View.VISIBLE);
             adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
 
             mUserNameTextView.setText(userIdList.get(mCurrentId).displayName);
         }
         recyclerView.setAdapter(adapter);
+
+        recyclerView.scrollToPosition(adapter.getItemCount() - 1);
 
     }
 
@@ -326,12 +352,19 @@ public class ChatFragment extends Fragment {
 
         if (adapter != null) {
             adapter.notifyDataSetChanged();
-            emptyChat.setVisibility(View.GONE);
+
+            if (emptyChat != null) {
+                emptyChat.setVisibility(View.GONE);
+            }
+
             if (playSound) {
                 mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
                 mSoundPlayer.Play(false);
             }
-            recyclerView.scrollToPosition(chatList.size() - 1);
+
+            if (recyclerView != null) {
+                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+            }
         }
     }
 
