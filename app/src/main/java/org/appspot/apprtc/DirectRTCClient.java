@@ -115,6 +115,16 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
+  public void unlockRoom(String roomName) {
+
+  }
+
+  @Override
+  public void lockRoom(String roomName, String pin) {
+
+  }
+
+  @Override
   public void disconnectFromRoom() {
     executor.execute(new Runnable() {
       @Override

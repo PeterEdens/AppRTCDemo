@@ -82,9 +82,11 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_USERACTION = "org.appspot.apprtc.service.EXTRA_USERACTION";
     public static final String ACTION_ERROR = "org.appspot.apprtc.service.ACTION_ERROR";
     public static final String EXTRA_CODE = "org.appspot.apprtc.service.EXTRA_CODE";
+    public static final String EXTRA_NOTIFICATION_ID = "org.appspot.apprtc.service.EXTRA_NOTIFICATION_ID";
 
     private String mServer = "";
 
+    int mNotificationId = 1;
     private Handler selfHandler = new Handler();
     private Runnable selfRenew = new Runnable() {
 
@@ -120,7 +122,17 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
+    public void unlockRoom(String roomName) {
+        if (appRtcClient != null) {
+        appRtcClient.unlockRoom(roomName);
+        }
+    }
 
+    public void lockRoom(String roomName, String pin) {
+        if (appRtcClient != null) {
+            appRtcClient.lockRoom(roomName, pin);
+        }
+    }
 
 
     enum ConnectionState {
@@ -445,6 +457,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         if (!mMessages.containsKey(roomName)) {
             mMessages.put(roomName, new ArrayList<ChatItem>());
         }
+
+        // Sets an ID for the notification
+        mNotificationId = mNotificationId++;
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_CHAT_MESSAGE);
         broadcastIntent.putExtra(EXTRA_MESSAGE, message);
@@ -452,6 +467,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.putExtra(EXTRA_STATUS, status);
         broadcastIntent.putExtra(EXTRA_TO, to);
         broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
+        broadcastIntent.putExtra(EXTRA_NOTIFICATION_ID, mNotificationId);
+
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
             for (User user : users) {
@@ -501,8 +518,6 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
         mBuilder.setContentIntent(resultPendingIntent);
 
-        // Sets an ID for the notification
-        int mNotificationId = 001;
 
         // Gets an instance of the NotificationManager service
         NotificationManager mNotifyMgr =

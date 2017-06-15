@@ -277,4 +277,7 @@
     <string name="about_title">About</string>
     <string name="about_android">%1$s Android app</string>
     <string name="about_version">version %1$s</string>
+    <string name="unlock_room">Do you want to unlock the room %1$s?</string>
+    <string name="unlock">Unlock</string>
+    <string name="invalid_credentials">Invalid PIN</string>
 </resources>

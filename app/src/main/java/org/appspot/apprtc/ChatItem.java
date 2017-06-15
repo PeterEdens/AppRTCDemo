@@ -14,6 +14,7 @@ public class ChatItem implements Serializable{
     boolean outgoing;
     FileInfo fileinfo;
     String to; // receipient of message
+    int notificationId = 0;
 
     public void setOutgoing() {
         outgoing = true;
@@ -69,5 +70,13 @@ public class ChatItem implements Serializable{
 
     public String getRecipient() {
         return to;
+    }
+
+    public void setNotificationId(int notificationId) {
+        this.notificationId = notificationId;
+    }
+
+    public int getNotificationId() {
+        return notificationId;
     }
 }

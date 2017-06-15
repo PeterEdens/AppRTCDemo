@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v7.app.AppCompatActivity;
@@ -116,6 +117,8 @@ public class ConnectActivity extends DrawerActivity {
   private String mOwnId;
   private ImageView mConnectedImage;
   private boolean mConnectManual;
+  private boolean mPromptDisplayed;
+  private boolean mRoomLocked;
 
   private enum ConnectionState {
     DISCONNECTED,
@@ -252,7 +255,7 @@ public class ConnectActivity extends DrawerActivity {
           roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
           roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
           roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
-
+          roomIntent.putExtra(RoomActivity.EXTRA_ROOM_LOCKED, mRoomLocked);
           Account account = getCurrentOwnCloudAccount(getApplicationContext());
           if (account != null) {
             AccountManager accountMgr = AccountManager.get(getApplicationContext());
@@ -321,11 +324,27 @@ public class ConnectActivity extends DrawerActivity {
         if (code.equals("authorization_required")) {
           PromptPin();
         }
+        else if (code.equals("invalid_credentials")) {
+          Snackbar snackbar = Snackbar
+                  .make(roomListView, getString(R.string.invalid_credentials), Snackbar.LENGTH_INDEFINITE)
+                  .setAction(getString(R.string.retry), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                      PromptPin();
+                    }
+                  });
+
+          snackbar.show();
+        }
       }
     }
   };
 
   void PromptPin() {
+    if (mPromptDisplayed) {
+      return;
+    }
+    mPromptDisplayed = true;
     AlertDialog.Builder alert = new AlertDialog.Builder(this);
     final EditText edittext = new EditText(this);
     alert.setMessage(String.format(getString(R.string.enter_pin), mCurrentRoom));
@@ -338,6 +357,8 @@ public class ConnectActivity extends DrawerActivity {
         String pin = edittext.getText().toString();
         if (mService != null) {
           mService.connectToRoom(mCurrentRoom, pin);
+          mRoomLocked = true;
+          mPromptDisplayed = false;
         }
       }
     });
@@ -345,6 +366,7 @@ public class ConnectActivity extends DrawerActivity {
     alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
       public void onClick(DialogInterface dialog, int whichButton) {
         // what ever you want to do with No option.
+        mPromptDisplayed = false;
       }
     });
 
@@ -442,6 +464,7 @@ public class ConnectActivity extends DrawerActivity {
       if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME)) {
         mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
         mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
+        mRoomLocked = false;
         mWaitingToEnterRoom = true;
       }
       else {
@@ -914,6 +937,7 @@ public class ConnectActivity extends DrawerActivity {
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = roomList.get(i);
           mCurrentRoom = roomId;
+          mRoomLocked = false;
           adapter.setCurrentRoom(roomId);
           adapter.notifyDataSetChanged();
           connectToRoom(roomId, false, false, false, 0);
@@ -946,6 +970,7 @@ public class ConnectActivity extends DrawerActivity {
       }
       else {
         mCurrentRoom = mAddRoomEditText.getText().toString();
+        mRoomLocked = false;
         adapter.setCurrentRoom(mCurrentRoom);
         adapter.notifyDataSetChanged();
         mService.connectToRoom(mAddRoomEditText.getText().toString());
@@ -969,6 +994,7 @@ public class ConnectActivity extends DrawerActivity {
     super.onRestoreInstanceState(savedInstanceState);
     String currentRoom = savedInstanceState.getString("currentRoom");
     mCurrentRoom = currentRoom;
+    mRoomLocked = false;
   }
 
 

@@ -543,7 +543,7 @@ public class AppRTCAudioManager {
     }
 
     // Update selected audio device.
-    AudioDevice newAudioDevice = selectedAudioDevice;
+    AudioDevice newAudioDevice = userSelectedAudioDevice;
 
     if (bluetoothManager.getState() == AppRTCBluetoothManager.State.SCO_CONNECTED) {
       // If a Bluetooth is connected, then it should be used as output audio
@@ -554,7 +554,7 @@ public class AppRTCAudioManager {
       // If a wired headset is connected, but Bluetooth is not, then wired headset is used as
       // audio device.
       newAudioDevice = AudioDevice.WIRED_HEADSET;
-    } else {
+    } else if (newAudioDevice == AudioDevice.NONE){
       // No wired headset and no Bluetooth, hence the audio-device list can contain speaker
       // phone (on a tablet), or speaker phone and earpiece (on mobile phone).
       // |defaultAudioDevice| contains either AudioDevice.SPEAKER_PHONE or AudioDevice.EARPIECE

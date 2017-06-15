@@ -55,6 +55,10 @@ public interface AppRTCClient {
 
   void connectToRoom(String roomName, String pin);
 
+  void unlockRoom(String roomName);
+
+  void lockRoom(String roomName, String pin);
+
   /**
    * Send offer SDP to the other participant.
    */

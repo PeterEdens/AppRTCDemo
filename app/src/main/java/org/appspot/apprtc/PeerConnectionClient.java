@@ -1422,4 +1422,37 @@ public class PeerConnectionClient {
       }
     });
   }
+
+  public void setPeerConnectionFactory(PeerConnectionFactory factory, PeerConnectionParameters peerConnectionParameters, PeerConnectionEvents events) {
+    this.factory = factory;
+    this.peerConnectionParameters = peerConnectionParameters;
+    this.events = events;
+
+    if (factory != null) {
+      videoCallEnabled = peerConnectionParameters.videoCallEnabled;
+      dataChannelEnabled = peerConnectionParameters.dataChannelParameters != null;
+      // Reset variables to initial states.
+      this.context = null;
+      factory = null;
+      peerConnection = null;
+      preferIsac = false;
+      videoCapturerStopped = false;
+      isError = false;
+      queuedRemoteCandidates = null;
+      localSdp = null; // either offer or answer SDP
+      mediaStream = null;
+      videoCapturer = null;
+      renderVideo = true;
+      localVideoTrack = null;
+      remoteVideoTrack = null;
+      localVideoSender = null;
+      enableAudio = true;
+      localAudioTrack = null;
+      statsTimer = new Timer();
+    }
+  }
+
+  PeerConnectionFactory getPeerConnectionFactory() {
+    return factory;
+  }
 }

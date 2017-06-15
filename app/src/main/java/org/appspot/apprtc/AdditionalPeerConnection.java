@@ -75,6 +75,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             new ArrayList<VideoRenderer.Callbacks>();
 
     private String mConferenceId;
+    private PeerConnectionFactory factory;
 
     public CallActivity.RemoteConnectionViews getRemoteViews() {
         return mRemoteConnectionViews;
@@ -106,7 +107,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId) {
+    AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId, PeerConnectionFactory factory) {
         uiHandler = new Handler();
         mRemoteId = remoteId;
         mContext = context;
@@ -116,6 +117,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         this.parent = parent;
         this.rootEglBase = rootEglBase;
         this.localRender = localRender;
+        this.factory = factory;
 
         if (remoteConnectionViews != null) {
             mRemoteConnectionViews = remoteConnectionViews;
@@ -151,8 +153,10 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         options.disableNetworkMonitor = true;
         peerConnectionClient.setPeerConnectionFactoryOptions(options);
 
-        peerConnectionClient.createPeerConnectionFactory(
-                mContext, peerConnectionParameters, this);
+        /*peerConnectionClient.createPeerConnectionFactory(
+                mContext, peerConnectionParameters, this);*/
+        peerConnectionClient.setPeerConnectionFactory(factory, peerConnectionParameters, this);
+        onPeerConnectionFactoryCreated();
 
     }
 
@@ -167,6 +171,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     public void close() {
         Log.d(TAG, "close()");
         if (peerConnectionClient != null) {
+            peerConnectionClient.setPeerConnectionFactory(null, null, this);
             peerConnectionClient.removeStream(mediaStream);
             peerConnectionClient.close();
             peerConnectionClient = null;

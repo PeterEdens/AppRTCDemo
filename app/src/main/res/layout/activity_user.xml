@@ -187,9 +187,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="10dp"
-                    android:tint="#ffffff"
-                    android:tintMode="src_in"
-                    android:src="@drawable/ic_library_books_black_48dp"/>
+                    android:src="@drawable/ic_library_books_white_fill_48dp"/>
 
                 <ImageView
                     android:id="@+id/file_button"

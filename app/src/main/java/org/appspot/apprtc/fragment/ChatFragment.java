@@ -26,6 +26,7 @@ import org.appspot.apprtc.R;
 import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.UsersAdapter;
+import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
 import org.webrtc.RendererCommon;
 
@@ -38,7 +39,7 @@ import java.util.TimeZone;
 
 
 
-public class ChatFragment extends Fragment {
+public class ChatFragment extends Fragment implements ChatAdapter.OnChatAdapterEvents {
 
     private View controlView;
     private RecyclerView recyclerView;
@@ -69,6 +70,11 @@ public class ChatFragment extends Fragment {
         chatList.clear();
     }
 
+    @Override
+    public void onMessageShown() {
+        chatEvents.onMessageRead();
+    }
+
 
     public enum ChatMode {
         TOPLEVEL,
@@ -84,7 +90,7 @@ public class ChatFragment extends Fragment {
         if (chatList.get(key) == null) {
             chatList.put(key, new ArrayList<ChatItem>());
         }
-        adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
+        adapter = new ChatAdapter(chatList.get(mCurrentId), getContext(), mServerName, mAvatarUrl, this);
 
         if (recyclerView != null) {
             recyclerView.setAdapter(adapter);
@@ -118,6 +124,9 @@ public class ChatFragment extends Fragment {
 
         if (chatList.get(user.Id) == null) {
             chatList.put(user.Id, new ArrayList<ChatItem>());
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
         }
 
         viewChat(user.Id);
@@ -130,7 +139,7 @@ public class ChatFragment extends Fragment {
                 @Override
                 public void run() {
                     InputMethodManager keyboard = (InputMethodManager)
-                            mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                            getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                     keyboard.showSoftInput(editChat, 0);
                 }
             },200);
@@ -212,7 +221,6 @@ public class ChatFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mContext = container.getContext();
 
         // Inflate the layout for this fragment
         controlView = inflater.inflate(R.layout.fragment_chat, container, false);
@@ -239,7 +247,7 @@ public class ChatFragment extends Fragment {
             public void onClick(View view) {
                 mode = ChatMode.TOPLEVEL;
                 mCurrentId = "";
-                adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
+                adapter = new ChatListAdapter(chatList, userIdList, getContext(), mServerName, mRoomName);
                 recyclerView.setAdapter(adapter);
                 mUserNameTextView.setText("");
                 recentButton.setVisibility(View.GONE);
@@ -301,19 +309,24 @@ public class ChatFragment extends Fragment {
             if (args.containsKey(RoomActivity.EXTRA_AVATAR_URL)) {
                 mAvatarUrl = args.getString(RoomActivity.EXTRA_AVATAR_URL);
             }
+
+            if (args.containsKey(WebsocketService.EXTRA_USER)) {
+                User user = (User) args.getSerializable(WebsocketService.EXTRA_USER);
+                setUser(user);
+            }
         }
 
         if (chatList.get("") == null) {
             chatList.put("", new ArrayList<ChatItem>());
         }
 
-        layoutManager=new LinearLayoutManager(mContext);
+        layoutManager=new LinearLayoutManager(getContext());
         ((LinearLayoutManager)layoutManager).setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
 
         if (mode == ChatMode.TOPLEVEL) {
             recentButton.setVisibility(View.GONE);
-            adapter = new ChatListAdapter(chatList, userIdList, mContext, mServerName, mRoomName);
+            adapter = new ChatListAdapter(chatList, userIdList, getContext(), mServerName, mRoomName);
             mUserNameTextView.setText("");
             editChat.setVisibility(View.GONE);
             sendButton.setVisibility(View.GONE);
@@ -323,7 +336,13 @@ public class ChatFragment extends Fragment {
 
             editChat.setVisibility(View.VISIBLE);
             sendButton.setVisibility(View.VISIBLE);
-            adapter = new ChatAdapter(chatList.get(mCurrentId), mContext, mServerName, mAvatarUrl);
+
+
+            if (chatList.get(mCurrentId) == null) {
+                chatList.put(mCurrentId, new ArrayList<ChatItem>());
+            }
+
+            adapter = new ChatAdapter(chatList.get(mCurrentId), getContext(), mServerName, mAvatarUrl, this);
 
             mUserNameTextView.setText(userIdList.get(mCurrentId).displayName);
         }
@@ -358,8 +377,10 @@ public class ChatFragment extends Fragment {
             }
 
             if (playSound) {
-                mSoundPlayer = new SoundPlayer(mContext, R.raw.message1);
-                mSoundPlayer.Play(false);
+                if (getContext() != null) {
+                    mSoundPlayer = new SoundPlayer(getContext(), R.raw.message1);
+                    mSoundPlayer.Play(false);
+                }
             }
 
             if (recyclerView != null) {

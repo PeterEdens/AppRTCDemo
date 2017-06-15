@@ -565,13 +565,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     localRender.setZOrderMediaOverlay(true);
     localRender.setEnableHardwareScaler(true /* enabled */);
-    remoteRenderScreen.setEnableHardwareScaler(true /* enabled */);
-    remoteRenderScreen2.setEnableHardwareScaler(true /* enabled */);
-    remoteRenderScreen2.setZOrderMediaOverlay(true);
-    remoteRenderScreen3.setEnableHardwareScaler(true /* enabled */);
-    remoteRenderScreen3.setZOrderMediaOverlay(true);
-    remoteRenderScreen4.setEnableHardwareScaler(true /* enabled */);
-    remoteRenderScreen4.setZOrderMediaOverlay(true);
+
     updateVideoView();
 
 
@@ -634,6 +628,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     callFragment.setArguments(intent.getExtras());
     hudFragment.setArguments(intent.getExtras());
     // Activate call and HUD fragments and start the call.
+    remoteUserImage.setVisibility(View.INVISIBLE);
     FragmentTransaction ft = getFragmentManager().beginTransaction();
     ft.add(R.id.call_fragment_container, initiateCallFragment);
     ft.add(R.id.hud_fragment_container, hudFragment);
@@ -729,7 +724,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         }
         else {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), "");
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), "", peerConnectionClient.getPeerConnectionFactory());
 
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
           updateVideoView();
@@ -742,7 +737,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         boolean added = false;
         if (!mPeerId.equals(user.Id) && !mAdditionalPeers.containsKey(user.Id) && (mOwnId.compareTo(user.Id) < 0)) {
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId, peerConnectionClient.getPeerConnectionFactory());
 
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
           updateVideoView();
@@ -770,7 +765,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         if (peerConnectionClient.getMediaStream() != null) {
 
           AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+                  localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId, peerConnectionClient.getPeerConnectionFactory());
           mAdditionalPeers.put(user.Id, additionalPeerConnection);
           updateVideoView();
           added = true;
@@ -1441,6 +1436,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           FragmentTransaction ft = getFragmentManager().beginTransaction();
           ft.replace(R.id.call_fragment_container, callFragment);
           ft.commit();
+
+          if (!mVideoCallEnabled) {
+            remoteUserImage.setVisibility(View.VISIBLE);
+          }
         }
       }
     });
@@ -1669,12 +1668,12 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onVideoEnabled() {
-    remoteUserImage.setVisibility(View.INVISIBLE);
+      remoteUserImage.setVisibility(View.INVISIBLE);
   }
 
   @Override
   public void onVideoDisabled() {
-    remoteUserImage.setVisibility(View.VISIBLE);
+      remoteUserImage.setVisibility(View.VISIBLE);
   }
 
   @Override
@@ -1696,7 +1695,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   private void addToCall(SerializableSessionDescription sdp, User user) {
     AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, false, sdp.from, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-            localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+            localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId, peerConnectionClient.getPeerConnectionFactory());
 
     additionalPeerConnection.setRemoteDescription(new SessionDescription(sdp.type, sdp.description));
     mAdditionalPeers.put(sdp.from, additionalPeerConnection);
@@ -1706,7 +1705,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private void addToCall(User user) {
 
     AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-            localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId);
+            localRender, getRemoteRenderScreen(user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), mConferenceId, peerConnectionClient.getPeerConnectionFactory());
     mAdditionalPeers.put(user.Id, additionalPeerConnection);
     updateVideoView();
   }
@@ -1820,6 +1819,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     FragmentTransaction ft = getFragmentManager().beginTransaction();
     ft.replace(R.id.call_fragment_container, callFragment);
     ft.commit();
+
+    if (!mVideoCallEnabled) {
+      remoteUserImage.setVisibility(View.VISIBLE);
+    }
   }
 
   @Override
@@ -1832,6 +1835,10 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     FragmentTransaction ft = getFragmentManager().beginTransaction();
     ft.replace(R.id.call_fragment_container, callFragment);
     ft.commit();
+
+    if (!mVideoCallEnabled) {
+      remoteUserImage.setVisibility(View.VISIBLE);
+    }
 
     callUser(user);
     updateVideoView();

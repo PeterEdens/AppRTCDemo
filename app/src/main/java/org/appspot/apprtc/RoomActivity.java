@@ -4,10 +4,12 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -32,7 +34,10 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -84,6 +89,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_CHAT_ID = "org.appspot.apprtc.EXTRA_CHAT_ID";
     public static final String EXTRA_AVATAR_URL = "org.appspot.apprtc.EXTRA_AVATAR_URL";
     public static final String EXTRA_ACTIVE_TAB = "org.appspot.apprtc.EXTRA_ACTIVE_TAB";
+    public static final String EXTRA_ROOM_LOCKED = "org.appspot.apprtc.EXTRA_ROOM_LOCKED";
     private static final int FILE_CODE = 1;
     public static final int CHAT_INDEX = 1;
 
@@ -177,6 +183,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 String status = intent.getStringExtra(WebsocketService.EXTRA_STATUS);
                 User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 String to = intent.getStringExtra(EXTRA_TO);
+                int notificationId = intent.getIntExtra(WebsocketService.EXTRA_NOTIFICATION_ID, 0);
 
                 if (user != null && message.length() == 0) {
                     // status message
@@ -188,7 +195,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                         toId = to;
                     }
 
-                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, toId, user);
+                    ShowMessage(user.displayName, message, time, status, user.buddyPicture, toId, user, notificationId);
                 }
             } else if (intent.getAction().equals(WebsocketService.ACTION_FILE_MESSAGE)) {
                 FileInfo fileinfo = (FileInfo)intent.getSerializableExtra(WebsocketService.EXTRA_FILEINFO);
@@ -230,14 +237,17 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private String mDisplayName;
     private String mServerName;
     private String mOwnId = "";
+    private boolean mRoomLocked;
 
     private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
         mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
-    private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, message, buddyPicture, Id, Id), user, true);
+    private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user, int notificationId) {
+        ChatItem chatItem = new ChatItem(time, displayName, message, buddyPicture, Id, Id);
+        chatItem.setNotificationId(notificationId);
+        mChatFragment.addMessage(chatItem, user, true);
         tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
@@ -256,6 +266,68 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         Intent connectActivity = new Intent(this, ConnectActivity.class);
         connectActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(connectActivity);
+    }
+
+    void PromptPin(final MenuItem item) {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        final EditText edittext = new EditText(this);
+        alert.setMessage(String.format(getString(R.string.enter_pin), mRoomName));
+        alert.setTitle(R.string.pin);
+
+        alert.setView(edittext);
+
+        alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                String pin = edittext.getText().toString();
+                if (mService != null) {
+                    mService.lockRoom(mRoomName, pin);
+                    mRoomLocked = true;
+                    item.setIcon(R.drawable.ic_lock_outline_white_24dp);
+                }
+            }
+        });
+
+        alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // what ever you want to do with No option.
+            }
+        });
+
+        alert.show();
+    }
+
+    void PromptUnlock(final MenuItem item) {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setMessage(String.format(getString(R.string.unlock_room), mRoomName));
+        alert.setTitle(R.string.unlock);
+
+        alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                if (mService != null) {
+                    mService.unlockRoom(mRoomName);
+                    mRoomLocked = false;
+                    item.setIcon(R.drawable.ic_lock_open_white_24dp);
+                }
+            }
+        });
+
+        alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // what ever you want to do with No option.
+            }
+        });
+
+        alert.show();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.room_menu, menu);
+        if (mRoomLocked) {
+            menu.findItem(R.id.action_lock_room).setIcon(R.drawable.ic_lock_outline_white_24dp);
+        }
+        return true;
     }
 
     @Override
@@ -376,7 +448,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             viewPager.setCurrentItem(CHAT_INDEX);
             User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
 
-            mChatFragment.setUser(user);
+            ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+            ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+            chatFragment.setUser(user);
         }
         else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
             String key = intent.getStringExtra(EXTRA_CHAT_ID);
@@ -457,6 +531,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         if (intent.hasExtra(WebsocketService.EXTRA_OWN_ID)) {
             mOwnId = intent.getStringExtra(WebsocketService.EXTRA_OWN_ID);
         }
+        if (intent.hasExtra(EXTRA_ROOM_LOCKED)) {
+            mRoomLocked = intent.getBooleanExtra(EXTRA_ROOM_LOCKED, false);
+        }
     }
 
 
@@ -525,6 +602,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mWebsocketServiceBound = false;
         }
         unregisterReceiver(mReceiver);
+
+        mChatFragment = null;
+        mRoomFragment = null;
     }
 
     @Override
@@ -538,7 +618,14 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             }
 
             return true;
+        } else if (item.getItemId() == R.id.action_lock_room) {
+            if (!mRoomLocked) {
+                PromptPin(item);
+            } else {
+                PromptUnlock(item);
+            }
         }
+
         return super.onOptionsItemSelected(item);
     }
 

@@ -72,7 +72,10 @@ public class CallFragment extends Fragment {
   }
 
   public void onUserEntered(User user) {
-      addCallButtonForUser(user);
+      View view = addToCallButton.findViewWithTag(user.Id);
+      if (view == null) {
+          addCallButtonForUser(user);
+      }
   }
 
   public void onUserLeft(User user) {
@@ -188,7 +191,7 @@ public class CallFragment extends Fragment {
       @Override
       public void onClick(View view) {
         boolean enabled = callEvents.onToggleMic();
-        toggleMuteButton.setAlpha(enabled ? 1.0f : 0.3f);
+        toggleMuteButton.setImageResource(enabled ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
       }
     });
 

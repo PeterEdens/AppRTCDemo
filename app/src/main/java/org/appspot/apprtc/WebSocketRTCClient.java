@@ -146,6 +146,28 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   @Override
+  public void unlockRoom(final String roomName) {
+    ;
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        unlockRoomInternal(roomName);
+      }
+    });
+  }
+
+  @Override
+  public void lockRoom(final String roomName, final String pin) {
+    ;
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+        lockRoomInternal(roomName, pin);
+      }
+    });
+  }
+
+  @Override
   public void disconnectFromRoom() {
     handler.post(new Runnable() {
       @Override
@@ -327,6 +349,54 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         JSONObject jsonRoom = new JSONObject();
         jsonPut(jsonRoom, "Hello", json);
         jsonPut(jsonRoom, "Type", "Hello");
+
+        wsClient.send(jsonRoom.toString());
+
+
+
+      }
+    });
+  }
+
+  // Connects to room - function runs on a local looper thread.
+  private void unlockRoomInternal(final String roomName) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject roomCredentials = new JSONObject();
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Name", roomName);
+        jsonPut(json, "Credentials", roomCredentials);
+
+        JSONObject jsonRoom = new JSONObject();
+        jsonPut(jsonRoom, "Room", json);
+        jsonPut(jsonRoom, "Type", "Room");
+        wsClient.send(jsonRoom.toString());
+
+
+
+      }
+    });
+  }
+
+  // Connects to room - function runs on a local looper thread.
+  private void lockRoomInternal(final String roomName, final String pin) {
+    handler.post(new Runnable() {
+      @Override
+      public void run() {
+
+        JSONObject roomCredentials = new JSONObject();
+        jsonPut(roomCredentials, "PIN", pin);
+
+        JSONObject json = new JSONObject();
+        jsonPut(json, "Name", roomName);
+        jsonPut(json, "Credentials", roomCredentials);
+
+        JSONObject jsonRoom = new JSONObject();
+        jsonPut(jsonRoom, "Room", json);
+        jsonPut(jsonRoom, "Type", "Room");
 
         wsClient.send(jsonRoom.toString());
 

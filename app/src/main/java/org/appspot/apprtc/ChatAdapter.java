@@ -1,11 +1,13 @@
 package org.appspot.apprtc;
 
+import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
@@ -36,12 +38,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.TimeZone;
 
+import static android.content.Context.NOTIFICATION_SERVICE;
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
+    private final OnChatAdapterEvents mEvents;
     String mServer = "";
     String mAvatarUrl;
     ArrayList<ChatItem> chatList;
@@ -49,12 +53,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     private final int INCOMING = 0;
     private final int OUTGOING = 1;
+    public interface OnChatAdapterEvents {
+        void onMessageShown();
+    }
 
-    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatarUrl) {
+    public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatarUrl, OnChatAdapterEvents events) {
         this.chatList = chatList;
         mServer = server;
         mContext = context;
         mAvatarUrl = avatarUrl;
+        mEvents = events;
     }
 
     @Override
@@ -83,6 +91,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(ChatAdapter.ChatViewHolder holder, int position) {
         ChatItem chatItem = chatList.get(position);
+
+        if (chatItem.getNotificationId() != 0) {
+            NotificationManager mNotifyMgr =
+                    (NotificationManager) mContext.getSystemService(NOTIFICATION_SERVICE);
+
+            mNotifyMgr.cancel(chatItem.getNotificationId());
+            chatItem.setNotificationId(0);
+            mEvents.onMessageShown();
+        }
+
         String buddyPic = chatItem.buddyPicture;
         if (buddyPic.length() != 0) {
             if (buddyPic.equals("self")) {
