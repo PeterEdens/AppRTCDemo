@@ -83,6 +83,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_ERROR = "org.appspot.apprtc.service.ACTION_ERROR";
     public static final String EXTRA_CODE = "org.appspot.apprtc.service.EXTRA_CODE";
     public static final String EXTRA_NOTIFICATION_ID = "org.appspot.apprtc.service.EXTRA_NOTIFICATION_ID";
+    public static final String ACTION_SCREENSHARE = "org.appspot.apprtc.service.ACTION_SCREENSHARE";
 
     private String mServer = "";
 
@@ -449,6 +450,24 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         broadcastIntent.putExtra(EXTRA_CODE, code);
         broadcastIntent.putExtra(EXTRA_MESSAGE, message);
         broadcastIntent.putExtra(EXTRA_ROOM_NAME, roomName);
+        sendBroadcast(broadcastIntent);
+    }
+
+    @Override
+    public void onScreenShare(String userId, String id, String roomName) {
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_SCREENSHARE);
+        broadcastIntent.putExtra(EXTRA_TOKEN, id);
+
+        ArrayList<User> users = mUsers.get(roomName);
+        if (users != null) {
+            for (User user : users) {
+                if (user.Id.equals(userId)) {
+                    broadcastIntent.putExtra(EXTRA_USER, user);
+                }
+            }
+        }
         sendBroadcast(broadcastIntent);
     }
 

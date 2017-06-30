@@ -24,7 +24,7 @@
             android:layout_height="@dimen/user_avatar_size"
             android:layout_centerHorizontal="true"
             android:layout_margin="5dp"
-            android:src="@drawable/user_icon_round" />
+            android:src="@drawable/ic_person_white_48dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -194,9 +194,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:padding="10dp"
-                        android:tint="#ffffff"
-                        android:tintMode="src_in"
-                        android:src="@drawable/ic_library_books_black_48dp"/>
+                        android:src="@drawable/ic_library_books_white_fill_48dp"/>
+
                     <ImageView
                         android:id="@+id/file_button"
                         android:layout_width="wrap_content"

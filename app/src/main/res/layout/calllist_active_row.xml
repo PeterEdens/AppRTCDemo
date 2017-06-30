@@ -1,0 +1,143 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="128dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:background="@drawable/calllist_active_background"
+    android:layout_marginBottom="2dp">
+
+    <com.makeramen.roundedimageview.RoundedImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:id="@+id/image_id"
+        android:layout_margin="5dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:src="@drawable/ic_person_white_48dp"
+        android:tint="#888"
+        app:riv_corner_radius="2dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="left|center_vertical"
+        android:text="User Name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        android:textStyle="bold"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_margin="5dp"
+        android:layout_toRightOf="@+id/image_id"
+        android:layout_toLeftOf="@+id/action_image"
+        android:layout_centerVertical="true"
+        android:textSize="20sp"
+        android:id="@+id/text_id"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="left|bottom"
+        android:text="status"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@+id/image_id"
+        android:layout_alignBottom="@+id/image_id"
+        android:layout_marginBottom="2dp"
+        android:textSize="12sp"
+        android:id="@+id/message"/>
+
+    <com.github.ybq.android.spinkit.SpinKitView
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/connecting_progress"
+        style="@style/SpinKitView.Large.ThreeBounce"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center"
+        app:SpinKit_Color="#757575" />
+
+    <ImageView
+        android:id="@+id/action_image"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:tint="#757575"
+        android:layout_centerVertical="true"
+        android:src="@drawable/ic_add_white_24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="right"
+        android:text="00:01:00"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_margin="5dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:textSize="14sp"
+        android:id="@+id/connection_time"/>
+
+    <ImageView
+        android:id="@+id/button_call_toggle_video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_visibility_white_24dp"
+        android:layout_alignParentBottom="true"
+        android:tint="#757575"
+        android:clickable="true"
+        android:layout_toLeftOf="@+id/connection_time"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="3dp"/>
+
+    <ImageView
+        android:id="@+id/button_call_toggle_mic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_mic_white_24dp"
+        android:layout_alignParentBottom="true"
+        android:tint="#757575"
+        android:clickable="true"
+        android:layout_toLeftOf="@+id/button_call_toggle_video"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="3dp"/>
+
+    <ImageView
+        android:id="@+id/button_send_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_textsms_white_24dp"
+        android:layout_alignParentBottom="true"
+        android:tint="#757575"
+        android:clickable="true"
+        android:layout_toLeftOf="@+id/button_call_toggle_mic"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="3dp"/>
+
+    <ImageView
+        android:id="@+id/button_send_file"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_library_books_black_48dp"
+        android:layout_alignParentBottom="true"
+        android:tint="#757575"
+        android:clickable="true"
+        android:layout_toLeftOf="@+id/button_send_message"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="3dp"/>
+
+    <ImageView
+        android:id="@+id/button_hangup"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_call_end_white_24dp"
+        android:layout_alignParentBottom="true"
+        android:tint="#757575"
+        android:clickable="true"
+        android:layout_toLeftOf="@+id/button_send_file"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="3dp"/>
+</RelativeLayout>

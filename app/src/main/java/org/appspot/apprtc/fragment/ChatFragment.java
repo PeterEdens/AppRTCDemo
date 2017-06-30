@@ -210,12 +210,18 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnChatAdapterE
 
         if (savedInstanceState != null) {
             chatList = (HashMap<String, ArrayList<ChatItem>>)savedInstanceState.getSerializable("chatList");
+            userIdList = (HashMap<String, User>)savedInstanceState.getSerializable("userList");
+            mode = savedInstanceState.getInt("mode") == 0 ? ChatMode.TOPLEVEL : ChatMode.CONTENTS;
+            mCurrentId = savedInstanceState.getString("current");
         }
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putSerializable("chatList", chatList);
+        savedInstanceState.putSerializable("userList", userIdList);
+        savedInstanceState.putInt("mode", mode.ordinal());
+        savedInstanceState.putString("current", mCurrentId);
     }
 
     @Override

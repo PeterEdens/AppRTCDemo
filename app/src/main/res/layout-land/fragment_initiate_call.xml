@@ -7,12 +7,21 @@
     android:background="#00000000">
 
     <ImageView
+        android:id="@+id/audioCallBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="center"
+        android:tint="#dd302e2f"
+        android:src="@drawable/ic_phone_in_talk_grey_nodp"
+        android:background="#302e2f"/>
+
+    <ImageView
         android:id="@+id/contact_image"
         android:layout_width="96dp"
         android:layout_height="96dp"
         android:layout_margin="10dp"
         android:layout_centerHorizontal="true"
-        android:src="@drawable/user_icon"/>
+        android:src="@drawable/ic_person_white_48dp"/>
     <TextView
         android:id="@+id/contact_name_call"
         android:layout_width="wrap_content"
@@ -27,6 +36,16 @@
         android:shadowDx="2"
         android:shadowDy="2"
         android:text="Incoming call..."/>
+
+    <com.github.ybq.android.spinkit.SpinKitView
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/connecting_progress"
+        style="@style/SpinKitView.Large.ThreeBounce"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/contact_name_call"
+        android:layout_gravity="center"
+        app:SpinKit_Color="@color/white" />
 
     <LinearLayout
         android:id="@+id/buttons_call_container"
@@ -43,8 +62,8 @@
             android:id="@+id/button_call_disconnect"
             android:src="@drawable/hangup"
             android:layout_margin="20dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="@dimen/initiate_call_button_size"
+            android:layout_height="50dp"
             android:focusableInTouchMode="false"
             android:focusable="true"
             android:clickable="true"
@@ -54,8 +73,8 @@
             android:id="@+id/button_call_connect"
             android:src="@drawable/answer"
             android:layout_margin="20dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:focusableInTouchMode="false"
             android:focusable="true"
             android:clickable="true"

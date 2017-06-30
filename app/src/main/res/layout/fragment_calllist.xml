@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="@dimen/activity_horizontal_margin"
+        android:background="#302e2f"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:id="@+id/room_empty_layout"
+        android:gravity="center">
+        <TextView
+            android:id="@+id/emptyRoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/room_controls_layout"
+            android:layout_centerVertical="true"
+            android:text="@string/emptyRoom"
+            android:gravity="center"
+            android:textColor="@color/white70"
+            android:layout_above="@+id/share_room"
+            android:textSize="20sp"/>
+
+        <ImageView
+            android:id="@+id/share_room"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:src="@drawable/ic_person_add_black_48dp"
+            android:tint="@color/white70"/>
+    </LinearLayout>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/button_add_users"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_person_add_white_36dp"
+        style="@style/MenuButtonsStyle"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="90dp"/>
+
+</RelativeLayout>

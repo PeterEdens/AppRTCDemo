@@ -20,6 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/recent_button"
+            android:textAllCaps="false"
             android:gravity="left|center_vertical"
             android:textSize="16sp"
             android:drawableLeft="@drawable/ic_arrow_back_white_24dp"
@@ -34,10 +35,14 @@
             android:layout_centerHorizontal="true"
             android:gravity="center"
             android:textSize="16sp"
+            android:layout_toRightOf="@+id/recentButton"
+            android:layout_toLeftOf="@+id/roomChatButton"
             android:layout_alignTop="@+id/recentButton"
             android:layout_alignBottom="@+id/recentButton"
             android:textColor="@color/white"
-            android:text="User Name"/>
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="User Namexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/>
 
         <TextView
             android:id="@+id/roomChatButton"

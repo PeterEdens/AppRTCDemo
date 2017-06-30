@@ -122,6 +122,7 @@ public interface AppRTCClient {
     public final List<IceCandidate> iceCandidates;
     public String token;
     public boolean dataonly;
+    public boolean screenshare;
 
     public SignalingParameters(List<PeerConnection.IceServer> iceServers, boolean initiator,
         String clientId, String wssUrl, String wssPostUrl, SessionDescription offerSdp,
@@ -212,5 +213,7 @@ public interface AppRTCClient {
       void onConferenceUser(String roomName, String conferenceId, String id);
 
       void onError(String code, String message, String roomName);
+
+      void onScreenShare(String userId, String id, String roomName);
   }
 }

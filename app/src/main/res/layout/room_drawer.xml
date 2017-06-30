@@ -30,6 +30,7 @@
         android:layout_weight="1"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/room_drawer_header"
+        app:theme="@style/NavigationView_ItemTextAppearance"
         app:menu="@menu/room_drawer_menu">
 
     </android.support.design.widget.NavigationView>

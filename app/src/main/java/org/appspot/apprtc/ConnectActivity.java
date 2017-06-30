@@ -25,7 +25,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -81,6 +83,7 @@ public class ConnectActivity extends DrawerActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
+  private static final int STATUS_PIXEL_SIZE = 256;
   private static boolean commandLineRun = false;
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -96,7 +99,12 @@ public class ConnectActivity extends DrawerActivity {
   String mServerName;
   String mDisplayName;
   ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
-
+  Handler mReconnectHandler = new Handler() {
+    @Override
+    public void handleMessage(Message msg) {
+      reconnect();
+    }
+  };
   RelativeLayout mRoomListLayout;
 
   FloatingActionButton mAddRoom;
@@ -150,6 +158,7 @@ public class ConnectActivity extends DrawerActivity {
         }
       }
       else {
+        mCurrentRoom = mService.getCurrentRoomName();
         onConnected();
       }
 
@@ -165,7 +174,7 @@ public class ConnectActivity extends DrawerActivity {
 
     adapter.setCurrentRoom(mCurrentRoom);
     adapter.notifyDataSetChanged();
-
+    mReconnectHandler.removeMessages(1);
     mConnectionTextView.setText(getString(R.string.connected));
     mConnectionState = ConnectionState.CONNECTED;
     mConnectingProgress.setVisibility(View.INVISIBLE);
@@ -190,7 +199,7 @@ public class ConnectActivity extends DrawerActivity {
       mDisplayName = accountMgr.getUserData(account, "oc_display_name");
 
       String name = account.name.substring(0, account.name.indexOf('@'));
-      int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
+      int size = STATUS_PIXEL_SIZE;
       String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
       Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
 
@@ -219,6 +228,14 @@ public class ConnectActivity extends DrawerActivity {
 
   }
 
+  private void reconnect() {
+
+    // try to reconnect
+    if (!mConnectManual && mConnectionState == ConnectionState.DISCONNECTED) {
+      mService.connectToServer(mServerName);
+    }
+
+  }
 
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
@@ -233,11 +250,7 @@ public class ConnectActivity extends DrawerActivity {
         mConnectingProgress.setVisibility(View.VISIBLE);
         mConnectedImage.setVisibility(View.INVISIBLE);
 
-        // try to reconnect
-        if (!mConnectManual) {
-          mService.connectToServer(mServerName);
-        }
-
+        mReconnectHandler.sendEmptyMessageDelayed(1, 5000);
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
 
@@ -420,6 +433,8 @@ public class ConnectActivity extends DrawerActivity {
       @Override
       public void onClick(View view) {
         mConnectManual = true;
+        mReconnectHandler.removeMessages(1);
+
         if (mService.getIsConnected()) {
           mService.disconnectFromServer();
           mStatusSent = false;
@@ -461,7 +476,8 @@ public class ConnectActivity extends DrawerActivity {
       String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
       Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
 
-      if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME)) {
+      if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME) &&
+              savedInstanceState == null) {
         mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
         mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
         mRoomLocked = false;

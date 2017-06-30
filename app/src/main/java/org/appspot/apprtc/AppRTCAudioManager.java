@@ -326,26 +326,27 @@ public class AppRTCAudioManager {
   /** Changes selection of the currently active audio device. */
   private void setAudioDeviceInternal(AudioDevice device) {
     Log.d(TAG, "setAudioDeviceInternal(device=" + device + ")");
-    AppRTCUtils.assertIsTrue(audioDevices.contains(device));
+    if (audioDevices.contains(device)){
 
-    switch (device) {
-      case SPEAKER_PHONE:
-        setSpeakerphoneOn(true);
-        break;
-      case EARPIECE:
-        setSpeakerphoneOn(false);
-        break;
-      case WIRED_HEADSET:
-        setSpeakerphoneOn(false);
-        break;
-      case BLUETOOTH:
-        setSpeakerphoneOn(false);
-        break;
-      default:
-        Log.e(TAG, "Invalid audio device selection");
-        break;
+      switch (device) {
+        case SPEAKER_PHONE:
+          setSpeakerphoneOn(true);
+          break;
+        case EARPIECE:
+          setSpeakerphoneOn(false);
+          break;
+        case WIRED_HEADSET:
+          setSpeakerphoneOn(false);
+          break;
+        case BLUETOOTH:
+          setSpeakerphoneOn(false);
+          break;
+        default:
+          Log.e(TAG, "Invalid audio device selection");
+          break;
+      }
+      selectedAudioDevice = device;
     }
-    selectedAudioDevice = device;
   }
 
   /**

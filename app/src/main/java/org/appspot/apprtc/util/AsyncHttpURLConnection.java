@@ -157,8 +157,9 @@ public class AsyncHttpURLConnection {
     } catch (GeneralSecurityException e) {
     }
 
+    HttpsURLConnection connection = null;
     try {
-      HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
+      connection = (HttpsURLConnection) new URL(url).openConnection();
       connection.setSSLSocketFactory(noSSLv3Factory);
 
       HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier());
@@ -232,6 +233,9 @@ public class AsyncHttpURLConnection {
     } catch (SocketTimeoutException e) {
       events.onHttpError("HTTP " + method + " to " + url + " timeout");
     } catch (IOException e) {
+      if (connection != null) {
+        connection.disconnect();
+      }
       events.onHttpError("HTTP " + method + " to " + url + " error: " + e.getMessage());
     }
   }

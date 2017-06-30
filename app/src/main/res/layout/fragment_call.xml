@@ -19,7 +19,7 @@
         android:id="@+id/button_call_disconnect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_call_end_white_24dp"
+        android:src="@drawable/ic_call_end_white_36dp"
         style="@style/EndCallButtonStyle"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
@@ -39,7 +39,7 @@
             android:id="@+id/button_call_switch_camera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_camera"
+            android:src="@drawable/ic_camera_alt_white_24dp"
             style="@style/CallActionButtonStyle"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
@@ -85,6 +85,17 @@
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true" />
 
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/user_list"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_supervisor_account_white_24dp"
+            style="@style/CallActionButtonStyle"
+            android:tint="@color/white"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="10dp"
+            android:layout_alignParentBottom="true"/>
+
 
         <com.github.clans.fab.FloatingActionMenu
             android:id="@+id/add_to_call"
@@ -101,7 +112,8 @@
             android:layout_alignParentRight="true"
             android:layout_marginRight="10dp"
             fab:menu_buttonSpacing="5dp"
-            android:layout_alignParentBottom="true">
+            android:layout_alignParentBottom="true"
+            android:visibility="gone">
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/add_all"

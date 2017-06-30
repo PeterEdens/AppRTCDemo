@@ -13,7 +13,10 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.telecom.Call;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,10 +28,14 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.ybq.android.spinkit.SpinKitView;
+
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
 import org.webrtc.RendererCommon.ScalingType;
+
+import static org.appspot.apprtc.CallActivity.EXTRA_VIDEO_CALL;
 
 /**
  * Fragment for call control.
@@ -43,17 +50,20 @@ public class InitiateCallFragment extends Fragment {
     private ImageView contactImageView;
     private boolean incomingCall = true;
     private SoundPlayer mSoundPlayer;
-
+    private Vibrator mVibrator;
     private OnInitiateCallEvents callEvents;
     private Context mContext;
     private boolean conferenceCall;
     private User mUser;
+    private SpinKitView connectingProgress;
+    private ImageView audioCallBackground;
 
     public void enableCallButtons() {
         if (incomingCall || conferenceCall) {
             connectButton.setVisibility(View.VISIBLE);
         }
         disconnectButton.setVisibility(View.VISIBLE);
+        connectingProgress.setVisibility(View.GONE);
     }
 
     public void showPickupTimeout(User user) {
@@ -68,17 +78,36 @@ public class InitiateCallFragment extends Fragment {
     }
 
     @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        ViewGroup container = (ViewGroup)getView();
+        container.removeAllViews();
+        LayoutInflater inflater = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View newView = inflater.inflate(R.layout.fragment_initiate_call, container, false);
+        setupViews(newView);
+        container.addView(newView);
+        populateViews();
+    }
+
+    @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         controlView = inflater.inflate(R.layout.fragment_initiate_call, container, false);
 
         mContext = container.getContext();
-        
+        setupViews(controlView);
+        return controlView;
+    }
+
+    void setupViews(View controlView) {
+
         // Create UI controls.
         contactImageView = (ImageView) controlView.findViewById(R.id.contact_image);
         contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
         connectButton = (ImageView) controlView.findViewById(R.id.button_call_connect);
         disconnectButton = (ImageView) controlView.findViewById(R.id.button_call_disconnect);
+        connectingProgress = (SpinKitView) controlView.findViewById(R.id.connecting_progress);
+        audioCallBackground = (ImageView) controlView.findViewById(R.id.audioCallBackground);
 
         // Add buttons click events.
         disconnectButton.setOnClickListener(new View.OnClickListener() {
@@ -92,25 +121,21 @@ public class InitiateCallFragment extends Fragment {
             @Override
             public void onClick(View view) {
 
-            if (incomingCall) {
-                callEvents.onAnswerCall();
-            }
-            else if (conferenceCall) {
-                callEvents.onStartConferenceCall(mUser);
-            }
+                if (incomingCall) {
+                    callEvents.onAnswerCall();
+                }
+                else if (conferenceCall) {
+                    callEvents.onStartConferenceCall(mUser);
+                }
             }
         });
 
         connectButton.setVisibility(View.GONE);
         disconnectButton.setVisibility(View.GONE);
 
-        return controlView;
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
+    void populateViews() {
         boolean captureSliderEnabled = false;
         Bundle args = getArguments();
         if (args != null) {
@@ -138,14 +163,30 @@ public class InitiateCallFragment extends Fragment {
                     ThumbnailsCacheManager.LoadImage(url, contactImageView, mUser.displayName, true, true);
                 }
                 else {
-                    contactImageView.setImageResource(R.drawable.user_icon);
+                    contactImageView.setImageResource(R.drawable.ic_person_white_48dp);
                 }
                 enableCallButtons();
             }
+
+            if (args.containsKey(EXTRA_VIDEO_CALL)) {
+                boolean video = args.getBoolean(EXTRA_VIDEO_CALL);
+                audioCallBackground.setVisibility(video ? View.INVISIBLE : View.VISIBLE);
+            }
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        populateViews();
 
         if (mSoundPlayer != null) {
             mSoundPlayer.Stop();
+        }
+
+        if (mVibrator != null) {
+            mVibrator.cancel();
         }
 
         if (!incomingCall && !conferenceCall) {
@@ -155,9 +196,18 @@ public class InitiateCallFragment extends Fragment {
             mSoundPlayer.Play(true);
         }
         else {
-
-            mSoundPlayer = new SoundPlayer(mContext, R.raw.whistle1);
-            mSoundPlayer.Play(true);
+            AudioManager am = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && am.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
+                if (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) {
+                    long[] pattern = {0, 100, 1000};
+                    mVibrator = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    mVibrator.vibrate(pattern, 0);
+                }
+                else {
+                    mSoundPlayer = new SoundPlayer(mContext, R.raw.whistle1);
+                    mSoundPlayer.Play(true);
+                }
+            }
         }
     }
 
@@ -171,6 +221,9 @@ public class InitiateCallFragment extends Fragment {
         super.onStop();
         if (mSoundPlayer != null) {
             mSoundPlayer.Stop();
+        }
+        if (mVibrator != null) {
+            mVibrator.cancel();
         }
     }
 
@@ -186,6 +239,9 @@ public class InitiateCallFragment extends Fragment {
     public void onDestroy() {
         if (mSoundPlayer != null) {
             mSoundPlayer.Stop();
+        }
+        if (mVibrator != null) {
+            mVibrator.cancel();
         }
         super.onDestroy();
     }

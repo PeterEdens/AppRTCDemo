@@ -6,11 +6,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.media.session.MediaSessionCompat;
 
 import org.appspot.apprtc.R;
+
+import java.io.IOException;
 
 import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
 
@@ -88,9 +91,19 @@ public class SoundPlayer implements MediaPlayer.OnCompletionListener {
     public SoundPlayer(Context context, int id) {
         mContext = context;
         am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-        mPlayer = MediaPlayer.create(context, id);
-        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mPlayer = new MediaPlayer(); //MediaPlayer.create(context, id);
+        mPlayer.setAudioStreamType(AudioManager.STREAM_RING);
+        try {
+            mPlayer.setDataSource(mContext, Uri.parse("android.resource://" + mContext.getPackageName() + "/" + id));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         mPlayer.setOnCompletionListener(this);
+        try {
+            mPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

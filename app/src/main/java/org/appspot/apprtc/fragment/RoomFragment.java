@@ -193,9 +193,12 @@ public class RoomFragment extends Fragment {
                 }
             }
         }
-        adapter.notifyDataSetChanged();
 
-        if (userList.size() == 0 && emptyRoom.getVisibility() != View.VISIBLE) {
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+
+        if (userList.size() == 0 && emptyRoom != null && emptyRoom.getVisibility() != View.VISIBLE) {
             emptyRoom.setVisibility(View.VISIBLE);
             shareRoom.setVisibility(View.VISIBLE);
         }

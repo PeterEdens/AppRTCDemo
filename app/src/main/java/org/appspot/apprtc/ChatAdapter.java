@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.FileProvider;
@@ -24,6 +25,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+import com.makeramen.roundedimageview.RoundedImageView;
 
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.util.ThumbnailsCacheManager;
@@ -103,6 +106,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         String buddyPic = chatItem.buddyPicture;
         if (buddyPic.length() != 0) {
+            holder.image.clearColorFilter();
             if (buddyPic.equals("self")) {
                 ThumbnailsCacheManager.LoadImage(mAvatarUrl, holder.image, chatItem.displayName, false, true);
             }
@@ -113,7 +117,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
         }
         else {
-            holder.image.setImageResource(R.drawable.user_icon);
+            holder.image.setImageResource(R.drawable.ic_person_white_48dp);
+            holder.image.setColorFilter(Color.parseColor("#ff757575"));
         }
 
         SimpleDateFormat format = chatItem.time.endsWith("Z") ? new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'") : new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ");
@@ -148,7 +153,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         private final Button downloadButton;
         private TextView filename;
         private TextView filesize;
-        protected ImageView image;
+        protected RoundedImageView image;
         protected TextView text;
         protected TextView time;
         public ChatItem chatItem;
@@ -162,7 +167,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         public ChatViewHolder(View itemView) {
             super(itemView);
             context = itemView.getContext();
-            image= (ImageView) itemView.findViewById(R.id.image_id);
+            image= (RoundedImageView) itemView.findViewById(R.id.image_id);
             text= (TextView) itemView.findViewById(R.id.msgtext);
             time= (TextView) itemView.findViewById(R.id.msgtime);
             fileLayout = (RelativeLayout) itemView.findViewById(R.id.fileLayout);

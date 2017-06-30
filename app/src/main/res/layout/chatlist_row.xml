@@ -23,7 +23,7 @@
         android:layout_toRightOf="@+id/image_id"
         android:layout_toLeftOf="@+id/call_button"
         android:layout_centerVertical="true"
-        android:textSize="20sp"
+        android:textSize="16sp"
         android:id="@+id/text_id"/>
 
 </RelativeLayout>

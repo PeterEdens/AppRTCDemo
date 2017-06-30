@@ -13,6 +13,7 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Looper;
 import android.util.Log;
 import android.util.TypedValue;
 import android.widget.ScrollView;
@@ -39,31 +40,38 @@ public class UnhandledExceptionHandler implements Thread.UncaughtExceptionHandle
 
   public void uncaughtException(Thread unusedThread, final Throwable e) {
     e.printStackTrace();
-    /*activity.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        String title = "Fatal error: " + getTopLevelCauseMessage(e);
-        String msg = getRecursiveStackTrace(e);
-        TextView errorView = new TextView(activity);
-        errorView.setText(msg);
-        errorView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
-        ScrollView scrollingContainer = new ScrollView(activity);
-        scrollingContainer.addView(errorView);
-        Log.e(TAG, title + "\n\n" + msg);
-        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.dismiss();
-            //activity.finish();
-          }
-        };
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle(title)
-            .setView(scrollingContainer)
-            .setPositiveButton("Close", listener)
-            .show();
-      }
-    });*/
+    if (Thread.currentThread() == Looper.getMainLooper().getThread()) {
+
+      new Thread() {
+        @Override
+        public void run() {
+          Looper.prepare();
+          String title = "Fatal error: " + getTopLevelCauseMessage(e);
+          String msg = getRecursiveStackTrace(e);
+          TextView errorView = new TextView(activity);
+          errorView.setText(msg);
+          errorView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8);
+          ScrollView scrollingContainer = new ScrollView(activity);
+          scrollingContainer.addView(errorView);
+          Log.e(TAG, title + "\n\n" + msg);
+          DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+              System.exit(2);
+            }
+          };
+          AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+          builder.setTitle(title)
+                  .setView(scrollingContainer)
+                  .setPositiveButton("Close", listener)
+                  .show();
+          Looper.loop();
+        }
+      }.start();
+
+    }
+
   }
 
   // Returns the Message attached to the original Cause of |t|.

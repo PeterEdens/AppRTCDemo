@@ -3,6 +3,7 @@ package org.appspot.apprtc;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.media.Image;
 import android.os.Handler;
 import android.os.Message;
@@ -64,7 +65,8 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
             ThumbnailsCacheManager.LoadImage(url, holder.image, user.displayName, true, true);
         }
         else {
-            holder.image.setImageResource(R.drawable.user_icon_round);
+            holder.image.setImageResource(R.drawable.ic_person_white_48dp);
+            holder.image.setColorFilter(Color.parseColor("#ff757575"));
         }
         holder.text.setText(user.displayName);
         if (user.message != null) {

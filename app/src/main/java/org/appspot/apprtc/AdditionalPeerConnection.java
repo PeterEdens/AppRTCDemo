@@ -48,7 +48,7 @@ import java.util.zip.Checksum;
  * Created by petere on 3/27/2017.
  */
 
-public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnectionEvents{
+public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnectionEvents, PeerConnectionClient.DataChannelCallback {
 
     private static final String TAG = "AdditPeerConnection";
     private final Context mContext;
@@ -76,9 +76,62 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     private String mConferenceId;
     private PeerConnectionFactory factory;
+    private String mToken;
+    private String mId = "";
+    PeerConnectionClient mSignalingClient;
 
     public CallActivity.RemoteConnectionViews getRemoteViews() {
         return mRemoteConnectionViews;
+    }
+
+    public void setToken(String token, PeerConnectionClient signalingClient) {
+        mToken = token;
+        mId = "1";
+        mSignalingClient = signalingClient;
+    }
+
+    @Override
+    public void onBinaryMessage(DataChannel.Buffer buffer) {
+        
+    }
+
+    @Override
+    public void onTextMessage(String text) {
+        try {
+            JSONObject json = new JSONObject(text);
+            String m = json.optString("m");
+            if (m.equals("bye")) {
+                close();
+            }
+
+            String type = json.optString("Type");
+
+            if (type.equals("Screenshare")) {
+                String userId = json.optString("Id");
+                String screenshareTxt = json.optString("Screenshare");
+                JSONObject screnshareJson = null;
+                screnshareJson = new JSONObject(screenshareTxt);
+
+                String id = screnshareJson.optString("id");
+                events.onScreenShare(userId, id, mRemoteId);
+            }
+            else if (type.equals("Hold")) {
+                String holdTxt = json.optString("Hold");
+                JSONObject holdJson = null;
+                holdJson = new JSONObject(holdTxt);
+
+                boolean hold = holdJson.getBoolean("state");
+
+                events.showHoldMessage(hold, mRemoteId);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onStateChange(DataChannel.State state) {
+
     }
 
     enum ConnectionState {
@@ -91,21 +144,58 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
     interface AdditionalPeerConnectionEvents {
 
-        void sendOfferSdp(SessionDescription localSdp, String remoteId, String conferenceId);
+        void sendOfferSdp(SessionDescription localSdp, String remoteId, String conferenceId, String token);
 
         void sendAnswerSdp(SessionDescription localSdp, String remoteId);
 
-        void sendLocalIceCandidate(SerializableIceCandidate candidate, String remoteId);
+        void sendLocalIceCandidate(SerializableIceCandidate candidate, String remoteId, String token, String id);
 
         void onError(String description, String to);
 
         void onConnected(String remoteId);
 
         void onConnectionClosed(String mRemoteId);
+
+        void showHoldMessage(boolean hold, String remoteId);
+
+        void onScreenShare(String userId, String token, String remoteId);
     }
 
     AdditionalPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
+
+    public AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, String token, String conferenceId, PeerConnectionFactory factory) {
+        uiHandler = new Handler();
+        mRemoteId = remoteId;
+        mContext = context;
+        mIceServers = iceServers;
+        this.initiator = initiator;
+        this.events = events;
+        this.parent = parent;
+        this.rootEglBase = rootEglBase;
+        this.localRender = localRender;
+        this.factory = factory;
+
+        if (remoteConnectionViews != null) {
+            mRemoteConnectionViews = remoteConnectionViews;
+            this.remoteUserImage = remoteConnectionViews.getImageView();
+            this.remoteRenderers.add(remoteConnectionViews.getSurfaceViewRenderer());
+        }
+
+        this.mediaStream = null;
+        this.mToken = token;
+        this.mConferenceId = conferenceId;
+
+        mLocalSdpSent = false;
+
+        dataChannelParameters = new PeerConnectionClient.DataChannelParameters(true,
+                -1,
+                -1, "",
+                false, -1);
+        peerConnectionParameters = params;
+
+        setupPeerConnection();
+    }
 
     AdditionalPeerConnection(CallActivity parent, Context context, AdditionalPeerConnectionEvents events, boolean initiator, String remoteId, List<PeerConnection.IceServer> iceServers, PeerConnectionClient.PeerConnectionParameters params, EglBase rootEglBase, SurfaceViewRenderer localRender, CallActivity.RemoteConnectionViews remoteConnectionViews, MediaStream mediaStream, String conferenceId, PeerConnectionFactory factory) {
         uiHandler = new Handler();
@@ -156,6 +246,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         /*peerConnectionClient.createPeerConnectionFactory(
                 mContext, peerConnectionParameters, this);*/
         peerConnectionClient.setPeerConnectionFactory(factory, peerConnectionParameters, this);
+        peerConnectionClient.setDataChannelCallback(this);
         onPeerConnectionFactoryCreated();
 
     }
@@ -178,6 +269,32 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         }
     }
 
+    public String createTokenOffer(final SessionDescription sdp, final String token, final String id, final String to) {
+        try {
+            //JSONObject jsonOfferWrap = new JSONObject();
+            //jsonOfferWrap.put("Type", "Offer");
+
+            JSONObject json = new JSONObject();
+            json.put("_id", id);
+            json.put("_token", token);
+            json.put("sdp", sdp.description);
+            json.put("type", "offer");
+
+            JSONObject jsonOffer = new JSONObject();
+            jsonOffer.put("To", to);
+            jsonOffer.put("Type", "Offer");
+            jsonOffer.put("Offer", json);
+
+            //jsonOfferWrap.put("Offer", jsonOffer);
+            jsonOffer.put("Type", "Offer");
+
+            return jsonOffer.toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
     @Override
     public void onLocalDescription(SessionDescription sdp) {
         Log.d(TAG, "onLocalDescription()");
@@ -187,7 +304,13 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             mLocalSdpSent = true;
             if (initiator) {
 
-                events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId);
+                if (mSignalingClient != null) {
+                    String offer = createTokenOffer(mLocalSdp, mToken, mId, "");
+                    mSignalingClient.sendDataChannelMessage(offer);
+                }
+                else {
+                    events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId, mToken);
+                }
                 Log.d(TAG, "TokenOfferSdp()");
             }
             else {
@@ -206,7 +329,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             mLocalSdpSent = true;
             if (initiator) {
 
-                events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId);
+                events.sendOfferSdp(mLocalSdp, mRemoteId, mConferenceId, mToken);
                 Log.d(TAG, "TokenOfferSdp()");
             }
             else {
@@ -215,8 +338,9 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
             }
         }
 
-        events.sendLocalIceCandidate(candidate, mRemoteId);
+        events.sendLocalIceCandidate(candidate, mRemoteId, mToken, mId);
         Log.d(TAG, "sendLocalIceCandidate()");
+
 
     }
 
@@ -267,7 +391,8 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     public void onPeerConnectionFactoryCreated() {
         Log.d(TAG, "onPeerConnectionFactoryCreated()");
         signalingParameters = new AppRTCClient.SignalingParameters(mIceServers, false, "", "", "", null, null);
-        signalingParameters.dataonly = false;
+        signalingParameters.dataonly = mediaStream == null ? true : false;
+        signalingParameters.screenshare = mToken != null && mToken.length() != 0;
         VideoCapturer videoCapturer = null;
         if (peerConnectionParameters.videoCallEnabled) {
             //videoCapturer = parent.createVideoCapturer();

@@ -14,8 +14,10 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -57,6 +59,7 @@ public class CallFragment extends Fragment {
     private String mOwnId;
     private FloatingActionButton toggleVideoButton;
     private FloatingActionButton toggleSpeakerPhoneButton;
+    private FloatingActionButton showUserListButton;
 
     /**
    * Call control interface for container activity.
@@ -69,20 +72,15 @@ public class CallFragment extends Fragment {
     boolean onToggleMic();
     boolean onToggleVideo();
     boolean onToggleSpeakerPhone();
+    boolean showUserList();
   }
 
   public void onUserEntered(User user) {
-      View view = addToCallButton.findViewWithTag(user.Id);
-      if (view == null) {
-          addCallButtonForUser(user);
-      }
+
   }
 
   public void onUserLeft(User user) {
-      View view = addToCallButton.findViewWithTag(user.Id);
-      if (view != null) {
-          addToCallButton.removeMenuButton((FloatingActionButton) view);
-      }
+
   }
 
   void addUsers() {
@@ -105,7 +103,7 @@ public class CallFragment extends Fragment {
                 String url = "https://" + parentActivity.get().getServerAddress() + RoomActivity.BUDDY_IMG_PATH + path;
                 ThumbnailsCacheManager.LoadImage(url, programFab2, user.displayName, true, true);
             } else {
-                programFab2.setImageResource(R.drawable.user_icon_round);
+                programFab2.setImageResource(R.drawable.ic_person_white_48dp);
             }
 
             programFab2.setOnClickListener(new View.OnClickListener() {
@@ -143,9 +141,18 @@ public class CallFragment extends Fragment {
         toggleSpeakerPhoneButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_speakerphone);
     //videoScalingButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_scaling_mode);
     toggleMuteButton = (FloatingActionButton) controlView.findViewById(R.id.button_call_toggle_mic);
-
+    showUserListButton = (FloatingActionButton) controlView.findViewById(R.id.user_list);
     addToCallButton = (FloatingActionMenu)  controlView.findViewById(R.id.add_to_call);
     addAllButton = (FloatingActionButton) controlView.findViewById(R.id.add_all);
+
+    showUserListButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            boolean userListsShown = callEvents.showUserList();
+            showUserListButton.setImageResource(userListsShown ? R.drawable.ic_videocam_white_24dp : R.drawable.ic_supervisor_account_white_24dp);
+
+        }
+    });
 
     addAllButton.setOnClickListener(new View.OnClickListener() {
       @Override
@@ -208,8 +215,15 @@ public class CallFragment extends Fragment {
             public void onClick(View view) {
            boolean enabled = callEvents.onToggleSpeakerPhone();
                 toggleSpeakerPhoneButton.setAlpha(enabled ? 1.0f : 0.3f);
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                prefs.edit().putString(getActivity().getString(R.string.pref_speakerphone_key), enabled ? "true" : "false").commit();
         }
         });
+
+
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+    boolean enabled = !prefs.getString(getActivity().getString(R.string.pref_speakerphone_key), "true").equals("false");
+    toggleSpeakerPhoneButton.setAlpha(enabled ? 1.0f : 0.3f);
 
     addUsers();
 
@@ -232,6 +246,8 @@ public class CallFragment extends Fragment {
     }
     if (!videoCallEnabled) {
       cameraSwitchButton.setVisibility(View.INVISIBLE);
+        toggleVideoButton.setVisibility(View.INVISIBLE);
+        showUserListButton.setVisibility(View.INVISIBLE);
     }
 
 

@@ -91,7 +91,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public static final String EXTRA_ACTIVE_TAB = "org.appspot.apprtc.EXTRA_ACTIVE_TAB";
     public static final String EXTRA_ROOM_LOCKED = "org.appspot.apprtc.EXTRA_ROOM_LOCKED";
     private static final int FILE_CODE = 1;
+    public static final int ROOM_INDEX = 0;
     public static final int CHAT_INDEX = 1;
+    public static final int FILE_INDEX = 2;
 
     static final String BUDDY_IMG_PATH = "/webrtc/static/img/buddy/s46/";
 
@@ -131,7 +133,10 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
             ArrayList<User> users = mService.getUsersInRoom(mRoomName.equals(getString(R.string.default_room)) ? "" : mRoomName);
 
-            mRoomFragment.addUsers(users);
+
+            ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+            RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
+            roomFragment.addUsers(users);
 
             ArrayList<ChatItem> messages = mService.getMessages(mRoomName);
 
@@ -141,16 +146,17 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                     userMap.put(user.Id, user);
                 }
 
-                mChatFragment.clearMessages();
+                ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+                chatFragment.clearMessages();
                 for (ChatItem chatItem : messages) {
                     User user = userMap.get(chatItem.Id);
                     if (user != null) {
-                        mChatFragment.addMessage(chatItem, user, false);
+                        chatFragment.addMessage(chatItem, user, false);
                     }
                     else {
                         // self
                         user = userMap.get(chatItem.getRecipient());
-                        mChatFragment.addMessage(chatItem, user, false);
+                        chatFragment.addMessage(chatItem, user, false);
                     }
 
                 }
@@ -209,9 +215,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
     };
 
-    private RoomFragment mRoomFragment;
     private boolean mWaitingToEnterRoom;
-    private ChatFragment mChatFragment;
     private String mFileRecipient;
     private PeerConnectionClient.PeerConnectionParameters peerConnectionParameters;
     private PeerConnectionClient.DataChannelParameters dataChannelParameters;
@@ -240,25 +244,31 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private boolean mRoomLocked;
 
     private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
-        mChatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
-        tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
+        //tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
     private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user, int notificationId) {
         ChatItem chatItem = new ChatItem(time, displayName, message, buddyPicture, Id, Id);
         chatItem.setNotificationId(notificationId);
-        mChatFragment.addMessage(chatItem, user, true);
-        tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.addMessage(chatItem, user, true);
+        //tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
     private void AddUser(User userEntered) {
-
-        mRoomFragment.addUser(userEntered);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
+        roomFragment.addUser(userEntered);
     }
 
     private void RemoveUser(User userLeft) {
-
-        mRoomFragment.removeUser(userLeft);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
+        roomFragment.removeUser(userLeft);
     }
 
     @Override
@@ -365,7 +375,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         setupViewPager(viewPager);
-        setupTabIcons();
+        //setupTabIcons();
 
         Account account = getCurrentOwnCloudAccount(this);
         if (account != null) {
@@ -454,12 +464,16 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
         else if (action != null && action.equals(ACTION_VIEW_CHAT)) {
             String key = intent.getStringExtra(EXTRA_CHAT_ID);
-            mChatFragment.viewChat(key);
+            ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+            ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+            chatFragment.viewChat(key);
         }
         else if (action != null && action.equals(ACTION_SHARE_FILE)) {
             User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
             mFileRecipient = user.Id;
-            mChatFragment.setUser(user);
+            ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+            ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+            chatFragment.setUser(user);
 
             Intent i;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -577,7 +591,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
                     ChatItem item = new ChatItem(time, "Me", fileInfo, "self", mFileRecipient);
                     item.setOutgoing();
-                    mChatFragment.addOutgoingMessage(item);
+                    ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+                    ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+                    chatFragment.addOutgoingMessage(item);
                 }
 
         }
@@ -603,8 +619,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
         unregisterReceiver(mReceiver);
 
-        mChatFragment = null;
-        mRoomFragment = null;
+        viewPager = null;
     }
 
     @Override
@@ -643,14 +658,28 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        mRoomFragment = new RoomFragment();
 
-        mRoomFragment.setArguments(getIntent().getExtras());
-        adapter.addFrag(mRoomFragment, getString(R.string.rooms));
-        mChatFragment = new ChatFragment();
-        mChatFragment.setArguments(getIntent().getExtras());
-        adapter.addFrag(mChatFragment, getString(R.string.recent));
-        adapter.addFrag(new FilesFragment(), getString(R.string.files));
+        RoomFragment roomFragment = (RoomFragment)getSupportFragmentManager().findFragmentByTag(makeFragmentName(viewPager.getId(), ROOM_INDEX));
+        if (roomFragment == null) {
+            roomFragment = new RoomFragment();
+            roomFragment.setArguments(getIntent().getExtras());
+        }
+        adapter.addFrag(roomFragment, getString(R.string.rooms));
+
+        ChatFragment chatFragment = (ChatFragment)getSupportFragmentManager().findFragmentByTag(makeFragmentName(viewPager.getId(), CHAT_INDEX));
+        if (chatFragment == null) {
+            chatFragment = new ChatFragment();
+            chatFragment.setArguments(getIntent().getExtras());
+        }
+        adapter.addFrag(chatFragment, getString(R.string.recent));
+
+        FilesFragment fileFragment = (FilesFragment)getSupportFragmentManager().findFragmentByTag(makeFragmentName(viewPager.getId(), FILE_INDEX));
+        if (fileFragment == null) {
+            fileFragment = new FilesFragment();
+        }
+        adapter.addFrag(fileFragment, getString(R.string.files));
+
+
         viewPager.setAdapter(adapter);
         tabLayout.setupWithViewPager(viewPager);
     }
@@ -664,7 +693,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     @Override
     public void onMessageRead() {
-        tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats);
+        //tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats);
     }
 
     @Override
@@ -884,12 +913,16 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     @Override
     public void onDownloadedBytes(int index, long bytes, String to) {
-        mChatFragment.setDownloadedBytes(index, bytes, to);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.setDownloadedBytes(index, bytes, to);
     }
 
     @Override
     public void onDownloadComplete(int index, String to) {
-        mChatFragment.setDownloadComplete(index, to);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.setDownloadComplete(index, to);
     }
 
     @Override
@@ -909,12 +942,20 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
 
     @Override
     public void onDownloadPath(int index, String path, String to) {
-        mChatFragment.setDownloadPath(index, path, to);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.setDownloadPath(index, path, to);
     }
 
     @Override
     public void onError(String description, int index, String to) {
-        mChatFragment.onDownloadError(description, index, to);
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        chatFragment.onDownloadError(description, index, to);
+    }
+
+    private static String makeFragmentName(int viewId, long id) {
+        return "android:switcher:" + viewId + ":" + id;
     }
 
     class ViewPagerAdapter extends FragmentPagerAdapter {

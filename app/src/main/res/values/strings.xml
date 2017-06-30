@@ -280,4 +280,6 @@
     <string name="unlock_room">Do you want to unlock the room %1$s?</string>
     <string name="unlock">Unlock</string>
     <string name="invalid_credentials">Invalid PIN</string>
+    <string name="screenshare_offer">%s offered to share their screen</string>
+    <string name="accept">Accept</string>
 </resources>

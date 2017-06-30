@@ -547,7 +547,11 @@ public class PeerConnectionClient {
     // Create SDP constraints.
     sdpMediaConstraints = new MediaConstraints();
 
-    if (!signalingParameters.dataonly) {
+    if (signalingParameters.screenshare) {
+      sdpMediaConstraints.mandatory.add(
+              new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
+    }
+    else if (!signalingParameters.dataonly) {
       sdpMediaConstraints.mandatory.add(
               new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
       if (videoCallEnabled || peerConnectionParameters.loopback) {
@@ -654,6 +658,10 @@ public class PeerConnectionClient {
     Logging.enableTracing("logcat:", EnumSet.of(Logging.TraceLevel.TRACE_DEFAULT));
     Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO);
 
+    if (signalingParameters.screenshare) {
+      mediaStream = factory.createLocalMediaStream("ARDAMS");
+    }
+
     if (!signalingParameters.dataonly) {
       if (mediaStream == null) {
         mediaStream = factory.createLocalMediaStream("ARDAMS");
@@ -708,10 +716,12 @@ public class PeerConnectionClient {
     }
     Log.d(TAG, "Stopping capture.");
     if (videoCapturer != null) {
-      try {
-        videoCapturer.stopCapture();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+      if (!videoCapturerStopped) {
+        try {
+          videoCapturer.stopCapture();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
       }
       videoCapturerStopped = true;
       videoCapturer.dispose();
@@ -957,10 +967,10 @@ public class PeerConnectionClient {
     executor.execute(new Runnable() {
       @Override
       public void run() {
-        if (!isError) {
+        //if (!isError) {
           events.onPeerConnectionError(errorMessage);
-          isError = true;
-        }
+          //isError = true;
+       // }
       }
     });
   }
@@ -1398,7 +1408,7 @@ public class PeerConnectionClient {
 
     @Override
     public void onSetFailure(final String error) {
-      reportError("setSDP error: " + error);
+      //reportError("setSDP error: " + error);
     }
   }
 

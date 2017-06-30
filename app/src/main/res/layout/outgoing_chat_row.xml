@@ -29,6 +29,7 @@
                     android:gravity="right"
                     android:text="Message"
                     android:padding="5dp"
+                    android:textSize="14sp"
                     android:id="@+id/msgtext"/>
 
                 <RelativeLayout
@@ -93,24 +94,42 @@
                     </RelativeLayout>
                 </RelativeLayout>
             </RelativeLayout>
-
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="right"
-                android:text="message time"
-                android:layout_margin="2dp"
+                android:layout_gravity="right"
+                android:orientation="horizontal"
                 android:layout_below="@+id/message_content_layout"
-                android:id="@+id/msgtime"/>
+                android:paddingBottom="2dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="right"
+                    android:text="message time"
+                    android:textSize="12sp"
+                    android:layout_margin="2dp"
+                    android:id="@+id/msgtime"/>
 
+                <ImageView
+                    android:id="@+id/security_indicator"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginLeft="4sp"
+                    android:alpha="0.54"
+                    android:gravity="right"
+                    android:tint="@color/black"
+                    android:src="@drawable/ic_lock_white_48dp" />
+            </LinearLayout>
         </RelativeLayout>
 
         <com.makeramen.roundedimageview.RoundedImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:id="@+id/image_id"
-            android:padding="5dp"
-            android:src="@drawable/user_icon"
-            app:riv_corner_radius="2dp"/>
+            android:src="@drawable/ic_person_white_48dp"
+            android:tint="#888"
+            android:textSize="12sp"
+            app:riv_corner_radius="3dp"/>
     </LinearLayout>
 </RelativeLayout>

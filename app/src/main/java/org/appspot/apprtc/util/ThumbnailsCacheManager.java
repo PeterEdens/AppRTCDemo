@@ -298,7 +298,7 @@ public class ThumbnailsCacheManager {
 
                     @Override
                     public void onHttpComplete(String response) {
-                        int size = 96;
+                        int size = 256;
                         Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                         Canvas canvas = new Canvas(bitmap);
                         final String trimmedName = name == null ? "" : name.trim();

@@ -24,7 +24,7 @@ public class CallReceiver extends BroadcastReceiver {
             String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
             activityIntent.putExtra(WebsocketService.EXTRA_TOKEN, token);
 
-            if (id.length() != 0) {
+            if (token.length() != 0 && !token.startsWith("screenshare")) {
                 activityIntent.setClass(context, RoomActivity.class);
             }
 
@@ -45,7 +45,7 @@ public class CallReceiver extends BroadcastReceiver {
             String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
             activityIntent.putExtra(WebsocketService.EXTRA_TOKEN, token);
 
-            if (token.length() != 0) {
+            if (token.length() != 0 && !token.startsWith("screenshare")) {
                 activityIntent.setClass(context, RoomActivity.class);
             }
 

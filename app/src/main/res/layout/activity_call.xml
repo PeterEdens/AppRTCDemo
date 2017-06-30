@@ -2,8 +2,19 @@
 
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <org.appspot.apprtc.PercentFrameLayout
+        android:id="@+id/screenshare_video_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <org.webrtc.SurfaceViewRenderer
+            android:id="@+id/screenshare_video_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </org.appspot.apprtc.PercentFrameLayout>
 
     <org.appspot.apprtc.PercentFrameLayout
         android:id="@+id/remote_video_layout"
@@ -21,7 +32,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:src="@drawable/user_icon_round"/>
+                android:src="@drawable/ic_person_white_48dp"/>
             <TextView
                 android:id="@+id/remote_video_label"
                 android:layout_width="wrap_content"
@@ -33,6 +44,16 @@
                 android:shadowColor="@color/black"
                 android:layout_alignParentBottom="true"
                 android:text="remote_video_label"/>
+            <ImageView
+                android:id="@+id/remote_user_hold_status"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="center"
+                android:layout_centerInParent="true"
+                android:background="#aa000000"
+                android:tint="#757575"
+                android:visibility="gone"
+                android:src="@drawable/ic_phone_paused_black_nodp"/>
         </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
@@ -52,7 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:src="@drawable/user_icon_round"/>
+                android:src="@drawable/ic_person_white_48dp"/>
             <TextView
                 android:id="@+id/remote_video_label2"
                 android:layout_width="wrap_content"
@@ -64,6 +85,16 @@
                 android:shadowColor="@color/black"
                 android:layout_alignParentBottom="true"
                 android:text="remote_video_label2"/>
+            <ImageView
+                android:id="@+id/remote_user_hold_status2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="center"
+                android:layout_centerInParent="true"
+                android:background="#aa000000"
+                android:tint="#757575"
+                android:visibility="gone"
+                android:src="@drawable/ic_phone_paused_black_nodp"/>
         </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
@@ -83,7 +114,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:src="@drawable/user_icon_round"/>
+                android:src="@drawable/ic_person_white_48dp"/>
             <TextView
                 android:id="@+id/remote_video_label3"
                 android:layout_width="wrap_content"
@@ -95,6 +126,16 @@
                 android:shadowColor="@color/black"
                 android:layout_alignParentBottom="true"
                 android:text="remote_video_label3"/>
+            <ImageView
+                android:id="@+id/remote_user_hold_status3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="center"
+                android:layout_centerInParent="true"
+                android:background="#aa000000"
+                android:tint="#757575"
+                android:visibility="gone"
+                android:src="@drawable/ic_phone_paused_black_nodp"/>
         </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
@@ -114,7 +155,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:src="@drawable/user_icon_round"/>
+                android:paddingBottom="20dp"
+                android:src="@drawable/ic_person_white_48dp"/>
             <TextView
                 android:id="@+id/remote_video_label4"
                 android:layout_width="wrap_content"
@@ -126,6 +168,16 @@
                 android:shadowColor="@color/black"
                 android:layout_alignParentBottom="true"
                 android:text="remote_video_label4"/>
+            <ImageView
+                android:id="@+id/remote_user_hold_status4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="center"
+                android:layout_centerInParent="true"
+                android:background="#aa000000"
+                android:tint="#757575"
+                android:visibility="gone"
+                android:src="@drawable/ic_phone_paused_black_nodp"/>
         </RelativeLayout>
     </org.appspot.apprtc.PercentFrameLayout>
 
@@ -140,6 +192,10 @@
     </org.appspot.apprtc.PercentFrameLayout>
 
     <FrameLayout
+        android:id="@+id/call_list_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <FrameLayout
         android:id="@+id/call_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -147,5 +203,12 @@
         android:id="@+id/hud_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <android.support.design.widget.CoordinatorLayout
+        android:id="@+id/snackbar_container"
+        android:layout_width="match_parent"
+        android:layout_height="100dp">
+
+    </android.support.design.widget.CoordinatorLayout>
 
 </RelativeLayout>

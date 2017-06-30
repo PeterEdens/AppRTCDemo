@@ -3,4 +3,5 @@
     <dimen name="user_avatar_size">48dp</dimen>
     <dimen name="user_header_spacing">10dp</dimen>
     <dimen name="user_name_size">16sp</dimen>
+    <dimen name="initiate_call_button_size">64dp</dimen>
 </resources>

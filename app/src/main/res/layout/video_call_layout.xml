@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.appspot.apprtc.PercentFrameLayout
+        android:id="@+id/remote_video_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remote_video_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/remote_user_image1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/ic_person_white_48dp"/>
+            <TextView
+                android:id="@+id/remote_video_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/grey50"
+                android:layout_margin="3dp"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowColor="@color/black"
+                android:layout_alignParentBottom="true"
+                android:text="remote_video_label"/>
+            <ImageView
+                android:id="@+id/remote_user_hold_status"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="center"
+                android:layout_centerInParent="true"
+                android:background="#aa000000"
+                android:tint="#757575"
+                android:src="@drawable/ic_phone_paused_black_nodp"/>
+        </RelativeLayout>
+    </org.appspot.apprtc.PercentFrameLayout>
+</RelativeLayout>

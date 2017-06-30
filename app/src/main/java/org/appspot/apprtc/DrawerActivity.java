@@ -349,7 +349,7 @@ public abstract class DrawerActivity extends AppCompatActivity {
                     navigationView.getMenu().findItem(R.id.action_change_presence).setIcon(null);
                 }
                 catch (IllegalStateException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 executeChangePresence(statusSpinner, position);
             }
@@ -718,7 +718,7 @@ public abstract class DrawerActivity extends AppCompatActivity {
                             Menu.NONE,
                             MENU_ORDER_ACCOUNT,
                             accounts[i].name)
-                            .setIcon(R.drawable.user_icon_round);
+                            .setIcon(R.drawable.ic_person_white_48dp);
                     int size = (int)mMenuAccountAvatarRadiusDimension * 2;
                     setAvatar(accounts[i], this, size, getResources(), accountMenuItem, true);
                 }
@@ -729,7 +729,7 @@ public abstract class DrawerActivity extends AppCompatActivity {
                         Menu.NONE,
                         MENU_ORDER_ACCOUNT,
                         accounts[i].name)
-                        .setIcon(R.drawable.user_icon_round);
+                        .setIcon(R.drawable.ic_person_white_48dp);
             }
         }
 

@@ -1,6 +1,7 @@
 package org.appspot.apprtc;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -52,12 +53,14 @@ public class UserActivity extends AppCompatActivity {
             String buddyPic = user.buddyPicture;
 
             if (buddyPic.length() != 0) {
+                image.clearColorFilter();
                 String path = buddyPic.substring(4);
                 String url = "https://" + mServer + RoomActivity.BUDDY_IMG_PATH + path;
                 ThumbnailsCacheManager.LoadImage(url, image, user.displayName, true, true);
             }
             else {
-                image.setImageResource(R.drawable.user_icon);
+                image.setImageResource(R.drawable.ic_person_white_48dp);
+                image.setColorFilter(Color.parseColor("#ff757575"));
             }
             text.setText(user.displayName);
             if (user.message != null) {

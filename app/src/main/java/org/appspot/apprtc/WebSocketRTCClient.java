@@ -1195,6 +1195,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           } else {
             reportError("Received offer for call receiver: " + msg);
           }
+        } else if (type.equals("Screenshare")) {
+          String userId = json.optString("Id");
+          String screenshareTxt = json.optString("Screenshare");
+          JSONObject screnshareJson = new JSONObject(screenshareTxt);
+          String id = screnshareJson.optString("id");
+          events.onScreenShare(userId, id, mRoomName);
+
         } else if (type.equals("Bye")) {
           String byeTxt = json.optString("Bye");
           JSONObject byeJson = new JSONObject(byeTxt);
