@@ -86,8 +86,10 @@ public class CallFragment extends Fragment {
   void addUsers() {
       if (parentActivity.get() != null) {
           ArrayList<User> users = parentActivity.get().getUsers();
-          for (final User user : users) {
-              addCallButtonForUser(user);
+          if (users != null) {
+              for (final User user : users) {
+                  addCallButtonForUser(user);
+              }
           }
       }
   }

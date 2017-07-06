@@ -75,6 +75,8 @@ import java.util.List;
 import java.util.TimeZone;
 
 import static android.R.id.message;
+import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
+import static org.appspot.apprtc.ConnectActivity.STATUS_PIXEL_SIZE;
 
 public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatEvents, PeerConnectionClient.PeerConnectionEvents, PeerConnectionClient.DataChannelCallback, TokenPeerConnection.TokenPeerConnectionEvents {
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.EXTRA_ROOM_NAME";
@@ -180,6 +182,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             } else if (intent.getAction().equals(WebsocketService.ACTION_USER_ENTERED)) {
                 User userEntered = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 AddUser(userEntered);
+            } else if (intent.getAction().equals(WebsocketService.ACTION_USER_UPDATE)) {
+                User userEntered = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+                UpdateUser(userEntered);
             } else if (intent.getAction().equals(WebsocketService.ACTION_USER_LEFT)) {
                 User userLeft = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
                 RemoveUser(userLeft);
@@ -211,6 +216,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 if (user != null) {
                     ShowMessage(user.displayName, time, fileinfo, user.buddyPicture, user.Id, user);
                 }
+            }
+            else if (intent.getAction().equals(ACTION_PRESENCE_CHANGED)) {
+                sendAccountBitmap();
             }
         }
     };
@@ -263,6 +271,12 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
         RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
         roomFragment.addUser(userEntered);
+    }
+
+    private void UpdateUser(User userEntered) {
+        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
+        roomFragment.updateUser(userEntered);
     }
 
     private void RemoveUser(User userLeft) {
@@ -349,9 +363,11 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         mIntentFilter.addAction(WebsocketService.ACTION_CONNECTED);
         mIntentFilter.addAction(WebsocketService.ACTION_DISCONNECTED);
         mIntentFilter.addAction(WebsocketService.ACTION_USER_ENTERED);
+        mIntentFilter.addAction(WebsocketService.ACTION_USER_UPDATE);
         mIntentFilter.addAction(WebsocketService.ACTION_USER_LEFT);
         mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
         mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
+        mIntentFilter.addAction(ACTION_PRESENCE_CHANGED);
 
         Intent intent = getIntent();
 
@@ -391,6 +407,45 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         }
         
         handleIntent(intent);
+
+    }
+
+    void sendAccountBitmap() {
+        Account account = getCurrentOwnCloudAccount(this);
+        if (account != null) {
+            AccountManager accountMgr = AccountManager.get(this);
+            String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+            mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+            String name = account.name.substring(0, account.name.indexOf('@'));
+            int size = STATUS_PIXEL_SIZE;
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+
+
+            String encodedImage = "";
+            ThumbnailsCacheManager.LoadImage(url, new ThumbnailsCacheManager.LoadImageCallback() {
+
+                @Override
+                public void onImageLoaded(Bitmap bitmap) {
+                    String encodedImage = getEncodedImage(bitmap);
+                    String presence = mService.getPresenceString();
+
+                    mService.sendStatus(mDisplayName, encodedImage, presence + " " + getStatusText());
+                }
+            }, getResources(), mDisplayName, true, true);
+        }
+    }
+
+    String getEncodedImage(Bitmap bitmap) {
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos); //bm is the bitmap object
+        byte[] byteArrayImage = baos.toByteArray();
+
+        String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+
+        return encodedImage;
 
     }
 
@@ -639,6 +694,23 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             } else {
                 PromptUnlock(item);
             }
+        }
+        else if (item.getItemId() == R.id.action_invite_user) {
+            Class<?> c = null;
+            try {
+                c = Class.forName(getString(R.string.share_with_activity) );
+            } catch (ClassNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Intent intent = new Intent(this, c);
+            intent.setAction(Intent.ACTION_SEND);
+            String link = "https://" + mServerName + "/apps/spreedme";
+            if (mRoomName.length() != 0 && !mRoomName.equals(getString(R.string.default_room))) {
+                link += "#" + mRoomName;
+            }
+            intent.putExtra(Intent.EXTRA_TEXT, link);
+            startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);

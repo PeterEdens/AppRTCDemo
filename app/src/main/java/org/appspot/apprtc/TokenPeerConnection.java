@@ -151,43 +151,50 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     @Override
     public void onBinaryMessage(DataChannel.Buffer buffer) {
         Log.d(TAG, "onBinaryMessage()");
+        boolean closeConnection = true;
         // write the stream to file
         ByteBuffer data = buffer.data;
         int length = data.capacity() - BINARY_HEADER_SIZE;
-        final byte[] bytes = new byte[length];
-        byte[] header = new byte[BINARY_HEADER_SIZE];
-        data.get(header, 0, BINARY_HEADER_SIZE);
-        data.get(bytes, 0, length);
-        ByteBuffer wrapped = ByteBuffer.wrap(bytes); // big-endian by default
-        wrapped.order(ByteOrder.LITTLE_ENDIAN);
-        long crc32 = CalculateCRC32ChecksumForByteArray(bytes);
-        char version = wrapped.getChar();
-        wrapped.get(3); // skip reserved
-        int sequenceNum = wrapped.getInt();
-        int checksum = wrapped.getInt();
+        if (length > 0) {
+            final byte[] bytes = new byte[length];
+            byte[] header = new byte[BINARY_HEADER_SIZE];
+            data.get(header, 0, BINARY_HEADER_SIZE);
+            data.get(bytes, 0, length);
+            ByteBuffer wrapped = ByteBuffer.wrap(bytes); // big-endian by default
+            wrapped.order(ByteOrder.LITTLE_ENDIAN);
+            long crc32 = CalculateCRC32ChecksumForByteArray(bytes);
+            char version = wrapped.getChar();
+            wrapped.get(3); // skip reserved
+            int sequenceNum = wrapped.getInt();
+            int checksum = wrapped.getInt();
 
-        try {
-            mDownloadStream.write(bytes);
-            mDownloadedBytes += length;
-            events.onDownloadedBytes(mDownloadIndex, mDownloadedBytes, mRemoteId);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (mChunkIndex < Integer.valueOf(fileInfo.chunks)) {
-            JSONObject json = new JSONObject();
             try {
-                json.put("m", "r");
-                json.put("i", mChunkIndex++);
-            } catch (JSONException e) {
+                mDownloadStream.write(bytes);
+                mDownloadedBytes += length;
+                events.onDownloadedBytes(mDownloadIndex, mDownloadedBytes, mRemoteId);
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            peerConnectionClient.sendDataChannelMessage(json.toString());
+            if (mChunkIndex < Integer.valueOf(fileInfo.chunks)) {
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("m", "r");
+                    json.put("i", mChunkIndex++);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                peerConnectionClient.sendDataChannelMessage(json.toString());
+                closeConnection = false;
+            }
         }
-        else {
+
+        if (closeConnection) {
             try {
-                mDownloadStream.close();
+                if (mDownloadStream != null) {
+                    mDownloadStream.close();
+                }
                 events.onDownloadComplete(mDownloadIndex, mRemoteId);
 
                 JSONObject json = new JSONObject();

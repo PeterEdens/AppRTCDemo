@@ -99,7 +99,8 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   // Asynchronously connect to an AppRTC room URL using supplied connection
   // parameters, retrieves room parameters and connect to WebSocket server.
   @Override
-  public void connectToServer(final String address) {
+  public void connectToServer(final String address, String roomName) {
+    mRoomName = roomName;
     this.connectionParameters = connectionParameters;
     handler.post(new Runnable() {
       @Override
@@ -666,8 +667,13 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(jsonStatusWrap, "Type", "Status");
 
         JSONObject json = new JSONObject();
-        jsonPut(json, "displayName", displayName);
-        jsonPut(json, "buddyPicture", "data:image/jpeg;base64," + buddyPicture);
+        if (displayName.length() != 0) {
+          jsonPut(json, "displayName", displayName);
+        }
+
+        if (buddyPicture.length() != 0) {
+          jsonPut(json, "buddyPicture", "data:image/jpeg;base64," + buddyPicture);
+        }
         jsonPut(json, "message", message);
 
         JSONObject jsonStatus = new JSONObject();
@@ -967,7 +973,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
             if (oldId.length() != 0) {
               hello = new JSONObject();
-              jsonPut(json, "Name", "");
+              jsonPut(json, "Name", mRoomName);
               jsonPut(json, "Version", "1.0.0");
               jsonPut(json, "Ua", "Spreedbox Android 1.0");
               jsonPut(json, "Type", "");
@@ -979,7 +985,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
             }
             else {
-              hello = new JSONObject("{ Type: \"Hello\", Hello: {\"Version\": \"1.0.0\", \"Ua\": \"Spreedbox Android 1.0\", \"Name\": \"\", \"Type\": \"\" } }");
+              hello = new JSONObject("{ Type: \"Hello\", Hello: {\"Version\": \"1.0.0\", \"Ua\": \"Spreedbox Android 1.0\", \"Name\": \"" + mRoomName + "\", \"Type\": \"\" } }");
             }
 
             wsClient.send(hello.toString());

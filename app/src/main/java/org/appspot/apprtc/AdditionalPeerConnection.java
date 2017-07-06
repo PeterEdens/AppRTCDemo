@@ -152,9 +152,9 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
 
         void onError(String description, String to);
 
-        void onConnected(String remoteId);
+        void onConnected(String remoteId, String token);
 
-        void onConnectionClosed(String mRemoteId);
+        void onConnectionClosed(String mRemoteId, String token);
 
         void showHoldMessage(boolean hold, String remoteId);
 
@@ -359,7 +359,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
         Log.d(TAG, "onIceConnected()");
         mConnectionState = ConnectionState.ICECONNECTED;
 
-        events.onConnected(mRemoteId);
+        events.onConnected(mRemoteId, mToken);
     }
 
     @Override
@@ -372,7 +372,7 @@ public class AdditionalPeerConnection implements PeerConnectionClient.PeerConnec
     public void onPeerConnectionClosed() {
         Log.d(TAG, "onPeerConnectionClosed()");
         mConnectionState = ConnectionState.PEERDISCONNECTED;
-        events.onConnectionClosed(mRemoteId);
+        events.onConnectionClosed(mRemoteId, mToken);
     }
 
     @Override

@@ -85,7 +85,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void connectToServer(String address) {
+  public void connectToServer(String address, String roomName) {
 
   }
 

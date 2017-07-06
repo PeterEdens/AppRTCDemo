@@ -56,6 +56,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String ACTION_CONNECTED_TO_ROOM = "org.appspot.apprtc.service.ACTION_CONNECTED_TO_ROOM";
     public static final String EXTRA_ROOM_NAME = "org.appspot.apprtc.service.EXTRA_ROOM_NAME";
     public static final String ACTION_USER_ENTERED = "org.appspot.apprtc.service.ACTION_USER_ENTERED";
+    public static final String ACTION_USER_UPDATE = "org.appspot.apprtc.service.ACTION_USER_UPDATE";
     public static final String ACTION_USER_LEFT = "org.appspot.apprtc.service.ACTION_USER_LEFT";
     public static final String ACTION_REMOTE_ICE_CANDIDATE = "org.appspot.apprtc.service.ACTION_REMOTE_ICE_CANDIDATE";
     public static final String ACTION_REMOTE_DESCRIPTION = "org.appspot.apprtc.service.ACTION_REMOTE_DESCRIPTION";
@@ -250,14 +251,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void connectToServer(String address) {
+    public void connectToServer(String address, String roomName) {
         mServer = address;
         if (mState == null) {
             appRtcClient = new WebSocketRTCClient(this);
         }
 
         if (appRtcClient != null) {
-            appRtcClient.connectToServer(address);
+            appRtcClient.connectToServer(address, roomName);
         }
     }
 
@@ -331,10 +332,15 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             users = new ArrayList<User>();
         }
 
+        boolean changed = false;
         boolean found = false;
         for (User u : users) {
             if (u.Id.equals(user.Id)) {
                 found = true;
+                if (!u.message.equals(user.message)) {
+                    u.message = user.message;
+                    changed = true;
+                }
                 break;
             }
         }
@@ -345,6 +351,13 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
             Intent broadcastIntent = new Intent();
             broadcastIntent.setAction(ACTION_USER_ENTERED);
+            broadcastIntent.putExtra(EXTRA_USER, user);
+            broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
+            sendBroadcast(broadcastIntent);
+        }
+        else if (changed) {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_USER_UPDATE);
             broadcastIntent.putExtra(EXTRA_USER, user);
             broadcastIntent.putExtra(EXTRA_ROOM_NAME, room);
             sendBroadcast(broadcastIntent);
@@ -376,6 +389,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ACTION_BYE);
         broadcastIntent.putExtra(EXTRA_REASON, reason);
+        broadcastIntent.putExtra(EXTRA_ID, fromId);
         ArrayList<User> users = mUsers.get(roomName);
         if (users != null) {
             for (User user : users) {
@@ -763,9 +777,14 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
         if (intent != null) {
             if (intent.getAction() != null && intent.getAction().equals(ACTION_CONNECT)) {
+                String room = "";
+                if (intent.hasExtra(EXTRA_ROOM_NAME)) {
+                    room = intent.getStringExtra(EXTRA_ROOM_NAME);
+                }
+
                 if (intent.hasExtra(EXTRA_ADDRESS)) {
                     String address = intent.getExtras().getString(EXTRA_ADDRESS);
-                    appRtcClient.connectToServer(address);
+                    appRtcClient.connectToServer(address, room);
                 }
             }
         }
@@ -854,6 +873,25 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     private void setStatus(Presence.Status status) {
         mPresence = status;
+    }
+
+    public String getPresenceString() {
+        if (mPresence == Presence.Status.CHAT) {
+            return getString(R.string.presence_chat);
+        }
+        else if (mPresence == Presence.Status.ONLINE) {
+            return getString(R.string.presence_online);
+        }
+        else if (mPresence == Presence.Status.AWAY) {
+            return getString(R.string.presence_away);
+        }
+        else if (mPresence == Presence.Status.XA) {
+            return getString(R.string.presence_xa);
+        }
+        else if (mPresence == Presence.Status.DND) {
+            return getString(R.string.presence_dnd);
+        }
+        return "";
     }
 
     public Presence.Status getPresence() {

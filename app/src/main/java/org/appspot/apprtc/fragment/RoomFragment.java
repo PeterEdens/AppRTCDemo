@@ -183,6 +183,22 @@ public class RoomFragment extends Fragment {
         }
 
     }
+    public void updateUser(User user) {
+        if (user != null) {
+            boolean found = false;
+            for (User u : userList) {
+                if (u.Id.equals(user.Id)) {
+                    u.message = user.message;
+                    found = true;
+                    if (adapter != null) {
+                        adapter.notifyDataSetChanged();
+                    }
+                    break;
+                }
+            }
+        }
+
+    }
 
     public void removeUser(User userLeft) {
         if (userLeft != null) {

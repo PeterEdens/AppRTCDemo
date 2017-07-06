@@ -44,7 +44,7 @@ public interface AppRTCClient {
 
   void sendSelf();
 
-  void connectToServer(final String address);
+  void connectToServer(final String address, String roomName);
 
   /**
    * Asynchronously connect to an AppRTC room URL using supplied connection

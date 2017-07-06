@@ -73,6 +73,7 @@ import org.json.JSONObject;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
 import static org.appspot.apprtc.R.id.roomName;
 
 
@@ -83,7 +84,7 @@ public class ConnectActivity extends DrawerActivity {
   private static final String TAG = "ConnectActivity";
   private static final int CONNECTION_REQUEST = 1;
   private static final int REMOVE_FAVORITE_INDEX = 0;
-  private static final int STATUS_PIXEL_SIZE = 256;
+  public static final int STATUS_PIXEL_SIZE = 256;
   private static boolean commandLineRun = false;
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -154,11 +155,14 @@ public class ConnectActivity extends DrawerActivity {
 
       if (!mService.getIsConnected()) {
         if (!mConnectManual) {
-          mService.connectToServer(mServerName);
+          mService.connectToServer(mServerName, mCurrentRoom);
         }
       }
       else {
-        mCurrentRoom = mService.getCurrentRoomName();
+        if (mCurrentRoom.length() == 0) {
+          mCurrentRoom = mService.getCurrentRoomName();
+          sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
+        }
         onConnected();
       }
 
@@ -210,7 +214,9 @@ public class ConnectActivity extends DrawerActivity {
         @Override
         public void onImageLoaded(Bitmap bitmap) {
           String encodedImage = getEncodedImage(bitmap);
-          mService.sendStatus(mDisplayName, encodedImage, getStatusText());
+          String presence = mService.getPresenceString();
+
+                  mService.sendStatus(mDisplayName, encodedImage, presence + " " + getStatusText());
         }
       }, getResources(), mDisplayName, true, true);
     }
@@ -232,7 +238,7 @@ public class ConnectActivity extends DrawerActivity {
 
     // try to reconnect
     if (!mConnectManual && mConnectionState == ConnectionState.DISCONNECTED) {
-      mService.connectToServer(mServerName);
+      mService.connectToServer(mServerName, mCurrentRoom);
     }
 
   }
@@ -350,6 +356,9 @@ public class ConnectActivity extends DrawerActivity {
           snackbar.show();
         }
       }
+      else if (intent.getAction().equals(ACTION_PRESENCE_CHANGED)) {
+        sendAccountBitmap();
+      }
     }
   };
 
@@ -443,7 +452,7 @@ public class ConnectActivity extends DrawerActivity {
           mConnectedImage.setImageResource(R.drawable.ic_cancel_white_48dp);
         }
         else {
-          mService.connectToServer(mServerName);
+          mService.connectToServer(mServerName, mCurrentRoom);
           mConnectedImage.setImageResource(R.drawable.ic_lock_white_48dp);
           mConnectedImage.setVisibility(View.INVISIBLE);
           mConnectingProgress.setVisibility(View.VISIBLE);
@@ -460,6 +469,7 @@ public class ConnectActivity extends DrawerActivity {
     mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
     mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
     mIntentFilter.addAction(WebsocketService.ACTION_ERROR);
+    mIntentFilter.addAction(ACTION_PRESENCE_CHANGED);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
@@ -475,11 +485,13 @@ public class ConnectActivity extends DrawerActivity {
       int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
       String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
       Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+      mCurrentRoom = sharedPref.getString(keyprefRoom, "");
 
       if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME) &&
               savedInstanceState == null) {
         mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
         mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
+        sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
         mRoomLocked = false;
         mWaitingToEnterRoom = true;
       }
@@ -953,6 +965,7 @@ public class ConnectActivity extends DrawerActivity {
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = roomList.get(i);
           mCurrentRoom = roomId;
+          sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
           mRoomLocked = false;
           adapter.setCurrentRoom(roomId);
           adapter.notifyDataSetChanged();
@@ -986,6 +999,7 @@ public class ConnectActivity extends DrawerActivity {
       }
       else {
         mCurrentRoom = mAddRoomEditText.getText().toString();
+        sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
         mRoomLocked = false;
         adapter.setCurrentRoom(mCurrentRoom);
         adapter.notifyDataSetChanged();
@@ -1010,6 +1024,7 @@ public class ConnectActivity extends DrawerActivity {
     super.onRestoreInstanceState(savedInstanceState);
     String currentRoom = savedInstanceState.getString("currentRoom");
     mCurrentRoom = currentRoom;
+    sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
     mRoomLocked = false;
   }
 

@@ -8,4 +8,11 @@
         android:icon="@drawable/ic_lock_open_white_24dp"
         android:title="Refresh"/>
 
+    <item
+        android:id="@+id/action_invite_user"
+        android:orderInCategory="100"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_person_add_white_24dp"
+        android:title="Refresh"/>
+
 </menu>

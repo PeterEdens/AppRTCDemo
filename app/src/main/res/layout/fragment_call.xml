@@ -15,6 +15,36 @@
         android:textSize="24sp"
         android:layout_margin="8dp"/>
 
+    <LinearLayout
+        android:id="@+id/connecting_progress_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/connecting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_above="@+id/buttons_call_container"
+            android:textSize="24sp"
+            android:textColor="@color/white70"
+            android:text="@string/connecting"
+            android:layout_margin="8dp"/>
+
+        <com.github.ybq.android.spinkit.SpinKitView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/connecting_progress"
+            style="@style/SpinKitView.Large.ThreeBounce"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/contact_name_call"
+            android:layout_gravity="center"
+            app:SpinKit_Color="@color/white" />
+
+    </LinearLayout>
+
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/button_call_disconnect"
         android:layout_width="wrap_content"
@@ -42,8 +72,8 @@
             android:src="@drawable/ic_camera_alt_white_24dp"
             style="@style/CallActionButtonStyle"
             android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="10dp"/>
+            android:layout_toLeftOf="@+id/button_call_toggle_mic"
+            android:layout_marginRight="10dp"/>
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/button_call_toggle_speakerphone"
@@ -52,8 +82,7 @@
             android:src="@drawable/ic_speaker_phone_white_24dp"
             style="@style/CallActionButtonStyle"
             android:layout_alignParentLeft="true"
-            android:layout_above="@+id/button_call_switch_camera"
-            android:layout_marginBottom="20dp"
+            android:layout_alignParentBottom="true"
             android:layout_marginLeft="10dp"/>
 
         <com.github.clans.fab.FloatingActionButton
@@ -63,7 +92,7 @@
             android:src="@drawable/ic_visibility_white_24dp"
             style="@style/CallActionButtonStyle"
             android:layout_alignParentBottom="true"
-            android:layout_toRightOf="@+id/button_call_switch_camera"
+            android:layout_toRightOf="@+id/button_call_toggle_mic"
             android:layout_marginLeft="10dp"/>
 
         <!--<ImageButton
