@@ -337,7 +337,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         for (User u : users) {
             if (u.Id.equals(user.Id)) {
                 found = true;
-                if (!u.message.equals(user.message)) {
+                if (u.message == null || !u.message.equals(user.message)) {
                     u.message = user.message;
                     changed = true;
                 }
