@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 
 import org.appspot.apprtc.AppRTCClient;
 import org.appspot.apprtc.ChatItem;
@@ -85,6 +86,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_CODE = "org.appspot.apprtc.service.EXTRA_CODE";
     public static final String EXTRA_NOTIFICATION_ID = "org.appspot.apprtc.service.EXTRA_NOTIFICATION_ID";
     public static final String ACTION_SCREENSHARE = "org.appspot.apprtc.service.ACTION_SCREENSHARE";
+    private static WebsocketService mInstance;
 
     private String mServer = "";
 
@@ -134,6 +136,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         if (appRtcClient != null) {
             appRtcClient.lockRoom(roomName, pin);
         }
+    }
+
+    public static WebsocketService getInstance() {
+        return mInstance;
     }
 
 
@@ -519,7 +525,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
                         .setContentTitle(getString(R.string.drawer_video_chat))
                         .setAutoCancel(true)
                         .setContentText(message);
-        Intent roomIntent = new Intent(this, RoomActivity.class);
+        Intent roomIntent = new Intent(getApplicationContext(), RoomActivity.class);
 
         roomIntent.setAction(ACTION_VIEW_CHAT);
         roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, getId());
@@ -543,7 +549,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         // no need to create an artificial back stack.
         PendingIntent resultPendingIntent =
                 PendingIntent.getActivity(
-                        this,
+                        getApplicationContext(),
                         0,
                         roomIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT
@@ -796,6 +802,10 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public void onCreate() {
       super.onCreate();
 
+        if (mInstance == null) {
+            mInstance = this;
+        }
+
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(ACTION_PRESENCE_CHANGED);
         registerReceiver(mReceiver, mIntentFilter);
@@ -809,6 +819,8 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
 
         unregisterReceiver(mReceiver);
+
+        mInstance = null;
 
         super.onDestroy();
     }
@@ -896,5 +908,30 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
 
     public Presence.Status getPresence() {
         return mPresence;
+    }
+
+    public String getAvatarUrl() {
+        Account account = getCurrentOwnCloudAccount(getApplicationContext());
+        if (account != null) {
+            AccountManager accountMgr = AccountManager.get(getApplicationContext());
+            String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+
+            String name = account.name.substring(0, account.name.indexOf('@'));
+            int size = getResources().getDimensionPixelSize(R.dimen.avatar_size_small);
+            String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+            return url;
+        }
+        return "";
+    }
+
+    public String getAccountName() {
+        Account account = getCurrentOwnCloudAccount(getApplicationContext());
+        if (account != null) {
+            AccountManager accountMgr = AccountManager.get(getApplicationContext());
+            String name = accountMgr.getUserData(account, "oc_display_name");
+
+            return name;
+        }
+        return "";
     }
 }

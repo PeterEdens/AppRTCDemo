@@ -58,7 +58,7 @@ public class AppRTCAudioManager {
         Set<AudioDevice> availableAudioDevices);
   }
 
-  private final Context apprtcContext;
+  private Context apprtcContext;
   private AudioManager audioManager;
 
   private AudioManagerEvents audioManagerEvents;
@@ -157,6 +157,10 @@ public class AppRTCAudioManager {
   /** Construction. */
   static AppRTCAudioManager create(Context context) {
     return new AppRTCAudioManager(context);
+  }
+
+  public void updateContext(Context context) {
+    apprtcContext = context;
   }
 
   private AppRTCAudioManager(Context context) {

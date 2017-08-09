@@ -17,6 +17,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -46,6 +47,7 @@ import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsObserver;
 import org.webrtc.StatsReport;
+import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoSource;
@@ -133,6 +135,10 @@ public class PeerConnectionClient {
   private boolean dataChannelEnabled;
   private String peerToken;
   private boolean mediaStreamShared;
+  private boolean remoteDescriptionSet;
+  private boolean delayedAnswer;
+  private VideoRenderer localVideoRenderer;
+  private List<VideoRenderer> remoteVideoRenders = new ArrayList<VideoRenderer>();
 
   public interface DataChannelCallback {
     void onBinaryMessage(DataChannel.Buffer buffer);
@@ -307,6 +313,11 @@ public class PeerConnectionClient {
 
   public void setPeerConnectionFactoryOptions(PeerConnectionFactory.Options options) {
     this.options = options;
+  }
+
+  public void updateActivity(final Context context, final PeerConnectionEvents events) {
+    this.events = events;
+    this.context = context;
   }
 
   public void createPeerConnectionFactory(final Context context,
@@ -836,7 +847,12 @@ public class PeerConnectionClient {
         if (peerConnection != null && !isError) {
           Log.d(TAG, "PC create ANSWER");
           isInitiator = false;
-          peerConnection.createAnswer(sdpObserver, sdpMediaConstraints);
+          if (remoteDescriptionSet) {
+            peerConnection.createAnswer(sdpObserver, sdpMediaConstraints);
+          }
+          else {
+            delayedAnswer = true;
+          }
         }
       }
     });
@@ -898,6 +914,11 @@ public class PeerConnectionClient {
         Log.d(TAG, "Set remote SDP.");
         SessionDescription sdpRemote = new SessionDescription(sdp.type, sdpDescription);
         peerConnection.setRemoteDescription(sdpObserver, sdpRemote);
+        remoteDescriptionSet = true;
+        if (delayedAnswer) {
+          peerConnection.createAnswer(sdpObserver, sdpMediaConstraints);
+          delayedAnswer = false;
+        }
       }
     });
   }
@@ -988,7 +1009,8 @@ public class PeerConnectionClient {
 
     localVideoTrack = factory.createVideoTrack(VIDEO_TRACK_ID, videoSource);
     localVideoTrack.setEnabled(renderVideo);
-    localVideoTrack.addRenderer(new VideoRenderer(localRender));
+    localVideoRenderer = new VideoRenderer(localRender);
+    localVideoTrack.addRenderer(localVideoRenderer);
     return localVideoTrack;
   }
 
@@ -1175,7 +1197,36 @@ public class PeerConnectionClient {
     videoSource.adaptOutputFormat(width, height, framerate);
   }
 
-  // Implementation detail: observe ICE & stream changes and react accordingly.
+  public void updateLocalRenderer(SurfaceViewRenderer localRender) {
+    localVideoTrack.removeRenderer(localVideoRenderer);
+    this.localRender = localRender;
+    localVideoRenderer = new VideoRenderer(localRender);
+    localVideoTrack.addRenderer(localVideoRenderer);
+  }
+
+  public void updateRemoteRenderers(final List<VideoRenderer.Callbacks> updatedRemoteRenders) {
+    executor.execute(new Runnable() {
+      @Override
+      public void run() {
+        remoteVideoTrack.setEnabled(false);
+        /*for (VideoRenderer videoRenderer : remoteVideoRenders) {
+          remoteVideoTrack.removeRenderer(videoRenderer);
+        }*/
+        remoteRenders = updatedRemoteRenders;
+        for (VideoRenderer.Callbacks remoteRender : remoteRenders) {
+          remoteVideoRenders.add(new VideoRenderer(remoteRender));
+        }
+
+        for (VideoRenderer videoRenderer : remoteVideoRenders) {
+          remoteVideoTrack.addRenderer(videoRenderer);
+        }
+
+        remoteVideoTrack.setEnabled(renderVideo);
+      }
+    });
+  }
+
+    // Implementation detail: observe ICE & stream changes and react accordingly.
   private class PCObserver implements PeerConnection.Observer {
     @Override
     public void onIceCandidate(final IceCandidate candidate) {
@@ -1249,8 +1300,13 @@ public class PeerConnectionClient {
           if (stream.videoTracks.size() == 1) {
             remoteVideoTrack = stream.videoTracks.get(0);
             remoteVideoTrack.setEnabled(renderVideo);
+
             for (VideoRenderer.Callbacks remoteRender : remoteRenders) {
-              remoteVideoTrack.addRenderer(new VideoRenderer(remoteRender));
+              remoteVideoRenders.add(new VideoRenderer(remoteRender));
+            }
+
+            for (VideoRenderer videoRenderer: remoteVideoRenders) {
+              remoteVideoTrack.addRenderer(videoRenderer);
             }
             events.onVideoEnabled();
           }
@@ -1264,6 +1320,7 @@ public class PeerConnectionClient {
         @Override
         public void run() {
           remoteVideoTrack = null;
+          remoteVideoRenders.clear();
           events.onVideoDisabled();
         }
       });
@@ -1408,7 +1465,7 @@ public class PeerConnectionClient {
 
     @Override
     public void onSetFailure(final String error) {
-      //reportError("setSDP error: " + error);
+      Log.d(TAG, "setSDP error: " + error);
     }
   }
 

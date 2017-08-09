@@ -1,6 +1,8 @@
 package org.appspot.apprtc;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -12,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -39,6 +42,7 @@ import static org.appspot.apprtc.RoomActivity.EXTRA_SERVER_NAME;
 public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.UsersViewHolder> {
 
     private final String mOwnId;
+    private final InCallUsersAdapterEvents mEvents;
     String mServer = "";
     ArrayList<User> userList;
     Context mContext;
@@ -46,11 +50,19 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
     private final int IDLE = 0;
     private final int INCALL = 1;
 
-    public InCallUsersAdapter(ArrayList<User> userList, Context context, String server, String ownId) {
+    /**
+     * Call control interface for container activity.
+     */
+    public interface InCallUsersAdapterEvents {
+        void onSendMessage(User user);
+    }
+
+    public InCallUsersAdapter(ArrayList<User> userList, Context context, String server, String ownId, InCallUsersAdapterEvents events) {
         this.userList = userList;
         mServer = server;
         mContext = context;
         mOwnId = ownId;
+        mEvents = events;
     }
 
     @Override
@@ -106,6 +118,7 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
 
         if (user.getCallState() == User.CallState.NONE) {
             holder.actionImage.setImageResource(R.drawable.ic_add_white_24dp);
+            holder.hangup_button.setVisibility(View.INVISIBLE);
             holder.actionImage.setVisibility(View.VISIBLE);
             holder.connecting.setVisibility(View.INVISIBLE);
             if (holder.time != null) {
@@ -115,13 +128,14 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
         }
         else if (user.getCallState() == User.CallState.CALLING) {
             holder.actionImage.setVisibility(View.INVISIBLE);
+            holder.hangup_button.setVisibility(View.INVISIBLE);
             holder.connecting.setVisibility(View.VISIBLE);
             holder.time.setVisibility(View.INVISIBLE);
             holder.toggleTimer(false);
         }
         else if (user.getCallState() == User.CallState.CONNECTED) {
-            holder.actionImage.setImageResource(R.drawable.ic_call_end_white_24dp);
-            holder.actionImage.setVisibility(View.VISIBLE);
+            holder.hangup_button.setVisibility(View.VISIBLE);
+            holder.actionImage.setVisibility(View.INVISIBLE);
             holder.connecting.setVisibility(View.INVISIBLE);
             holder.time.setVisibility(View.VISIBLE);
             holder.time.setText(holder.updateTimer(System.currentTimeMillis() - user.getConnectedTime()));
@@ -135,6 +149,7 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
         }
 
         holder.user = user;
+        holder.mEvents = mEvents;
     }
 
 
@@ -149,6 +164,7 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
 
     public static class UsersViewHolder extends RecyclerView.ViewHolder {
 
+        InCallUsersAdapterEvents mEvents;
         private final ImageView actionImage;
         private SpinKitView connecting;
         /*ImageButton callButton;
@@ -158,6 +174,13 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
         protected TextView text;
         protected TextView message;
         protected TextView time;
+        ImageView hangup_button;
+        boolean videoEnabled = true;
+        ImageView toggleVideo_button;
+        boolean micEnabled = true;
+        ImageView toggleMic_button;
+        ImageView sendMessage_button;
+        ImageView shareFile_button;
         public User user;
         Timer timer;
 
@@ -211,6 +234,114 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
             actionImage = (ImageView) itemView.findViewById(R.id.action_image);
             connecting = (SpinKitView) itemView.findViewById(R.id.connecting_progress);
             time = (TextView) itemView.findViewById(R.id.connection_time);
+            hangup_button = (ImageView) itemView.findViewById(R.id.button_hangup);
+            toggleVideo_button = (ImageView) itemView.findViewById(R.id.button_call_toggle_video);
+            toggleMic_button = (ImageView) itemView.findViewById(R.id.button_call_toggle_mic);
+            sendMessage_button = (ImageView) itemView.findViewById(R.id.button_send_message);
+            shareFile_button = (ImageView) itemView.findViewById(R.id.button_send_file);
+
+            shareFile_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(view.getContext(), CallActivity.class);
+                    intent.setAction(RoomActivity.ACTION_SHARE_FILE);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    view.getContext().startActivity(intent);
+                }
+            });
+
+            toggleVideo_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    videoEnabled = !videoEnabled;
+
+                    // toggle video
+                    Intent intent = new Intent(view.getContext(), CallActivity.class);
+                    intent.setAction(CallActivity.ACTION_TOGGLE_VIDEO);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                    intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, videoEnabled);
+                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    view.getContext().startActivity(intent);
+                    toggleVideo_button.setImageResource(videoEnabled ? R.drawable.ic_visibility_white_24dp : R.drawable.ic_visibility_off_white_24dp);
+                }
+            });
+
+            toggleMic_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    micEnabled = !micEnabled;
+
+                    // toggle video
+                    Intent intent = new Intent(view.getContext(), CallActivity.class);
+                    intent.setAction(CallActivity.ACTION_TOGGLE_MIC);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                    intent.putExtra(CallActivity.EXTRA_MIC_ENABLED, micEnabled);
+                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    view.getContext().startActivity(intent);
+                    toggleMic_button.setImageResource(micEnabled ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
+                }
+            });
+
+            hangup_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    // hang up
+                    Intent intent = new Intent(view.getContext(), CallActivity.class);
+                    intent.setAction(CallActivity.ACTION_HANG_UP);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    view.getContext().startActivity(intent);
+                }
+            });
+
+            sendMessage_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mEvents.onSendMessage(user);
+                    /*final Context context = view.getContext();
+                    AlertDialog.Builder alert = new AlertDialog.Builder(view.getContext());
+                    final EditText edittext = new EditText(view.getContext());
+                    alert.setMessage(view.getContext().getString(R.string.send_message));
+                    alert.setTitle(R.string.spreed_talk);
+
+                    alert.setView(edittext);
+
+                    alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            String messageText = edittext.getText().toString();
+                            //
+                            Intent intent = new Intent(context, CallActivity.class);
+                            intent.setAction(CallActivity.ACTION_SEND_MESSAGE);
+                            intent.putExtra(WebsocketService.EXTRA_USER, user);
+                            intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                            intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                            intent.putExtra(CallActivity.EXTRA_MESSAGE, messageText);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(intent);
+
+                        }
+                    });
+
+                    alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int whichButton) {
+                            // what ever you want to do with No option.
+                        }
+                    });
+
+                    alert.show();*/
+
+                }
+            });
 
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -227,14 +358,14 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
                     }
                     else {
                         // hang up
-                        Intent intent = new Intent(view.getContext(), CallActivity.class);
+                        /*Intent intent = new Intent(view.getContext(), CallActivity.class);
                         intent.setAction(CallActivity.ACTION_HANG_UP);
                         intent.putExtra(WebsocketService.EXTRA_USER, user);
                         intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                         intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
                         intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        view.getContext().startActivity(intent);
+                        view.getContext().startActivity(intent);*/
                     }
                 }
             });

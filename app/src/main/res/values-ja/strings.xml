@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Spreedbox Webrtc</string>
+
+    <string name="settings_name" translatable="false">設定</string>
+    <string name="manage_accounts_class" translatable="false">com.owncloud.android.ui.activity.ManageAccountsActivity</string>
+
+    <string name="no_rooms">ルーム無し</string>
+    <string name="channel_error_title">接続エラー</string>
+    <string name="connecting_to">接続：%1$s</string>
+    <string name="missing_url">致命的エラー：接続先URLがありません。</string>
+    <string name="camera2_texture_only_error">カメラ２はテクスチャへのキャプチャのみをサポートしています。カメラ２を無効にするかオプションのテクスチャキャプチャを有効にします。</string>
+    <string name="ok">OK</string>
+    <string name="switch_camera">フロント/バックカメラ切替</string>
+    <string name="capture_format_change_text">キャプチャ形式をスライドして変更する</string>
+    <string name="muted">ミュート</string>
+    <string name="toggle_debug">デバッグビュートグル切替え</string>
+    <string name="toggle_mic">マイクトグル on/off</string>
+    <string name="action_settings">設定</string>
+    <string name="action_loopback">ループバック接続</string>
+    <string name="connect_description">ルームに接続</string>
+    <string name="add_favorite_description">ルーム追加</string>
+    <string name="format_description">%1$dx%2$d @ %3$d fps</string>
+
+    <!-- Settings strings. -->
+    <string name="pref_room_key">room_preference</string>
+    <string name="pref_room_list_key">room_list_preference</string>
+
+    <string name="pref_videosettings_key">video_settings_key</string>
+    <string name="pref_videosettings_title">SecureMeet 動画設定。</string>
+
+    <string name="pref_videocall_key">videocall_preference</string>
+    <string name="pref_videocall_title">ビデオ通話。</string>
+    <string name="pref_videocall_dlg">通話中にビデオを使用する。</string>
+    <string name="pref_videocall_default">true</string>
+
+    <string name="pref_screencapture_key">screencapture_preference</string>
+    <string name="pref_screencapture_title">画面キャプチャの使用。</string>
+    <string name="pref_screencapture_default">false</string>
+
+    <string name="pref_camera2_key">camera2_preference</string>
+    <string name="pref_camera2_title">カメラ２の使用。</string>
+    <string name="pref_camera2_default">true</string>
+    <string name="pref_camera2_not_supported">このデバイスではサポートされていません。</string>
+
+    <string name="pref_status_key">status_preference</string>
+    <string name="pref_status_title">ステータスメッセージ</string>
+    <string name="pref_status_dlg">どんな感じ？</string>
+    <string name="pref_status_default"></string>
+
+    <string name="pref_resolution_key">resolution_preference</string>
+    <string name="pref_resolution_title">ビデオ解像度。</string>
+    <string name="pref_resolution_dlg">AppRTCのローカルビデオ解像度を入力する。</string>
+    <string name="pref_resolution_default">320 x 240</string>
+
+    <string name="pref_fps_key">fps_preference</string>
+    <string name="pref_fps_title">カメラ fps。</string>
+    <string name="pref_fps_dlg">ローカルカメラのfpsを入力する。</string>
+    <string name="pref_fps_default">デフォルト</string>
+
+    <string name="pref_capturequalityslider_key">capturequalityslider_preference</string>
+    <string name="pref_capturequalityslider_title">キャプチャ品質スライダー。</string>
+    <string name="pref_capturequalityslider_dlg">キャプチャ品質を変更するスライダーを使用する。</string>
+    <string name="pref_capturequalityslider_default">false</string>
+
+    <string name="pref_maxvideobitrate_key">maxvideobitrate_preference</string>
+    <string name="pref_maxvideobitrate_title">最大ビデオビットレート設定。</string>
+    <string name="pref_maxvideobitrate_dlg">最大ビデオビットレートを設定する。</string>
+    <string name="pref_maxvideobitrate_default">デフォルト</string>
+
+    <string name="pref_maxvideobitratevalue_key">maxvideobitratevalue_preference</string>
+    <string name="pref_maxvideobitratevalue_title">ビデオエンコーダーの最大ビットレート。</string>
+    <string name="pref_maxvideobitratevalue_dlg">ビデオエンコーダーの最大ビットレート（kbps）を入力する。</string>
+    <string name="pref_maxvideobitratevalue_default">1700</string>
+
+    <string name="pref_videocodec_key">videocodec_preference</string>
+    <string name="pref_videocodec_title">デフォルトのビデオコーデック。</string>
+    <string name="pref_videocodec_dlg">デフォルトのビデオコーデックを選択する。</string>
+    <string name="pref_videocodec_default">VP8</string>
+
+    <string name="pref_hwcodec_key">hwcodec_preference</string>
+    <string name="pref_hwcodec_title">ビデオコーデックハードウェアアクセラレーション。</string>
+    <string name="pref_hwcodec_dlg">ビデオコーデックにハードウェアアクセラレートを使用する。（利用可能な場合）</string>
+    <string name="pref_hwcodec_default">false</string>
+
+    <string name="pref_capturetotexture_key">capturetotexture_preference</string>
+    <string name="pref_capturetotexture_title">サーフェーステクスチャへのビデオキャプチャ</string>
+    <string name="pref_capturetotexture_dlg">テクスチャにキャプチャ映像を利用する。（利用可能な場合）</string>
+    <string name="pref_capturetotexture_default">true</string>
+
+    <string name="pref_flexfec_key">flexfec_preference</string>
+    <string name="pref_flexfec_title">コーデック非依存フレキシブルFEC</string>
+    <string name="pref_flexfec_dlg">FlexFECを使用する。</string>
+    <string name="pref_flexfec_default">false</string>
+
+    <string name="pref_value_enabled">true</string>
+    <string name="pref_value_disabled">false</string>
+
+    <string name="pref_audiosettings_key">audio_settings_key</string>
+    <string name="pref_audiosettings_title">WebRTC音声設定。</string>
+
+    <string name="pref_startaudiobitrate_key">startaudiobitrate_preference</string>
+    <string name="pref_startaudiobitrate_title">音声ビットレート設定。</string>
+    <string name="pref_startaudiobitrate_dlg">音声ビットレートの設定を選択する。</string>
+    <string name="pref_startaudiobitrate_default">デフォルト</string>
+
+    <string name="pref_startaudiobitratevalue_key">startaudiobitratevalue_preference</string>
+    <string name="pref_startaudiobitratevalue_title">音声コーデックビットレート。</string>
+    <string name="pref_startaudiobitratevalue_dlg">音声コーデックビットレート（kbps）を入力する。</string>
+    <string name="pref_startaudiobitratevalue_default">32</string>
+
+    <string name="pref_audiocodec_key">audiocodec_preference</string>
+    <string name="pref_audiocodec_title">デフォルト音声コーデック。</string>
+    <string name="pref_audiocodec_dlg">デフォルトの音声コーデックを選択する。</string>
+    <string name="pref_audiocodec_default">OPUS</string>
+
+    <string name="pref_noaudioprocessing_key">audioprocessing_preference</string>
+    <string name="pref_noaudioprocessing_title">音声処理無効化。</string>
+    <string name="pref_noaudioprocessing_dlg">音声処理パイプライン無効化を有効または無効にする。</string>
+    <string name="pref_noaudioprocessing_default">false</string>
+
+    <string name="pref_aecdump_key">aecdump_preference</string>
+    <string name="pref_aecdump_title">aecdumpの作成。</string>
+    <string name="pref_aecdump_dlg">診断音声録音を有効にする。</string>
+    <string name="pref_aecdump_default">false</string>
+
+    <string name="pref_opensles_key">opensles_preference</string>
+    <string name="pref_opensles_title">音声再生に OpenSL ES の使用。</string>
+    <string name="pref_opensles_dlg">音声再生に OpenSL ES を使用する。</string>
+    <string name="pref_opensles_default">false</string>
+
+    <string name="pref_disable_built_in_aec_key">disable_built_in_aec_preference</string>
+    <string name="pref_disable_built_in_aec_title">ハードウェアAEC無効化処理。</string>
+    <string name="pref_disable_built_in_aec_dlg">ハードウェアAEC無効化処理を有効または無効にする。</string>
+    <string name="pref_disable_built_in_aec_default">false</string>
+    <string name="pref_built_in_aec_not_available">ハードウェアAECは使用できません</string>
+
+    <string name="pref_disable_built_in_agc_key">disable_built_in_agc_preference</string>
+    <string name="pref_disable_built_in_agc_title">ハードウェアAGC無効化処理。</string>
+    <string name="pref_disable_built_in_agc_dlg">ハードウェアAGC無効化処理を有効または無効にする。</string>
+    <string name="pref_disable_built_in_agc_default">false</string>
+    <string name="pref_built_in_agc_not_available">ハードウェアAGCは使用できません</string>
+
+    <string name="pref_disable_built_in_ns_key">disable_built_in_ns_preference</string>
+    <string name="pref_disable_built_in_ns_title">ハードウェアNS無効化処理。</string>
+    <string name="pref_disable_built_in_ns_dlg">ハードウェアNS無効化処理を有効または無効にする。</string>
+    <string name="pref_disable_built_in_ns_default">false</string>
+    <string name="pref_built_in_ns_not_available">ハードウェアNSは使用できません</string>
+
+    <string name="pref_enable_level_control_key">enable_level_control_preference</string>
+    <string name="pref_enable_level_control_title">レベルコントロール</string>
+    <string name="pref_enable_level_control_default">false</string>
+
+    <string name="pref_speakerphone_key">speakerphone_preference</string>
+    <string name="pref_speakerphone_title">スピーカーフォン。</string>
+    <string name="pref_speakerphone_dlg">スピーカーフォン。</string>
+    <string name="pref_speakerphone_default">自動</string>
+
+    <string name="pref_datasettings_key">data_settings_key</string>
+    <string name="pref_datasettings_title">WebRTC データチャンネル設定。</string>
+
+    <string name="pref_enable_datachannel_key">enable_datachannel_preference</string>
+    <string name="pref_enable_datachannel_title">データチャンネル。</string>
+    <string name="pref_enable_datachannel_dlg">データチャンネルを使用する。</string>
+    <string name="pref_enable_datachannel_default" translatable="false">true</string>
+
+    <string name="pref_ordered_key">ordered_preference</string>
+    <string name="pref_ordered_title">オーダーメッセージ。</string>
+    <string name="pref_ordered_dlg">オーダーメッセージを表示する。</string>
+    <string name="pref_ordered_default" translatable="false">true</string>
+
+    <string name="pref_data_protocol_key">Subprotocol</string>
+    <string name="pref_data_protocol_title">サブプロトコル。</string>
+    <string name="pref_data_protocol_dlg">サブプロトコルを入力する。</string>
+    <string name="pref_data_protocol_default" translatable="false"></string>
+
+    <string name="pref_negotiated_key">negotiated_preference</string>
+    <string name="pref_negotiated_title">ネゴシエート。</string>
+    <string name="pref_negotiated_dlg">ネゴシエートを使用する。</string>
+    <string name="pref_negotiated_default" translatable="false">false</string>
+
+    <string name="pref_max_retransmit_time_ms_key">max_retransmit_time_ms_preference</string>
+    <string name="pref_max_retransmit_time_ms_title">再送する時の最大遅延時間。</string>
+    <string name="pref_max_retransmit_time_ms_dlg">再送する時の最大遅延時間（ms）を入力する。</string>
+    <string name="pref_max_retransmit_time_ms_default" translatable="false">-1</string>
+
+    <string name="pref_max_retransmits_key">max_retransmits_preference</string>
+    <string name="pref_max_retransmits_title">最大再送回数。</string>
+    <string name="pref_max_retransmits_dlg">最大再送回数を入力する。</string>
+    <string name="pref_max_retransmits_default" translatable="false">-1</string>
+
+    <string name="pref_data_id_key">data_id_preference</string>
+    <string name="pref_data_id_title">データID。</string>
+    <string name="pref_data_id_dlg">データチャンネルIDを入力する。</string>
+    <string name="pref_data_id_default" translatable="false">-1</string>
+
+    <string name="pref_miscsettings_key">misc_settings_key</string>
+    <string name="pref_miscsettings_title">その他の設定。</string>
+
+    <string name="pref_room_server_url_key">room_server_url_preference</string>
+    <string name="pref_room_server_url_title">ルームサーバーURL。</string>
+    <string name="pref_room_server_url_dlg">ルームサーバーのURLを入力する。</string>
+    <string name="pref_room_server_url_default" translatable="false">https://appr.tc</string>
+
+    <string name="pref_displayhud_key">displayhud_preference</string>
+    <string name="pref_displayhud_title">通話の統計情報。</string>
+    <string name="pref_displayhud_dlg">通話の統計情報を表示する。</string>
+    <string name="pref_displayhud_default" translatable="false">false</string>
+
+    <string name="pref_tracing_key">tracing_preference</string>
+    <string name="pref_tracing_title">パフォーマンストレースデバッグ。</string>
+    <string name="pref_tracing_dlg">パフォーマンストレースデバッグを使用する。</string>
+    <string name="pref_tracing_default" translatable="false">false</string>
+
+    <string name="pref_force_relay_key">force_relay_preference</string>
+    <string name="pref_force_relay_title">TURN強制使用</string>
+    <string name="pref_force_relay_dlg">TURNを強制的に使用する。</string>
+    <string name="pref_force_relay_default" translatable="false">false</string>
+
+    <!-- Spreedbox -->
+    <string name="enter_server_name">Spreedboxのドメイン名またはIPアドレスを入力してください</string>
+    <string name="connected">>接続済</string>
+    <string name="connecting">接続中...</string>
+    <string name="disconnected">切断しました</string>
+    <string name="connect">接続</string>
+    <string name="disconnect">切断</string>
+    <string name="rooms">ルーム</string>
+    <string name="rooms_button">ルーム</string>
+    <string name="default_room">デフォルトルーム</string>
+    <string name="login">ログイン</string>
+    <string name="login_desc">Spreedboxのユーザー名とパスワードを入力してください</string>
+    <string name="answer">答え</string>
+    <string name="reject_call">通話拒否</string>
+    <string name="stop_calling">呼び出し中止</string>
+
+    <string name="recent">最近の動静</string>
+    <string name="recent_button">最近の動静</string>
+
+    <string name="files">ファイル</string>
+
+    <string name="chooser_class"></string>
+    <string name="extra_mode"></string>
+    <string name="mode_im"></string>
+    <string name="mode_video_chat"></string>
+    <string name="mode_share_files"></string>
+    <string name="drawer_chat">SecureIM</string>
+    <string name="drawer_video_chat">SecureMeet</string>
+    <string name="drawer_share_files">セキュアファイル共有</string>
+    <string name="prefs_add_account">アカウント追加</string>
+
+    <string name="drawer_item_settings">設定</string>
+    <string name="drawer_close">クローズ</string>
+    <string name="drawer_open">オープン</string>
+    <string name="action_accounts">アカウント</string>
+    <string name="emptyRoom">このルームには誰もいません\n\nフレンズとルームシェアをしてください。</string>
+    <string name="emptyChat">メッセージ / 不在着信はありません。</string>
+    <string name="emptyFiles">ファイルを受け取っていません。</string>
+    <string name="download">ダウンロード</string>
+    <string name="cancel">キャンセル</string>
+    <string name="open">オープン</string>
+    <string name="retry">リトライ</string>
+    <string name="spreed_talk">SecureMeet</string>
+    <string name="video_call">ビデオ電話</string>
+    <string name="voice_call">電話</string>
+    <string name="send_message">メッセージ送信</string>
+    <string name="share_a_file">ファイルを共有</string>
+    <string name="room_chat_button">ルームチャット</string>
+    <string name="all">すべて</string>
+    <string name="no_activity">ファイルを開くためのアプリケーションがありません。</string>
+    <string name="unshare">共有しない</string>
+    <string name="action_status">ステータス</string>
+    <string name="incoming_call_from">Incoming call from</string>
+    <string name="calling">呼び出し</string>
+    <string name="enter_pin">ルーム %1$s のPINを入力</string>
+    <string name="pin">PINを入力</string>
+    <string name="missed_call">%s からの不在着信</string>
+    <string name="about_title">アバウト</string>
+    <string name="about_android">アンドロイドアプリ %1$s</string>
+    <string name="about_version">version %1$s</string>
+    <string name="unlock_room">ルーム %1$sをアンロックしたいですか？</string>
+    <string name="unlock">アンロック</string>
+    <string name="invalid_credentials">無効なPIN</string>
+    <string name="screenshare_offer">%s  から画面共有の申し込み</string>
+    <string name="accept">了承</string>
+    <string name="unknown">不明</string>
+</resources>

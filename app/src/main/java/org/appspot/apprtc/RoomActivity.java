@@ -13,6 +13,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +21,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.provider.OpenableColumns;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -130,6 +132,15 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             mService = binder.getService();
             mWebsocketServiceBound = true;
 
+            SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            String pin = pref.getString("pref_room_pin_" + mRoomName, "");
+            if (pin.length() != 0 && !mRoomLocked) {
+                mService.lockRoom(mRoomName, pin);
+                if (mMenu != null) {
+                    mMenu.findItem(R.id.action_lock_room).setIcon(R.drawable.ic_lock_outline_white_24dp);
+                }
+            }
+
             Presence.Status presence = mService.getPresence();
             updateStatus(presence);
 
@@ -140,7 +151,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
             RoomFragment roomFragment = (RoomFragment)adapter.getItem(ROOM_INDEX);
             roomFragment.addUsers(users);
 
-            ArrayList<ChatItem> messages = mService.getMessages(mRoomName);
+            /*ArrayList<ChatItem> messages = mService.getMessages(mRoomName);
 
             if (messages != null && users != null) {
                 HashMap<String, User> userMap = new HashMap<>();
@@ -162,7 +173,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                     }
 
                 }
-            }
+            }*/
         }
 
         @Override
@@ -250,20 +261,21 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     private String mServerName;
     private String mOwnId = "";
     private boolean mRoomLocked;
+    private Menu mMenu;
 
     private void ShowMessage(String displayName, String time, FileInfo fileinfo, String buddyPicture, String Id, User user) {
-        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
-        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
-        chatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
+        //ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        //ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        //chatFragment.addMessage(new ChatItem(time, displayName, fileinfo, buddyPicture, Id), user, true);
         //tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
     private void ShowMessage(String displayName, String message, String time, String status, String buddyPicture, String Id, User user, int notificationId) {
-        ChatItem chatItem = new ChatItem(time, displayName, message, buddyPicture, Id, Id);
-        chatItem.setNotificationId(notificationId);
-        ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
-        ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
-        chatFragment.addMessage(chatItem, user, true);
+        //ChatItem chatItem = new ChatItem(time, displayName, message, buddyPicture, Id, Id);
+        //chatItem.setNotificationId(notificationId);
+        //ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
+        //ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
+        //chatFragment.addMessage(chatItem, user, true);
         //tabLayout.getTabAt(1).setIcon(R.drawable.recent_chats_message);
     }
 
@@ -293,6 +305,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     }
 
     void PromptPin(final MenuItem item) {
+        final Context context = this;
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         final EditText edittext = new EditText(this);
         alert.setMessage(String.format(getString(R.string.enter_pin), mRoomName));
@@ -306,6 +319,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 if (mService != null) {
                     mService.lockRoom(mRoomName, pin);
                     mRoomLocked = true;
+                    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+                    pref.edit().putString("pref_room_pin_" + mRoomName, pin).commit();
                     item.setIcon(R.drawable.ic_lock_outline_white_24dp);
                 }
             }
@@ -321,6 +336,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     }
 
     void PromptUnlock(final MenuItem item) {
+        final Context context = this;
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage(String.format(getString(R.string.unlock_room), mRoomName));
         alert.setTitle(R.string.unlock);
@@ -330,6 +346,8 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                 if (mService != null) {
                     mService.unlockRoom(mRoomName);
                     mRoomLocked = false;
+                    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+                    pref.edit().remove("pref_room_pin_" + mRoomName).commit();
                     item.setIcon(R.drawable.ic_lock_open_white_24dp);
                 }
             }
@@ -348,6 +366,7 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.room_menu, menu);
+        this.mMenu = menu;
         if (mRoomLocked) {
             menu.findItem(R.id.action_lock_room).setIcon(R.drawable.ic_lock_outline_white_24dp);
         }
@@ -642,9 +661,9 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
                     fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
                     String time = fmt.format(new Date());
                     FileInfo fileInfo = new FileInfo("", "", name, String.valueOf(size), mime);
-                    mService.sendFileMessage(time, "Me", "self", fileInfo, path.toString(), size, name, mime, mFileRecipient, mRoomName);
+                    mService.sendFileMessage(time, mService.getAccountName(), "self", fileInfo, path.toString(), size, name, mime, mFileRecipient, mRoomName);
 
-                    ChatItem item = new ChatItem(time, "Me", fileInfo, "self", mFileRecipient);
+                    ChatItem item = new ChatItem(time, mService.getAccountName(), fileInfo, "self", mFileRecipient);
                     item.setOutgoing();
                     ViewPagerAdapter adapter = (ViewPagerAdapter) viewPager.getAdapter();
                     ChatFragment chatFragment = (ChatFragment)adapter.getItem(CHAT_INDEX);
@@ -773,6 +792,27 @@ public class RoomActivity extends DrawerActivity implements ChatFragment.OnChatE
         if (mService != null) {
            // mService.sendFileMessage(time, displayName, buddyPicture, fileInfo, message, size, name, mime, to, mRoomName);
         }
+    }
+
+    @Override
+    public void onDownload(int position, String id, FileInfo fileinfo) {
+        initiator = true;
+
+        String remoteId = id;
+        FileInfo downloadFile = fileinfo;
+        String token = downloadFile.id;
+        int downloadIndex = position;
+
+        String connectionId = getNextId();
+        String peerConnectionId = remoteId + token + connectionId;
+        if (mPeerConnections.containsKey(peerConnectionId)) {
+            mPeerConnections.get(peerConnectionId).close();
+            mPeerConnections.remove(peerConnectionId);
+        }
+
+        TokenPeerConnection connection = new TokenPeerConnection(this, this, true, token, remoteId, connectionId, mService.getIceServers(), downloadIndex);
+        connection.setFileInfo(downloadFile);
+        mPeerConnections.put(peerConnectionId, connection);
     }
 
     @Override

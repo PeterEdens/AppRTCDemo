@@ -74,7 +74,6 @@ import org.json.JSONObject;
 import javax.net.ssl.HttpsURLConnection;
 
 import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
-import static org.appspot.apprtc.R.id.roomName;
 
 
 /**
@@ -214,9 +213,11 @@ public class ConnectActivity extends DrawerActivity {
         @Override
         public void onImageLoaded(Bitmap bitmap) {
           String encodedImage = getEncodedImage(bitmap);
-          String presence = mService.getPresenceString();
+          if (mService != null) {
+            String presence = mService.getPresenceString();
 
-                  mService.sendStatus(mDisplayName, encodedImage, presence + " " + getStatusText());
+            mService.sendStatus(mDisplayName, encodedImage, presence + " " + getStatusText());
+          }
         }
       }, getResources(), mDisplayName, true, true);
     }
@@ -243,6 +244,7 @@ public class ConnectActivity extends DrawerActivity {
 
   }
 
+  private boolean mConnectedToRoom;
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -257,6 +259,7 @@ public class ConnectActivity extends DrawerActivity {
         mConnectedImage.setVisibility(View.INVISIBLE);
 
         mReconnectHandler.sendEmptyMessageDelayed(1, 5000);
+        mConnectedToRoom = false;
       } else if (intent.getAction().equals(WebsocketService.ACTION_CONNECTED_TO_ROOM)) {
         String roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
 
@@ -266,6 +269,8 @@ public class ConnectActivity extends DrawerActivity {
             adapter.notifyDataSetChanged();
 
         }
+
+        mConnectedToRoom = true;
 
         if (mWaitingToEnterRoom) {
           mWaitingToEnterRoom = false;
@@ -964,6 +969,26 @@ public class ConnectActivity extends DrawerActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = roomList.get(i);
+          if (mCurrentRoom.equals(roomId) && mConnectedToRoom) {
+            Intent roomIntent = new Intent(getApplicationContext(), RoomActivity.class);
+            roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+            roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomId);
+            roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, mServerName);
+            roomIntent.putExtra(RoomActivity.EXTRA_ROOM_LOCKED, mRoomLocked);
+            Account account = getCurrentOwnCloudAccount(getApplicationContext());
+            if (account != null) {
+              AccountManager accountMgr = AccountManager.get(getApplicationContext());
+              String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+              mDisplayName = accountMgr.getUserData(account, "oc_display_name");
+
+              String name = account.name.substring(0, account.name.indexOf('@'));
+              int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
+              String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+              roomIntent.putExtra(RoomActivity.EXTRA_AVATAR_URL, url);
+            }
+            startActivity(roomIntent);
+            return;
+          }
           mCurrentRoom = roomId;
           sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
           mRoomLocked = false;

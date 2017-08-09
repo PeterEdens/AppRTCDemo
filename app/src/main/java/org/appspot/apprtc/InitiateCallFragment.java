@@ -28,6 +28,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.sharedresourceslib.BroadcastTypes;
 import com.github.ybq.android.spinkit.SpinKitView;
 
 import org.appspot.apprtc.service.WebsocketService;
@@ -145,9 +146,20 @@ public class InitiateCallFragment extends Fragment {
                 String contactText = "";
 
                 incomingCall = args.containsKey(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
-                conferenceCall = args.containsKey(WebsocketService.EXTRA_CONFERENCE_ID);
+                conferenceCall = args.containsKey(WebsocketService.EXTRA_CONFERENCE_ID) && args.getString(WebsocketService.EXTRA_CONFERENCE_ID, "").length() != 0;
 
-                if (incomingCall || conferenceCall) {
+                // conference call can be incoming or outgoing
+                if (conferenceCall) {
+                    String ownId = args.getString(WebsocketService.EXTRA_OWN_ID);
+                    if ((ownId.compareTo(mUser.Id) < 0)) {
+                        incomingCall = false;
+                    }
+                    else {
+                        incomingCall = true;
+                    }
+                }
+
+                if (incomingCall) {
                     contactText = getString(R.string.incoming_call_from) + " " + mUser.displayName;
                 }
                 else {
@@ -165,6 +177,20 @@ public class InitiateCallFragment extends Fragment {
                 else {
                     contactImageView.setImageResource(R.drawable.ic_person_white_48dp);
                 }
+                enableCallButtons();
+            }
+            else if (args.containsKey(BroadcastTypes.EXTRA_JID)) {
+                String contactText = "";
+                incomingCall = args.containsKey(WebsocketService.EXTRA_REMOTE_DESCRIPTION);
+
+                if (incomingCall) {
+                    contactText = getString(R.string.incoming_call_from) + " " + args.getString(BroadcastTypes.EXTRA_JID);
+                }
+                else {
+                    contactText = getString(R.string.calling) + " " + args.getString(BroadcastTypes.EXTRA_JID);
+                }
+
+                contactView.setText(contactText);
                 enableCallButtons();
             }
 

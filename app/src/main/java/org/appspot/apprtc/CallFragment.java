@@ -10,6 +10,8 @@
 
 package org.appspot.apprtc;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -23,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -37,9 +40,12 @@ import org.webrtc.RendererCommon.ScalingType;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
+import static org.appspot.apprtc.RoomActivity.ACTION_VIEW_CHAT;
+
 /**
  * Fragment for call control.
  */
+
 public class CallFragment extends Fragment {
   private View controlView;
   private TextView contactView;
@@ -60,6 +66,44 @@ public class CallFragment extends Fragment {
     private FloatingActionButton toggleVideoButton;
     private FloatingActionButton toggleSpeakerPhoneButton;
     private FloatingActionButton showUserListButton;
+    private LinearLayout connecting_layout;
+    private FloatingActionButton button_gotoMessage;
+    ReceivedMessage receivedMessage;
+
+    class ReceivedMessage {
+        String roomName;
+        String server;
+        String fromId;
+        User user;
+    }
+
+    public void onChatMessage(Intent intent, String server) {
+        receivedMessage = new ReceivedMessage();
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+        receivedMessage.roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+
+        if (user != null) {
+            receivedMessage.server = server;
+            receivedMessage.fromId = user.Id;
+            receivedMessage.user = user;
+            button_gotoMessage.setImageResource(R.drawable.ic_textsms_white_24dp);
+            button_gotoMessage.show(true);
+        }
+    }
+
+    public void onFileMessage(Intent intent, String server) {
+        receivedMessage = new ReceivedMessage();
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+        receivedMessage.roomName = intent.getStringExtra(WebsocketService.EXTRA_ROOM_NAME);
+
+        if (user != null) {
+            receivedMessage.server = server;
+            receivedMessage.fromId = user.Id;
+            receivedMessage.user = user;
+            button_gotoMessage.setImageResource(R.drawable.ic_library_books_white_24dp);
+            button_gotoMessage.show(true);
+        }
+    }
 
     /**
    * Call control interface for container activity.
@@ -73,7 +117,8 @@ public class CallFragment extends Fragment {
     boolean onToggleVideo();
     boolean onToggleSpeakerPhone();
     boolean showUserList();
-  }
+    void showChatMessages(String roomName, String fromId, User user);
+    }
 
   public void onUserEntered(User user) {
 
@@ -146,6 +191,19 @@ public class CallFragment extends Fragment {
     showUserListButton = (FloatingActionButton) controlView.findViewById(R.id.user_list);
     addToCallButton = (FloatingActionMenu)  controlView.findViewById(R.id.add_to_call);
     addAllButton = (FloatingActionButton) controlView.findViewById(R.id.add_all);
+    connecting_layout = (LinearLayout) controlView.findViewById(R.id.connecting_progress_layout);
+    button_gotoMessage = (FloatingActionButton) controlView.findViewById(R.id.button_goto_message);
+    button_gotoMessage.hide(false);
+
+    button_gotoMessage.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if (receivedMessage != null) {
+                gotoMessage(receivedMessage.roomName, receivedMessage.server, receivedMessage.fromId, receivedMessage.user);
+            }
+            button_gotoMessage.hide(true);
+        }
+    });
 
     showUserListButton.setOnClickListener(new View.OnClickListener() {
         @Override
@@ -243,8 +301,9 @@ public class CallFragment extends Fragment {
       String contactName = args.getString(CallActivity.EXTRA_ROOMID);
       contactView.setText(contactName);
       videoCallEnabled = args.getBoolean(CallActivity.EXTRA_VIDEO_CALL, true);
-      captureSliderEnabled = videoCallEnabled
-          && args.getBoolean(CallActivity.EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED, false);
+      if (args.containsKey(CallActivity.EXTRA_PEER_ID)) {
+        connecting_layout.setVisibility(View.GONE);
+      }
     }
     if (!videoCallEnabled) {
       cameraSwitchButton.setVisibility(View.INVISIBLE);
@@ -275,5 +334,21 @@ public class CallFragment extends Fragment {
     super.onAttach(activity);
     parentActivity = new WeakReference<CallActivity>((CallActivity)activity);
     callEvents = (OnCallEvents) activity;
+  }
+
+  void gotoMessage(String roomName, String server, String fromId, User user) {
+      /*Intent roomIntent = new Intent(getActivity(), RoomActivity.class);
+
+      roomIntent.setAction(ACTION_VIEW_CHAT);
+      roomIntent.putExtra(WebsocketService.EXTRA_OWN_ID, getId());
+      roomIntent.putExtra(RoomActivity.EXTRA_ROOM_NAME, roomName);
+      roomIntent.putExtra(RoomActivity.EXTRA_SERVER_NAME, server);
+      roomIntent.putExtra(RoomActivity.EXTRA_ACTIVE_TAB, RoomActivity.CHAT_INDEX);
+      roomIntent.putExtra(RoomActivity.EXTRA_CHAT_ID, fromId);
+      roomIntent.putExtra(WebsocketService.EXTRA_USER, user);
+
+      getActivity().startActivity(roomIntent);*/
+      callEvents.showChatMessages(roomName, fromId, user);
+
   }
 }

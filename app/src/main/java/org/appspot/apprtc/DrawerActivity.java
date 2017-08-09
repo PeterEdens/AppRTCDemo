@@ -257,12 +257,14 @@ public abstract class DrawerActivity extends AppCompatActivity {
     }
 
     private void executeChangePresence(Spinner spinner, int position) {
-        Status status = getStatusFromSpinner(spinner);
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(ACTION_PRESENCE_CHANGED);
-        broadcastIntent.putExtra(EXTRA_PRESENCE, status.toShowString());
-        broadcastIntent.putExtra(EXTRA_ACCOUNT_NAME, mCurrentAccount.name);
-        sendBroadcast(broadcastIntent);
+        if (mCurrentAccount != null) {
+            Status status = getStatusFromSpinner(spinner);
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(ACTION_PRESENCE_CHANGED);
+            broadcastIntent.putExtra(EXTRA_PRESENCE, status.toShowString());
+            broadcastIntent.putExtra(EXTRA_ACCOUNT_NAME, mCurrentAccount.name);
+            sendBroadcast(broadcastIntent);
+        }
     }
 
     private Status getStatusFromSpinner(Spinner spinner) {

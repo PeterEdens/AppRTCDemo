@@ -73,7 +73,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
         ICEDISCONNECTED
     }
 
-    interface TokenPeerConnectionEvents {
+    public interface TokenPeerConnectionEvents {
         void onDownloadedBytes(int index, long bytes, String to);
         void onDownloadComplete(int mDownloadIndex, String to);
 
@@ -91,7 +91,7 @@ public class TokenPeerConnection implements PeerConnectionClient.PeerConnectionE
     TokenPeerConnectionEvents events;
     ConnectionState mConnectionState = ConnectionState.IDLE;
 
-    TokenPeerConnection(Context context, TokenPeerConnectionEvents events, boolean initiator, String token, String remoteId, String connectionId, List<PeerConnection.IceServer> iceServers, int downloadIndex) {
+    public TokenPeerConnection(Context context, TokenPeerConnectionEvents events, boolean initiator, String token, String remoteId, String connectionId, List<PeerConnection.IceServer> iceServers, int downloadIndex) {
         mToken = token;
         mRemoteId = remoteId;
         mConnectionId = connectionId;

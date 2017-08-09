@@ -58,6 +58,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private final int OUTGOING = 1;
     public interface OnChatAdapterEvents {
         void onMessageShown();
+        void onDownload(int position, String id, FileInfo fileinfo);
     }
 
     public ChatAdapter(ArrayList<ChatItem> chatList, Context context, String server, String avatarUrl, OnChatAdapterEvents events) {
@@ -140,10 +141,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         holder.chatItem = chatItem;
         holder.position = position;
         holder.ToggleViews();
+        holder.mEvents = mEvents;
     }
 
     @Override
     public int getItemCount() {
+        if (chatList == null) {
+            return 0;
+        }
         return chatList.size();
     }
 
@@ -163,6 +168,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         protected TextView downloadProgressText;
         int position;
         Context context;
+        public OnChatAdapterEvents mEvents;
 
         public ChatViewHolder(View itemView) {
             super(itemView);
@@ -186,12 +192,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     }
                     else if (chatItem.fileinfo.getDownloadState() == FileInfo.DownloadState.IDLE) {
 
-                        Intent intent = new Intent(v.getContext(), RoomActivity.class);
+                        /*Intent intent = new Intent(v.getContext(), RoomActivity.class);
                         intent.setAction(RoomActivity.ACTION_DOWNLOAD);
                         intent.putExtra(WebsocketService.EXTRA_FILEINFO, chatItem.fileinfo);
                         intent.putExtra(RoomActivity.EXTRA_TO, chatItem.Id);
                         intent.putExtra(RoomActivity.EXTRA_INDEX, position);
-                        v.getContext().startActivity(intent);
+                        v.getContext().startActivity(intent);*/
+                        mEvents.onDownload(position, chatItem.Id, chatItem.fileinfo);
+
                         downloadButton.setText(R.string.cancel);
                         downloadLayout.setVisibility(View.VISIBLE);
                         filesize.setVisibility(View.GONE);
@@ -240,6 +248,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 fileLayout.setVisibility(View.GONE);
             }
             else {
+                fileLayout.setVisibility(View.VISIBLE);
                 text.setVisibility(View.GONE);
                 filename.setText(chatItem.fileinfo.name);
                 Formatter formatter = new Formatter();

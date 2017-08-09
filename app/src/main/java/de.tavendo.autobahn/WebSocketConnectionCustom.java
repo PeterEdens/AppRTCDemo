@@ -60,7 +60,9 @@ public class WebSocketConnectionCustom  extends WebSocketConnection implements W
     }
 
     public void sendTextMessage(String payload) {
-        this.mWebSocketWriter.forward(new WebSocketMessage.TextMessage(payload));
+        if (this.mWebSocketWriter != null) {
+            this.mWebSocketWriter.forward(new WebSocketMessage.TextMessage(payload));
+        }
     }
 
     public void sendRawTextMessage(byte[] payload) {

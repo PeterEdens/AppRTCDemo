@@ -35,6 +35,7 @@ import com.github.clans.fab.FloatingActionMenu;
 import org.appspot.apprtc.CallActivity;
 import org.appspot.apprtc.InCallUsersAdapter;
 import org.appspot.apprtc.R;
+import org.appspot.apprtc.RoomActivity;
 import org.appspot.apprtc.User;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
@@ -52,7 +53,7 @@ import static org.appspot.apprtc.receiver.CustomPhoneStateListener.ACTION_HOLD_O
 /**
  * Fragment for call control.
  */
-public class CallListFragment extends Fragment {
+public class CallListFragment extends Fragment implements InCallUsersAdapter.InCallUsersAdapterEvents {
     private View controlView;
     private TextView contactView;
 
@@ -71,6 +72,8 @@ public class CallListFragment extends Fragment {
     FloatingActionButton addUsersButton;
     private boolean filter = true;
     private LinearLayout roomEmptyLayout;
+    private String mRoomName;
+    private InCallUsersAdapter.InCallUsersAdapterEvents mInstance;
 
     public void init(ArrayList<User> users) {
         if (users != null) {
@@ -78,6 +81,11 @@ public class CallListFragment extends Fragment {
                 onUserEntered(user);
             }
         }
+    }
+
+    @Override
+    public void onSendMessage(User user) {
+        parentActivity.get().showChatMessages(user);
     }
 
     public class UserComparator implements Comparator<User> {
@@ -187,7 +195,8 @@ public class CallListFragment extends Fragment {
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         controlView = inflater.inflate(R.layout.fragment_calllist, container, false);
-        mContext = container.getContext();
+        mContext = container != null ? container.getContext() : getActivity();
+        mInstance = this;
 
         // Create UI controls.
         contactView = (TextView) controlView.findViewById(R.id.contact_name_call);
@@ -210,7 +219,7 @@ public class CallListFragment extends Fragment {
                 else {
                     // show all users
 
-                    adapter=new InCallUsersAdapter(userList,mContext, mServerName, mOwnId);
+                    adapter=new InCallUsersAdapter(userList,mContext, mServerName, mOwnId, mInstance);
                     recyclerView.swapAdapter(adapter, true);
                     if (adapter.getItemCount() == 0) {
                         roomEmptyLayout.setVisibility(View.VISIBLE);
@@ -226,7 +235,7 @@ public class CallListFragment extends Fragment {
 
     void showActiveUsers() {
 
-        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId);
+        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, mInstance);
         recyclerView.swapAdapter(adapter, true);
         roomEmptyLayout.setVisibility(View.INVISIBLE);
     }
@@ -237,6 +246,7 @@ public class CallListFragment extends Fragment {
 
         Bundle args = getArguments();
         if (args != null) {
+
             if (args.containsKey(WebsocketService.EXTRA_OWN_ID)) {
                 mOwnId = args.getString(WebsocketService.EXTRA_OWN_ID);
             }
@@ -250,7 +260,7 @@ public class CallListFragment extends Fragment {
         layoutManager=new LinearLayoutManager(mContext);
         recyclerView.setLayoutManager(layoutManager);
 
-        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId);
+        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, this);
         recyclerView.setAdapter(adapter);
     }
 

@@ -683,7 +683,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(jsonStatusWrap, "Status", jsonStatus);
         jsonPut(jsonStatus, "Type", "Status");
 
-        wsClient.send(jsonStatusWrap.toString());
+        if (wsClient != null) {
+            wsClient.send(jsonStatusWrap.toString());
+        }
       }
     });
   }
@@ -1013,7 +1015,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
           JSONObject roomJson = new JSONObject(roomText);
           String roomType = roomJson.optString("Type");
           String roomName = "";
-          if (roomType.equals("Room")) {
+          if (roomType.equals("Room") || roomType.equals("Conference")) {
             roomName = roomJson.optString("Name");
             String credentials = roomJson.optString("Credentials");
             mRoomName = roomName;

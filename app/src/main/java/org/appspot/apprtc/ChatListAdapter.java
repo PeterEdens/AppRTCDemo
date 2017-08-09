@@ -34,13 +34,22 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
     HashMap<String, User> userIdList;
     Context mContext;
     String mRoomName;
+    ChatAdapterEvents events;
 
-    public ChatListAdapter(HashMap<String, ArrayList<ChatItem>> chatList, HashMap<String, User> userIdList, Context context, String server, String roomName) {
+    /**
+     * Call control interface for container activity.
+     */
+    public interface ChatAdapterEvents {
+        void onViewChat(String key);
+    }
+
+    public ChatListAdapter(HashMap<String, ArrayList<ChatItem>> chatList, HashMap<String, User> userIdList, Context context, String server, String roomName, ChatAdapterEvents events) {
         this.chatList = chatList;
         this.userIdList = userIdList;
         mServer = server;
         mContext = context;
         mRoomName = roomName;
+        this.events = events;
     }
 
     @Override
@@ -58,6 +67,8 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
 
         String key = (String)chatList.keySet().toArray()[position];
         User user = userIdList.get(key);
+        holder.context = mContext;
+        holder.events = events;
 
         if (user != null) {
             String buddyPic = user.buddyPicture;
@@ -98,10 +109,10 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
         protected TextView displayName;
         String key;
         Context context;
+        ChatAdapterEvents events;
 
         public ChatListViewHolder(View itemView) {
             super(itemView);
-            context = itemView.getContext();
             image= (ImageView) itemView.findViewById(R.id.image_id);
             time= (TextView) itemView.findViewById(R.id.msgtime);
             displayName= (TextView) itemView.findViewById(R.id.text_id);
@@ -109,10 +120,11 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(context, RoomActivity.class);
+                    /*Intent intent = new Intent(context, RoomActivity.class);
                     intent.setAction(RoomActivity.ACTION_VIEW_CHAT);
                     intent.putExtra(RoomActivity.EXTRA_CHAT_ID, key);
-                    context.startActivity(intent);
+                    context.startActivity(intent);*/
+                    events.onViewChat(key);
                 }
             });
 

@@ -37,6 +37,7 @@ import android.graphics.drawable.Drawable;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
@@ -78,7 +79,11 @@ public class ThumbnailsCacheManager {
             if (mThumbnailCacheStarting) {
                 // initialise thumbnails cache on background thread
                 try {
-                    new InitDiskCacheTask().execute();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                        new InitDiskCacheTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+                    } else {
+                        new InitDiskCacheTask().execute();
+                    }
                 }
                 catch (RejectedExecutionException e) {
                     e.printStackTrace();

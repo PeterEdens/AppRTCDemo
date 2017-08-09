@@ -8,7 +8,7 @@ import java.io.Serializable;
  */
 
 public class FileInfo implements Serializable {
-    String id;
+    public String id;
     String chunks;
     String name;
     String size;

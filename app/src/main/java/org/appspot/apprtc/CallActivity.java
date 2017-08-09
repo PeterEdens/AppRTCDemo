@@ -13,8 +13,11 @@ package org.appspot.apprtc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -23,12 +26,14 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.media.projection.MediaProjection;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -42,6 +47,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.sharedresourceslib.BroadcastTypes;
+import com.github.clans.fab.FloatingActionButton;
+
 import org.appspot.apprtc.AppRTCAudioManager.AudioDevice;
 import org.appspot.apprtc.AppRTCAudioManager.AudioManagerEvents;
 import org.appspot.apprtc.AppRTCClient.RoomConnectionParameters;
@@ -49,6 +57,7 @@ import org.appspot.apprtc.AppRTCClient.SignalingParameters;
 import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
 import org.appspot.apprtc.fragment.CallListFragment;
+import org.appspot.apprtc.fragment.ChatFragment;
 import org.appspot.apprtc.receiver.CustomPhoneStateListener;
 import org.appspot.apprtc.service.WebsocketService;
 import org.appspot.apprtc.sound.SoundPlayer;
@@ -85,6 +94,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 
+import static com.example.sharedresourceslib.BroadcastTypes.ACTION_SEND_SESSION_DESCRIPTION;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_CANDIDATES;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_SIGNALING;
+import static org.appspot.apprtc.RoomActivity.ACTION_SHARE_FILE;
+
 /**
  * Activity for peer connection call setup, call waiting
  * and call view.
@@ -92,9 +106,17 @@ import java.util.TimeZone;
 public class CallActivity extends AppCompatActivity implements AppRTCClient.SignalingEvents,
                                                       PeerConnectionClient.PeerConnectionEvents,
                                                       CallFragment.OnCallEvents,
+                                                      ChatFragment.OnChatEvents,
                                                       InitiateCallFragment.OnInitiateCallEvents, AdditionalPeerConnection.AdditionalPeerConnectionEvents, PeerConnectionClient.DataChannelCallback {
   public static final String ACTION_NEW_CALL = "org.appspot.apprtc.ACTION_NEW_CALL";
+  public static final String ACTION_RESUME_CALL = "org.appspot.apprtc.ACTION_RESUME_CALL";
+  public static final String EXTRA_PEER_ID = "org.appspot.apprtc.EXTRA_PEER_ID";
   public static final String ACTION_HANG_UP = "org.appspot.apprtc.ACTION_HANG_UP";
+  public static final String ACTION_TOGGLE_VIDEO = "org.appspot.apprtc.ACTION_TOGGLE_VIDEO";
+    public static final String ACTION_TOGGLE_MIC = "org.appspot.apprtc.ACTION_TOGGLE_MIC";
+    public static final String ACTION_SEND_MESSAGE = "org.appspot.apprtc.ACTION_SEND_MESSAGE";
+    public static final String EXTRA_MESSAGE = "org.appspot.apprtc.EXTRA_MESSAGE";
+  public static final String EXTRA_MIC_ENABLED = "org.appspot.apprtc.EXTRA_MIC_ENABLED";
   public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
   public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
   public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
@@ -141,6 +163,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
   public static final String EXTRA_ID = "org.appspot.apprtc.ID";
 
+  private static final int FILE_CODE = 1;
+
   private static final String TAG = "CallRTCClient";
 
   // Peer connection statistics callback period in ms.
@@ -175,8 +199,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private SessionDescription mLocalSdp = null;
   private boolean initiator = false;
   private SignalingParameters signalingParameters;
-  private AppRTCAudioManager audioManager = null;
-  private EglBase rootEglBase;
+  static private AppRTCAudioManager audioManager = null;
+  static private EglBase rootEglBase;
   private SurfaceViewRenderer localRender;
   private SurfaceViewRenderer screenshareRender;
   private SurfaceViewRenderer remoteRenderScreen;
@@ -258,7 +282,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private CallFragment callFragment;
   private CallListFragment callListFragment;
   private HudFragment hudFragment;
-  private CpuMonitor cpuMonitor;
+  //private CpuMonitor cpuMonitor;
 
   private SharedPreferences sharedPref;
 
@@ -277,6 +301,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private RemoteConnectionViews screenshareRemoteView;
   private boolean maximizeScreenshare = true;
   private int screenshareFrontIndex;
+  private String mSignaling = "spreed";
+  private String mOwnJid;
+  private String mSid;
+  private ChatFragment chatFragment;
+  private String mFileRecipient;
 
   @Override
   public void onBinaryMessage(DataChannel.Buffer buffer) {
@@ -297,6 +326,35 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
               String id = screnshareJson.optString("id");
               onScreenShare(mPeerId, id, peerConnectionClient);
+          }
+          else if (type.equals("Chat")) {
+            String chatTxt = json.optString("Chat");
+            JSONObject chatJson = new JSONObject(chatTxt);
+            String message = chatJson.optString("Message");
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String time = fmt.format(new Date());
+            String status = "";
+            String statusTxt = chatJson.optString("Status");
+            if (statusTxt != null && !statusTxt.equals("null") && statusTxt.length() > 0) {
+              JSONObject jsonStatus = new JSONObject(statusTxt);
+              if (jsonStatus.has("Typing")) {
+                status = " is Typing";
+              }
+              else if (jsonStatus.has("FileInfo")) {
+                // {"FileInfo":{"id":"511832825.560452.PNG_2X0jvV2T8nN4c5ymaxa0cmkDgE5rvJB0upD3KB+h","chunks":22,"name":"511832825.560452.PNG","size":1296472,"type":"image\/png"}}
+                JSONObject jsonFileInfo = new JSONObject(jsonStatus.getString("FileInfo"));
+                String id = jsonFileInfo.getString("id");
+                String chunks = jsonFileInfo.getString("chunks");
+                String name = jsonFileInfo.getString("name");
+                String size = jsonFileInfo.getString("size");
+                String filetype = jsonFileInfo.getString("type");
+                mService.onFileMessage(time, id, chunks, name, size, filetype, mPeerId, mService.getCurrentRoomName());
+              }
+            }
+            else {
+              mService.onChatMessage(message, time, status, mOwnId, mPeerId, mService.getCurrentRoomName());
+            }
           }
           else if (type.equals("Answer")) {
             String answerTxt = json.optString("Answer");
@@ -336,6 +394,28 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onStateChange(DataChannel.State state) {
+
+  }
+
+    @Override
+    public void onSendChatMessage(String time, String displayName, String buddyPicture, String message, String to) {
+        if (mService != null) {
+            mService.sendChatMessage(time, displayName, buddyPicture, message, to, mService.getCurrentRoomName());
+        }
+    }
+
+    @Override
+    public void onMessageRead() {
+
+    }
+
+    @Override
+    public void onSendFile(String time, String displayName, String buddyPicture, String message, long size, String name, String mime, String to) {
+
+    }
+
+  @Override
+  public void onDownload(int position, String id, FileInfo fileinfo) {
 
   }
 
@@ -510,7 +590,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
             finish();
           }
         }
-        else if (user.Id.equals(mPeerId)) {
+        else if (user != null && user.Id.equals(mPeerId)) {
           // normal call clearing
           if (!mFinishCalled) {
             mFinishCalled = true;
@@ -536,6 +616,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
               callListFragment.onUserLeft(user);
           }
       }
+      else if (intent.getAction().equals(WebsocketService.ACTION_CHAT_MESSAGE)) {
+        // pass the intent to the callFragment and callListFragment
+        if (callFragment != null) {
+          callFragment.onChatMessage(intent, mServer);
+        }
+      }
+      else if (intent.getAction().equals(WebsocketService.ACTION_FILE_MESSAGE)) {
+        if (callFragment != null) {
+          callFragment.onFileMessage(intent, mServer);
+        }
+      }
 
     }
   };
@@ -554,6 +645,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private ArrayList<User> mQueuedPeers = new ArrayList<User>();
   private ArrayList<RemoteConnection> mQueuedRemoteConnections = new ArrayList<RemoteConnection>();
   private String mServer;
+
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -577,6 +669,8 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     mIntentFilter.addAction(WebsocketService.ACTION_SCREENSHARE);
     mIntentFilter.addAction(CustomPhoneStateListener.ACTION_HOLD_ON);
     mIntentFilter.addAction(CustomPhoneStateListener.ACTION_HOLD_OFF);
+    mIntentFilter.addAction(WebsocketService.ACTION_CHAT_MESSAGE);
+    mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
     registerReceiver(mReceiver, mIntentFilter);
 
     // Get setting keys.
@@ -633,6 +727,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     scalingType = ScalingType.SCALE_ASPECT_FILL;
 
     // Create UI controls.
+
     localRender = (SurfaceViewRenderer) findViewById(R.id.local_video_view);
     screenshareRender = (SurfaceViewRenderer) findViewById(R.id.screenshare_video_view);
     remoteRenderScreen = (SurfaceViewRenderer) findViewById(R.id.remote_video_view);
@@ -662,6 +757,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     callListFragment = new CallListFragment();
     callFragment = new CallFragment();
     hudFragment = new HudFragment();
+    chatFragment = new ChatFragment();
 
     screenshareRemoteView = new RemoteConnectionViews("screenshare", screenshareRenderLayout, screenshareRender, null, null, null);
 
@@ -696,7 +792,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
 
     // Create video renderers.
-    rootEglBase = EglBase.create();
+    if (rootEglBase == null) {
+      rootEglBase = EglBase.create();
+    }
     localRender.init(rootEglBase.getEglBaseContext(), null);
     screenshareRender.init(rootEglBase.getEglBaseContext(), null);
     String saveRemoteVideoToFile = intent.getStringExtra(EXTRA_SAVE_REMOTE_VIDEO_TO_FILE);
@@ -724,6 +822,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     screenshareRender.getHolder().setFormat(PixelFormat.TRANSLUCENT);
     screenshareRenderLayout.setVisibility(View.GONE);
+    screenshareRender.setVisibility(View.GONE);
+
+    if (intent.getAction().equals(ACTION_RESUME_CALL)) {
+      iceConnected = true;
+    }
 
     updateVideoView();
 
@@ -778,12 +881,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     //roomConnectionParameters = new RoomConnectionParameters(roomUri.toString(), roomId, loopback);
 
     // Create CPU monitor
-    cpuMonitor = new CpuMonitor(this);
-    hudFragment.setCpuMonitor(cpuMonitor);
+    //cpuMonitor = new CpuMonitor(this);
+    //hudFragment.setCpuMonitor(cpuMonitor);
     Bundle extras = intent.getExtras();
     extras.putBoolean(CallActivity.EXTRA_VIDEO_CALL, mVideoCallEnabled);
 
     // Send intent arguments to fragments.
+    chatFragment.setArguments(getIntent().getExtras());
     initiateCallFragment.setArguments(extras);
     callFragment.setArguments(extras);
     callListFragment.setArguments(extras);
@@ -791,7 +895,12 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     // Activate call and HUD fragments and start the call.
     remoteUserImage.setVisibility(View.INVISIBLE);
     FragmentTransaction ft = getFragmentManager().beginTransaction();
-    ft.add(R.id.call_fragment_container, initiateCallFragment);
+    if (intent.getAction().equals(ACTION_RESUME_CALL)) {
+      ft.add(R.id.call_fragment_container, callFragment);
+    }
+    else {
+      ft.add(R.id.call_fragment_container, initiateCallFragment);
+    }
     ft.add(R.id.hud_fragment_container, hudFragment);
     ft.commit();
 
@@ -805,35 +914,82 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       }, runTimeMs);
     }
 
-    peerConnectionClient = PeerConnectionClient.getInstance();
+    if (!intent.getAction().equals(ACTION_RESUME_CALL)) {
+      peerConnectionClient = PeerConnectionClient.getInstance();
 
       PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
       options.disableNetworkMonitor = true;
       peerConnectionClient.setPeerConnectionFactoryOptions(options);
 
 
-    if (mForceTurn) {
-      peerConnectionParameters.forceTurn = true;
+      if (mForceTurn) {
+        peerConnectionParameters.forceTurn = true;
+      }
+
+      peerConnectionClient.createPeerConnectionFactory(
+              CallActivity.this, peerConnectionParameters, CallActivity.this);
+
+      peerConnectionClient.setDataChannelCallback(this);
+
+      ThumbnailsCacheManager.ThumbnailsCacheManagerInit(this);
+      handleIntent(intent);
+
+      if (screencaptureEnabled) {
+        /*MediaProjectionManager mediaProjectionManager =
+            (MediaProjectionManager) getApplication().getSystemService(
+                Context.MEDIA_PROJECTION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          startActivityForResult(
+              mediaProjectionManager.createScreenCaptureIntent(), CAPTURE_PERMISSION_REQUEST_CODE);
+        }*/
+      } else {
+        startCall();
+      }
+    }
+    else {
+      mPeerId = intent.getStringExtra(EXTRA_PEER_ID);
+      iceConnected = true;
+      if (peerConnectionClient != null) {
+        peerConnectionClient.updateActivity(this, this);
+        peerConnectionClient.updateLocalRenderer(localRender);
+        peerConnectionClient.updateRemoteRenderers(remoteRenderers);
+      }
     }
 
-    peerConnectionClient.createPeerConnectionFactory(
-        CallActivity.this, peerConnectionParameters, CallActivity.this);
+    AddRunningIntent();
+  }
 
-    peerConnectionClient.setDataChannelCallback(this);
+  private void AddRunningIntent() {
+    String notificationText = String.format(getString(R.string.in_call_with), mPeerName);
+    NotificationCompat.Builder mBuilder =
+            new NotificationCompat.Builder(this)
+                    .setSmallIcon(mVideoCallEnabled ? R.drawable.ic_videocam_white_24dp : R.drawable.ic_call_white_48dp)
+                    .setContentTitle(getString(R.string.drawer_video_chat))
+                    .setOngoing(true)
+                    .setContentText(notificationText);
 
-    handleIntent(intent);
+    Intent callIntent = new Intent(getApplicationContext(), CallActivity.class);
+    callIntent.setAction(ACTION_RESUME_CALL);
+    callIntent.putExtra(CallActivity.EXTRA_VIDEO_CALL, mVideoCallEnabled);
+    callIntent.putExtra(CallActivity.EXTRA_PEER_ID, mPeerId);
+    callIntent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
 
-    if (screencaptureEnabled) {
-      /*MediaProjectionManager mediaProjectionManager =
-          (MediaProjectionManager) getApplication().getSystemService(
-              Context.MEDIA_PROJECTION_SERVICE);
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        startActivityForResult(
-            mediaProjectionManager.createScreenCaptureIntent(), CAPTURE_PERMISSION_REQUEST_CODE);
-      }*/
-    } else {
-      startCall();
-    }
+    PendingIntent resultPendingIntent =
+            PendingIntent.getActivity(
+                    getApplicationContext(),
+                    0,
+                    callIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+            );
+
+    mBuilder.setContentIntent(resultPendingIntent);
+
+
+    // Gets an instance of the NotificationManager service
+    NotificationManager mNotifyMgr =
+            (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    // Builds the notification and issues it.
+    mNotifyMgr.notify(1001, mBuilder.build());
   }
 
   RemoteConnectionViews getRemoteRenderScreen(String remoteId, String name, String url) {
@@ -843,7 +999,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       remoteConnectionViews.setId(remoteId);
       remoteViewsInUseList.add(remoteConnectionViews);
 
-      remoteConnectionViews.getTextView().setText(name);
+      if (remoteConnectionViews.getTextView() != null) {
+        remoteConnectionViews.getTextView().setText(name);
+      }
       ThumbnailsCacheManager.LoadImage(url, remoteConnectionViews.getImageView(), name, true, true);
       return remoteConnectionViews;
     }
@@ -857,6 +1015,48 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       ThumbnailsCacheManager.LoadImage(getUrl(user.buddyPicture), remoteUserImage, user.displayName, true, true);
       initiator = true;
       signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
+  }
+
+
+  protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+    if (requestCode == FILE_CODE && resultCode == Activity.RESULT_OK) {
+      Uri path = intent.getData();
+      long size = 0;
+      String name = "";
+      ContentResolver cr = this.getContentResolver();
+      String mime = cr.getType(path);
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        size = TokenPeerConnection.getContentSize(path, this);
+        name = TokenPeerConnection.getContentName(path, this);
+
+        final int takeFlags = intent.getFlags()
+                & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        // Check for the freshest data.
+        getContentResolver().takePersistableUriPermission(path, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+      }
+      else {
+        size = TokenPeerConnection.getContentSize(path, this);
+        name = TokenPeerConnection.getContentName(path, this);
+      }
+
+      // Do something with the result...
+      if (mService != null) {
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String time = fmt.format(new Date());
+        FileInfo fileInfo = new FileInfo("", "", name, String.valueOf(size), mime);
+        mService.sendFileMessage(time, mService.getAccountName(), "self", fileInfo, path.toString(), size, name, mime, mFileRecipient, mService.getCurrentRoomName());
+
+        ChatItem item = new ChatItem(time, mService.getAccountName(), fileInfo, "self", mFileRecipient);
+        item.setOutgoing();
+
+        chatFragment.addOutgoingMessage(item);
+      }
+
+    }
   }
 
   @Override
@@ -874,7 +1074,24 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       mServer = intent.getStringExtra(WebsocketService.EXTRA_ADDRESS);
     }
 
-    if (intent.getAction().equals(ACTION_HANG_UP)) {
+    if (intent.getAction().equals(ACTION_SHARE_FILE)) {
+      User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+      mFileRecipient = user.Id;
+      Intent i;
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+        i = new Intent();
+        i.setAction(Intent.ACTION_GET_CONTENT);
+        i.setType("*/*");
+      } else {
+        i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        i.setType("*/*");
+      }
+      startActivityForResult(i, FILE_CODE);
+    }
+    else if (intent.getAction().equals(ACTION_HANG_UP)) {
       User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
       if (mAdditionalPeers.containsKey(user.Id)) {
         mAdditionalPeers.get(user.Id).getRemoteViews().setId("");
@@ -882,25 +1099,77 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         mAdditionalPeers.get(user.Id).close();
         mAdditionalPeers.remove(user.Id);
       }
+      else if (mPeerId.equals(user.Id)) {
+        onCallHangUp();
+      }
+    }
+    else if (intent.getAction().equals(ACTION_TOGGLE_VIDEO)) {
+      User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+      boolean enabled = intent.getBooleanExtra(CallActivity.EXTRA_VIDEO_CALL, true);
+
+      if (mAdditionalPeers.containsKey(user.Id)) {
+        mAdditionalPeers.get(user.Id).setVideoEnabled(enabled);
+      }
+      else if (mPeerId.equals(user.Id)) {
+        onToggleVideo();
+      }
+    }
+    else if (intent.getAction().equals(ACTION_TOGGLE_MIC)) {
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+        boolean enabled = intent.getBooleanExtra(CallActivity.EXTRA_MIC_ENABLED, true);
+
+        if (mAdditionalPeers.containsKey(user.Id)) {
+            mAdditionalPeers.get(user.Id).setAudioEnabled(enabled);
+        }
+        else if (mPeerId.equals(user.Id)) {
+            onToggleMic();
+        }
+    }
+    else if (intent.getAction().equals(ACTION_SEND_MESSAGE)) {
+        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+        String messageText = intent.getStringExtra(CallActivity.EXTRA_MESSAGE);
+
+        if (mService != null) {
+
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String time = fmt.format(new Date());
+            mService.sendChatMessage(time, mService.getAccountName(), "Self", messageText, user.Id, mService.getCurrentRoomName());
+        }
     }
     else if (intent.getAction().equals(ACTION_NEW_CALL)) {
-        User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
-        if (intent.hasExtra(WebsocketService.EXTRA_USERACTION)) {
-          if (mConferenceId == null) {
-            SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
-            mConferenceId = mOwnId + "_" + gen.nextSessionId();
+
+        String signaling = intent.getStringExtra(EXTRA_SIGNALING);
+        if (signaling != null) {
+          mSignaling = signaling;
+        }
+
+        if (mSignaling.equals("xmpp")) {
+          mOwnJid = intent.getStringExtra(BroadcastTypes.EXTRA_ACCOUNT_JID);
+          mPeerId = intent.getStringExtra(BroadcastTypes.EXTRA_JID);
+          mPeerName = mPeerId;
+
+          initiator = true;
+          signalingParameters = new SignalingParameters(WebsocketService.getIceServers(), initiator, "", "", "", null, null);
+        }
+        else {
+          User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
+          if (intent.hasExtra(WebsocketService.EXTRA_USERACTION)) {
+            if (mConferenceId == null) {
+              SessionIdentifierGenerator gen = new SessionIdentifierGenerator();
+              mConferenceId = mOwnId + "_" + gen.nextSessionId();
+            }
           }
-        }
 
-        if (mPeerId.length() == 0) {
-          callUser(user);
-        }
-        else if (!mPeerId.equals(user.Id)){ // don't call if already in call
-          AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
-                  localRender, getRemoteRenderScreen(user.Id, user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), "", peerConnectionClient.getPeerConnectionFactory());
+          if (mPeerId.length() == 0) {
+            callUser(user);
+          } else if (!mPeerId.equals(user.Id)) { // don't call if already in call
+            AdditionalPeerConnection additionalPeerConnection = new AdditionalPeerConnection(this, this, this, true, user.Id, WebsocketService.getIceServers(), peerConnectionParameters, rootEglBase,
+                    localRender, getRemoteRenderScreen(user.Id, user.displayName, getUrl(user.buddyPicture)), peerConnectionClient.getMediaStream(), "", peerConnectionClient.getPeerConnectionFactory());
 
-          mAdditionalPeers.put(user.Id, additionalPeerConnection);
-          updateVideoView();
+            mAdditionalPeers.put(user.Id, additionalPeerConnection);
+            updateVideoView();
+          }
         }
     }
     else if (intent.getAction().equals(WebsocketService.ACTION_ADD_ALL_CONFERENCE)) {
@@ -982,7 +1251,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
       String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
 
-      if (token.length() != 0) {
+      if (token != null && token.length() != 0) {
         if (mTokenPeers.containsKey(candidate.from)) {
           IceCandidate ic = new IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
           mTokenPeers.get(candidate.from).addRemoteIceCandidate(ic);
@@ -1002,8 +1271,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       String token = intent.getStringExtra(WebsocketService.EXTRA_TOKEN);
       String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
       String conferenceId = intent.getStringExtra(WebsocketService.EXTRA_CONFERENCE_ID);
+      String signaling = intent.getStringExtra(EXTRA_SIGNALING);
+      String ownJid = intent.getStringExtra(BroadcastTypes.EXTRA_ACCOUNT_JID);
+      mSid = intent.getStringExtra(BroadcastTypes.EXTRA_SID);
       User user = (User)intent.getSerializableExtra(WebsocketService.EXTRA_USER);
-      if (mConferenceId == null && conferenceId.length() != 0) {
+      if (mConferenceId == null && conferenceId != null && conferenceId.length() != 0) {
         mConferenceId = conferenceId;
       }
       /*else if (conferenceId != null && mConferenceId != null && !mConferenceId.equals(conferenceId)) {
@@ -1011,7 +1283,15 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         return;
       }*/
 
-      if (token.length() != 0) {
+      if (ownJid != null) {
+        mOwnJid = ownJid;
+      }
+
+      if (signaling != null && signaling.equals("xmpp")) {
+        mSignaling = signaling;
+      }
+
+      if (token != null && token.length() != 0) {
         if (mTokenPeers.containsKey(sdp.from)) {
           mTokenPeers.get(sdp.from).setRemoteDescription(new SessionDescription(sdp.type, sdp.description));
         }
@@ -1082,15 +1362,6 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
   }
 
-  @Override
-  public void onActivityResult(int requestCode, int resultCode, Intent data) {
-    /*if (requestCode != CAPTURE_PERMISSION_REQUEST_CODE)
-      return;
-    mediaProjectionPermissionResultCode = resultCode;
-    mediaProjectionPermissionResultData = data;
-    startCall();*/
-  }
-
   private boolean useCamera2() {
     return Camera2Enumerator.isSupported(this) && mUseCamera2;
   }
@@ -1141,7 +1412,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (peerConnectionClient != null && !screencaptureEnabled) {
       peerConnectionClient.stopVideoSource();
     }
-    cpuMonitor.pause();
+    //cpuMonitor.pause();
   }
 
   @Override
@@ -1152,7 +1423,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (peerConnectionClient != null && !screencaptureEnabled && !disconnected) {
       peerConnectionClient.startVideoSource();
     }
-    cpuMonitor.resume();
+    //cpuMonitor.resume();
   }
 
   @Override
@@ -1164,7 +1435,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       logToast.cancel();
     }
     activityRunning = false;
-    rootEglBase.release();
+    if (disconnected || mFinishCalled) {
+      rootEglBase.release();
+      rootEglBase = null;
+    }
+
+
+
     super.onDestroy();
   }
 
@@ -1261,6 +1538,33 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     return userListShown;
   }
 
+  public void showChatMessages(User user) {
+
+    if (!chatFragment.isAdded()) {
+      // Show in call fragment
+      android.support.v4.app.FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+      ft.add(R.id.chat_fragment_container, chatFragment);
+      ft.commit();
+    }
+
+    chatFragment.setAvatarUrl(mService.getAvatarUrl());
+    chatFragment.setUser(user);
+    chatFragment.viewChat(user.Id);
+
+  }
+
+    @Override
+    public void showChatMessages(String roomName, String fromId, User user) {
+
+      if (!chatFragment.isAdded()) {
+        // Show in call fragment
+        android.support.v4.app.FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.add(R.id.chat_fragment_container, chatFragment);
+        ft.commit();
+      }
+
+    }
+
   // Helper functions.
   private void toggleCallControlFragmentVisibility() {
 
@@ -1315,7 +1619,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         }
 
         screenshareRenderLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
-        screenshareFrontIndex = ((ViewGroup)screenshareRenderLayout.getParent()).indexOfChild(screenshareRenderLayout);
+          if (screenshareFrontIndex == 0) {
+              screenshareFrontIndex = ((ViewGroup) screenshareRenderLayout.getParent()).indexOfChild(screenshareRenderLayout);
+          }
         sendToBack(screenshareRenderLayout);
       }
       else {
@@ -1442,7 +1748,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
     // Create and audio manager that will take care of audio routing,
     // audio modes, audio device enumeration etc.
-    audioManager = AppRTCAudioManager.create(this);
+    audioManager = AppRTCAudioManager.create(getApplicationContext());
     // Store existing audio settings and change audio mode to
     // MODE_IN_COMMUNICATION for best possible VoIP performance.
     Log.d(TAG, "Starting the audio manager...");
@@ -1504,6 +1810,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   private void disconnect() {
 
     if (!disconnected) {
+      // Gets an instance of the NotificationManager service
+      NotificationManager mNotifyMgr =
+              (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+      mNotifyMgr.cancel(1001);
+
       disconnected = true; // only call disconnect once per activity
       activityRunning = false;
       if (mService != null) {
@@ -1853,6 +2164,20 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
   }
 
   @Override
+  public void onBackPressed() {
+    if (chatFragment.isAdded()) {
+      // Show in call fragment
+      android.support.v4.app.FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+      ft.remove(chatFragment);
+      ft.commit();
+
+    }
+    else {
+      super.onBackPressed();
+    }
+  }
+
+  @Override
   public void onBye(final String reason, String fromId, String roomName) {
 
     runOnUiThread(new Runnable() {
@@ -2124,6 +2449,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     if (token.length() != 0) {
       mTokenPeers.put(user.Id, additionalPeerConnection);
       screenshareRenderLayout.setVisibility(View.VISIBLE);
+      screenshareRender.setVisibility(View.VISIBLE);
     }
     else {
       mAdditionalPeers.put(user.Id, additionalPeerConnection);
@@ -2138,7 +2464,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       public void run() {
         logAndToast("ICE disconnected");
         iceConnected = false;
-        disconnect();
+        //disconnect();
       }
     });
   }
@@ -2207,7 +2533,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     mAnswerPressed = true;
 
     if (mLocalSdp != null) {
-      if (mService != null) {
+      if (mService != null && mSignaling.equals("spreed")) {
         mService.sendAnswerSdp(mLocalSdp, to);
         for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
           SerializableIceCandidate candidate = entry.getValue();
@@ -2216,20 +2542,67 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         mIceCandidates.clear();
         mSentAnswer = true;
       }
+      else if (mSignaling.equals("xmpp")) {
+        SerializableSessionDescription sdp = new SerializableSessionDescription(mLocalSdp.type, mLocalSdp.description, "");
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_SEND_SESSION_DESCRIPTION);
+        broadcastIntent.putExtra(BroadcastTypes.EXTRA_REMOTE_DESCRIPTION, sdp);
+        broadcastIntent.putExtra(BroadcastTypes.EXTRA_JID, mPeerId);
+        broadcastIntent.putExtra(BroadcastTypes.EXTRA_ACCOUNT_JID, mOwnJid);
+        broadcastIntent.putExtra(BroadcastTypes.EXTRA_SID, mSid);
+        broadcastIntent.putExtra(EXTRA_SIGNALING, "xmpp");
+        ArrayList<SerializableIceCandidate> candidates = new ArrayList<SerializableIceCandidate>();
+        for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
+          SerializableIceCandidate candidate = entry.getValue();
+          candidates.add(candidate);
+        }
+        broadcastIntent.putExtra(EXTRA_CANDIDATES, candidates);
+        sendBroadcast(broadcastIntent);
+        mIceCandidates.clear();
+        mSentAnswer = true;
+      }
     }
   }
 
   void StartCall(String to) {
-    if (mService == null) {
+    if (mSignaling.equals("spreed")) {
+      if (mService == null) {
         return;
-    }
+      }
 
-    mService.sendOfferSdp(mLocalSdp, to);
-    for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
-      SerializableIceCandidate candidate = entry.getValue();
-      mService.sendLocalIceCandidate(candidate, mToken, mSdpId, mPeerId);
+
+      if (mConferenceId != null) {
+        // send the conference invites
+        mService.sendConferenceOfferSdp(mLocalSdp, to, mConferenceId);
+      } else {
+        mService.sendOfferSdp(mLocalSdp, to);
+      }
+
+      for (HashMap.Entry<String, SerializableIceCandidate> entry : mIceCandidates.entrySet()) {
+        SerializableIceCandidate candidate = entry.getValue();
+        mService.sendLocalIceCandidate(candidate, mToken, mSdpId, mPeerId);
+      }
+      mIceCandidates.clear();
     }
-    mIceCandidates.clear();
+    else if (mSignaling.equals("xmpp")) {
+      SerializableSessionDescription sdp = new SerializableSessionDescription(mLocalSdp.type, mLocalSdp.description, "");
+      Intent broadcastIntent = new Intent();
+      broadcastIntent.setAction(ACTION_SEND_SESSION_DESCRIPTION);
+      broadcastIntent.putExtra(BroadcastTypes.EXTRA_REMOTE_DESCRIPTION, sdp);
+      broadcastIntent.putExtra(BroadcastTypes.EXTRA_JID, mPeerId);
+      broadcastIntent.putExtra(BroadcastTypes.EXTRA_ACCOUNT_JID, mOwnJid);
+      broadcastIntent.putExtra(BroadcastTypes.EXTRA_SID, mSid);
+      broadcastIntent.putExtra(EXTRA_SIGNALING, "xmpp");
+      ArrayList<SerializableIceCandidate> candidates = new ArrayList<SerializableIceCandidate>();
+      for (HashMap.Entry<String, SerializableIceCandidate> entry: mIceCandidates.entrySet()) {
+        SerializableIceCandidate candidate = entry.getValue();
+        candidates.add(candidate);
+      }
+      broadcastIntent.putExtra(EXTRA_CANDIDATES, candidates);
+      sendBroadcast(broadcastIntent);
+      mIceCandidates.clear();
+      mSentAnswer = true;
+    }
   }
 
   public String getPeerId() {
@@ -2240,6 +2613,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     mService.sendBye(mPeerId);
     if (!mFinishCalled) {
       mFinishCalled = true;
+      disconnect();
       finish();
     }
   }
@@ -2582,6 +2956,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
           mTokenPeers.get(remoteId).close();
           mTokenPeers.remove(remoteId);
           screenshareRenderLayout.setVisibility(View.GONE);
+          if (screenshareRender != null) {
+            screenshareRender.setVisibility(View.GONE);
+          }
           updateVideoView();
         }
       }
