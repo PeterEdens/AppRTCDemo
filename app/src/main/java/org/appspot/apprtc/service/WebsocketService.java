@@ -295,6 +295,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
             }
 
             ChatItem item = new ChatItem(time, displayName, fileInfo, buddyPicture, to);
+            item.setOutgoing();
             mMessages.get(roomName).add(item);
         }
     }

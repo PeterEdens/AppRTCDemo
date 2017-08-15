@@ -25,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 
 import org.appspot.apprtc.CallActivity;
+import org.appspot.apprtc.CallFragment;
 import org.appspot.apprtc.InCallUsersAdapter;
 import org.appspot.apprtc.R;
 import org.appspot.apprtc.RoomActivity;
@@ -57,7 +59,7 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
     private View controlView;
     private TextView contactView;
 
-    private OnUserEvents callEvents;
+    private CallFragment.OnCallEvents callEvents;
     private Context mContext;
     private WeakReference<CallActivity> parentActivity;
     private String mOwnId;
@@ -74,6 +76,8 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
     private LinearLayout roomEmptyLayout;
     private String mRoomName;
     private InCallUsersAdapter.InCallUsersAdapterEvents mInstance;
+    private ImageView shareRoom;
+    private FloatingActionButton showUserListButton;
 
     public void init(ArrayList<User> users) {
         if (users != null) {
@@ -205,7 +209,18 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
         recyclerView= (RecyclerView) controlView.findViewById(R.id.recycler_view);
         roomEmptyLayout = (LinearLayout) controlView.findViewById(R.id.room_empty_layout);
         roomEmptyLayout.setVisibility(View.INVISIBLE);
+
+        showUserListButton = (FloatingActionButton) controlView.findViewById(R.id.user_list);
         addUsers();
+
+        showUserListButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean userListsShown = parentActivity.get().showUserList();
+                showUserListButton.setImageResource(userListsShown ? R.drawable.ic_videocam_white_24dp : R.drawable.ic_supervisor_account_white_24dp);
+
+            }
+        });
 
         addUsersButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -219,7 +234,7 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
                 else {
                     // show all users
 
-                    adapter=new InCallUsersAdapter(userList,mContext, mServerName, mOwnId, mInstance);
+                    adapter=new InCallUsersAdapter(userList,mContext, mServerName, mOwnId, mInstance, videoCallEnabled);
                     recyclerView.swapAdapter(adapter, true);
                     if (adapter.getItemCount() == 0) {
                         roomEmptyLayout.setVisibility(View.VISIBLE);
@@ -230,12 +245,38 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
                 }
             }
         });
+
+        shareRoom = (ImageView) controlView.findViewById(R.id.share_room);
+
+        shareRoom.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Class<?> c = null;
+                try {
+                    c = Class.forName(getString(R.string.share_with_activity) );
+                } catch (ClassNotFoundException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                Intent intent = new Intent(mContext, c);
+                intent.setAction(Intent.ACTION_SEND);
+                String link = "https://" + mServerName + "/apps/spreedme";
+                if (mRoomName == null) {
+                    mRoomName = parentActivity.get().getCurrentRoomName();
+                }
+                if (mRoomName.length() != 0 && !mRoomName.equals(getString(R.string.default_room))) {
+                    link += "#" + mRoomName;
+                }
+                intent.putExtra(Intent.EXTRA_TEXT, link);
+                getActivity().startActivity(intent);
+            }
+        });
         return controlView;
     }
 
     void showActiveUsers() {
 
-        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, mInstance);
+        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, mInstance, videoCallEnabled);
         recyclerView.swapAdapter(adapter, true);
         roomEmptyLayout.setVisibility(View.INVISIBLE);
     }
@@ -246,6 +287,12 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
 
         Bundle args = getArguments();
         if (args != null) {
+            if (args.containsKey(RoomActivity.EXTRA_ROOM_NAME)) {
+                mRoomName = args.getString(RoomActivity.EXTRA_ROOM_NAME);
+                if (mRoomName.length() == 0) {
+                    mRoomName = getString(R.string.default_room);
+                }
+            }
 
             if (args.containsKey(WebsocketService.EXTRA_OWN_ID)) {
                 mOwnId = args.getString(WebsocketService.EXTRA_OWN_ID);
@@ -257,10 +304,14 @@ public class CallListFragment extends Fragment implements InCallUsersAdapter.InC
             videoCallEnabled = args.getBoolean(CallActivity.EXTRA_VIDEO_CALL, true);
         }
 
+        if (!videoCallEnabled) {
+            showUserListButton.setVisibility(View.INVISIBLE);
+        }
+
         layoutManager=new LinearLayoutManager(mContext);
         recyclerView.setLayoutManager(layoutManager);
 
-        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, this);
+        adapter=new InCallUsersAdapter(activeUserList,mContext, mServerName, mOwnId, this, videoCallEnabled);
         recyclerView.setAdapter(adapter);
     }
 

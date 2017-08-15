@@ -419,6 +419,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   }
 
+  public String getCurrentRoomName() {
+    if (mService != null) {
+      return mService.getCurrentRoomName();
+    }
+    return "";
+  }
+
   public class RemoteConnection {
     SerializableSessionDescription sdp;
     User user;
@@ -569,7 +576,13 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         User user = (User) intent.getSerializableExtra(WebsocketService.EXTRA_USER);
         String id = intent.getStringExtra(WebsocketService.EXTRA_ID);
         if (user != null) {
-            user.setCallState(User.CallState.NONE);
+          ArrayList<User> users = getUsers();
+          for (User u: users) {
+            if (u.Id.equals(user.Id)) {
+              u.setCallState(User.CallState.NONE);
+              break;
+            }
+          }
         }
 
         if (mAdditionalPeers.containsKey(id)) {
@@ -961,6 +974,17 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   private void AddRunningIntent() {
     String notificationText = String.format(getString(R.string.in_call_with), mPeerName);
+
+    if (mAdditionalPeers.size() != 0) {
+      String users = "";
+      for (RemoteConnectionViews rc: remoteViewsInUseList) {
+          if (users.length() != 0) {
+              users += " " + getString(R.string.and) + " ";
+          }
+          users +=  rc.getTextView().getText();
+      }
+      notificationText = String.format(getString(R.string.in_conference_with), users);
+    }
     NotificationCompat.Builder mBuilder =
             new NotificationCompat.Builder(this)
                     .setSmallIcon(mVideoCallEnabled ? R.drawable.ic_videocam_white_24dp : R.drawable.ic_call_white_48dp)
@@ -1548,6 +1572,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     }
 
     chatFragment.setAvatarUrl(mService.getAvatarUrl());
+      Bundle args = chatFragment.getArguments();
+      args.putSerializable(WebsocketService.EXTRA_USER, user);
+      chatFragment.setArguments(args);
     chatFragment.setUser(user);
     chatFragment.viewChat(user.Id);
 
@@ -2929,6 +2956,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
         @Override
         public void run() {
           callListFragment.updateUserState(User.CallState.CONNECTED, remoteId);
+          AddRunningIntent();
         }
       });
 

@@ -284,4 +284,6 @@
     <string name="accept">Accept</string>
     <string name="unknown">Unknown</string>
     <string name="in_call_with">In call with %1$s</string>
+    <string name="in_conference_with">Conference with %1$s</string>
+    <string name="and">and</string>
 </resources>

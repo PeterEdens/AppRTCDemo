@@ -612,6 +612,7 @@ public class ConnectActivity extends DrawerActivity {
   public void onResume() {
     super.onResume();
 
+    ArrayList<String> oldList = roomList;
     roomList = new ArrayList<String>();
     String roomListJson = sharedPref.getString(keyprefRoomList, null);
     if (roomListJson != null) {
@@ -624,6 +625,16 @@ public class ConnectActivity extends DrawerActivity {
         Log.e(TAG, "Failed to load room list: " + e.toString());
       }
     }
+
+    // did we add a room while paused?
+    if (oldList != null) {
+      for (String room : oldList) {
+        if (!roomList.contains(room)) {
+          roomList.add(room);
+        }
+      }
+    }
+
     adapter = new RoomAdapter(this, R.id.text_id, R.layout.rooms_list, roomList);
     if (mConnectionState == ConnectionState.CONNECTED) {
       adapter.setCurrentRoom(mCurrentRoom);

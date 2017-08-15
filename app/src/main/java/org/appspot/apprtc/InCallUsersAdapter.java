@@ -43,6 +43,7 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
 
     private final String mOwnId;
     private final InCallUsersAdapterEvents mEvents;
+    private final boolean videoCallEnabled;
     String mServer = "";
     ArrayList<User> userList;
     Context mContext;
@@ -57,12 +58,13 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
         void onSendMessage(User user);
     }
 
-    public InCallUsersAdapter(ArrayList<User> userList, Context context, String server, String ownId, InCallUsersAdapterEvents events) {
+    public InCallUsersAdapter(ArrayList<User> userList, Context context, String server, String ownId, InCallUsersAdapterEvents events, boolean videoCallEnabled) {
         this.userList = userList;
         mServer = server;
         mContext = context;
         mOwnId = ownId;
         mEvents = events;
+        this.videoCallEnabled = videoCallEnabled;
     }
 
     @Override
@@ -118,7 +120,9 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
 
         if (user.getCallState() == User.CallState.NONE) {
             holder.actionImage.setImageResource(R.drawable.ic_add_white_24dp);
-            holder.hangup_button.setVisibility(View.INVISIBLE);
+            if (holder.hangup_button != null) {
+                holder.hangup_button.setVisibility(View.INVISIBLE);
+            }
             holder.actionImage.setVisibility(View.VISIBLE);
             holder.connecting.setVisibility(View.INVISIBLE);
             if (holder.time != null) {
@@ -128,13 +132,17 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
         }
         else if (user.getCallState() == User.CallState.CALLING) {
             holder.actionImage.setVisibility(View.INVISIBLE);
-            holder.hangup_button.setVisibility(View.INVISIBLE);
+            if (holder.hangup_button != null) {
+                holder.hangup_button.setVisibility(View.INVISIBLE);
+            }
             holder.connecting.setVisibility(View.VISIBLE);
             holder.time.setVisibility(View.INVISIBLE);
             holder.toggleTimer(false);
         }
         else if (user.getCallState() == User.CallState.CONNECTED) {
-            holder.hangup_button.setVisibility(View.VISIBLE);
+            if (holder.hangup_button != null) {
+                holder.hangup_button.setVisibility(View.VISIBLE);
+            }
             holder.actionImage.setVisibility(View.INVISIBLE);
             holder.connecting.setVisibility(View.INVISIBLE);
             holder.time.setVisibility(View.VISIBLE);
@@ -146,6 +154,14 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
             holder.actionImage.setVisibility(View.VISIBLE);
             holder.connecting.setVisibility(View.INVISIBLE);
             holder.toggleTimer(false);
+        }
+
+        if (holder.toggleVideo_button != null) {
+            if (!videoCallEnabled) {
+                holder.toggleVideo_button.setVisibility(View.GONE);
+            } else {
+                holder.toggleVideo_button.setVisibility(View.VISIBLE);
+            }
         }
 
         holder.user = user;
@@ -240,115 +256,68 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
             sendMessage_button = (ImageView) itemView.findViewById(R.id.button_send_message);
             shareFile_button = (ImageView) itemView.findViewById(R.id.button_send_file);
 
-            shareFile_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Intent intent = new Intent(view.getContext(), CallActivity.class);
-                    intent.setAction(RoomActivity.ACTION_SHARE_FILE);
-                    intent.putExtra(WebsocketService.EXTRA_USER, user);
-                    view.getContext().startActivity(intent);
-                }
-            });
-
-            toggleVideo_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    videoEnabled = !videoEnabled;
-
-                    // toggle video
-                    Intent intent = new Intent(view.getContext(), CallActivity.class);
-                    intent.setAction(CallActivity.ACTION_TOGGLE_VIDEO);
-                    intent.putExtra(WebsocketService.EXTRA_USER, user);
-                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
-                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-                    intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, videoEnabled);
-                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    view.getContext().startActivity(intent);
-                    toggleVideo_button.setImageResource(videoEnabled ? R.drawable.ic_visibility_white_24dp : R.drawable.ic_visibility_off_white_24dp);
-                }
-            });
-
-            toggleMic_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    micEnabled = !micEnabled;
-
-                    // toggle video
-                    Intent intent = new Intent(view.getContext(), CallActivity.class);
-                    intent.setAction(CallActivity.ACTION_TOGGLE_MIC);
-                    intent.putExtra(WebsocketService.EXTRA_USER, user);
-                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
-                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-                    intent.putExtra(CallActivity.EXTRA_MIC_ENABLED, micEnabled);
-                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    view.getContext().startActivity(intent);
-                    toggleMic_button.setImageResource(micEnabled ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
-                }
-            });
-
-            hangup_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-
-                    // hang up
-                    Intent intent = new Intent(view.getContext(), CallActivity.class);
-                    intent.setAction(CallActivity.ACTION_HANG_UP);
-                    intent.putExtra(WebsocketService.EXTRA_USER, user);
-                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
-                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    view.getContext().startActivity(intent);
-                }
-            });
-
-            sendMessage_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    mEvents.onSendMessage(user);
-                    /*final Context context = view.getContext();
-                    AlertDialog.Builder alert = new AlertDialog.Builder(view.getContext());
-                    final EditText edittext = new EditText(view.getContext());
-                    alert.setMessage(view.getContext().getString(R.string.send_message));
-                    alert.setTitle(R.string.spreed_talk);
-
-                    alert.setView(edittext);
-
-                    alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            String messageText = edittext.getText().toString();
-                            //
-                            Intent intent = new Intent(context, CallActivity.class);
-                            intent.setAction(CallActivity.ACTION_SEND_MESSAGE);
-                            intent.putExtra(WebsocketService.EXTRA_USER, user);
-                            intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
-                            intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-                            intent.putExtra(CallActivity.EXTRA_MESSAGE, messageText);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
-
-                        }
-                    });
-
-                    alert.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int whichButton) {
-                            // what ever you want to do with No option.
-                        }
-                    });
-
-                    alert.show();*/
-
-                }
-            });
-
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (user.getCallState() == User.CallState.NONE) {
+            if (shareFile_button != null) {
+                shareFile_button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
                         Intent intent = new Intent(view.getContext(), CallActivity.class);
-                        intent.setAction(CallActivity.ACTION_NEW_CALL);
+                        intent.setAction(RoomActivity.ACTION_SHARE_FILE);
+                        intent.putExtra(WebsocketService.EXTRA_USER, user);
+                        view.getContext().startActivity(intent);
+                    }
+                });
+            }
+
+            if (toggleVideo_button != null) {
+                toggleVideo_button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        videoEnabled = !videoEnabled;
+
+                        // toggle video
+                        Intent intent = new Intent(view.getContext(), CallActivity.class);
+                        intent.setAction(CallActivity.ACTION_TOGGLE_VIDEO);
+                        intent.putExtra(WebsocketService.EXTRA_USER, user);
+                        intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                        intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                        intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, videoEnabled);
+                        intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        view.getContext().startActivity(intent);
+                        toggleVideo_button.setImageResource(videoEnabled ? R.drawable.ic_visibility_white_24dp : R.drawable.ic_visibility_off_white_24dp);
+                    }
+                });
+            }
+
+            if (toggleMic_button != null) {
+                toggleMic_button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        micEnabled = !micEnabled;
+
+                        // toggle video
+                        Intent intent = new Intent(view.getContext(), CallActivity.class);
+                        intent.setAction(CallActivity.ACTION_TOGGLE_MIC);
+                        intent.putExtra(WebsocketService.EXTRA_USER, user);
+                        intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                        intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                        intent.putExtra(CallActivity.EXTRA_MIC_ENABLED, micEnabled);
+                        intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        view.getContext().startActivity(intent);
+                        toggleMic_button.setImageResource(micEnabled ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
+                    }
+                });
+            }
+
+            if (hangup_button != null) {
+                hangup_button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+                        // hang up
+                        Intent intent = new Intent(view.getContext(), CallActivity.class);
+                        intent.setAction(CallActivity.ACTION_HANG_UP);
                         intent.putExtra(WebsocketService.EXTRA_USER, user);
                         intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
                         intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
@@ -356,17 +325,31 @@ public class InCallUsersAdapter extends RecyclerView.Adapter<InCallUsersAdapter.
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         view.getContext().startActivity(intent);
                     }
-                    else {
-                        // hang up
-                        /*Intent intent = new Intent(view.getContext(), CallActivity.class);
-                        intent.setAction(CallActivity.ACTION_HANG_UP);
-                        intent.putExtra(WebsocketService.EXTRA_USER, user);
-                        intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
-                        intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
-                        intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        view.getContext().startActivity(intent);*/
+                });
+            }
+
+            if (sendMessage_button != null) {
+                sendMessage_button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        mEvents.onSendMessage(user);
+
                     }
+                });
+            }
+
+            actionImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(view.getContext(), CallActivity.class);
+                    intent.setAction(CallActivity.ACTION_NEW_CALL);
+                    intent.putExtra(WebsocketService.EXTRA_USER, user);
+                    intent.putExtra(WebsocketService.EXTRA_OWN_ID, mOwnId);
+                    intent.putExtra(WebsocketService.EXTRA_ID, user.Id);
+                    intent.putExtra(WebsocketService.EXTRA_USERACTION, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    view.getContext().startActivity(intent);
+
                 }
             });
 
