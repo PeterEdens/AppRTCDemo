@@ -45,6 +45,7 @@ import java.util.TimeZone;
 import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
 import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_ACCOUNT_NAME;
 import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_PRESENCE;
+import static com.example.sharedresourceslib.BroadcastTypes.EXTRA_SID;
 import static org.appspot.apprtc.RoomActivity.ACTION_VIEW_CHAT;
 import static org.appspot.apprtc.RoomActivity.EXTRA_TO;
 
@@ -71,6 +72,7 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     public static final String EXTRA_TIME = "org.appspot.apprtc.service.EXTRA_TIME";
     public static final String EXTRA_STATUS = "org.appspot.apprtc.service.EXTRA_STATUS";
     public static final String ACTION_PATCH_RESPONSE = "org.appspot.apprtc.service.ACTION_PATCH_RESPONSE";
+    public static final String ACTION_ID_CHANGED = "org.appspot.apprtc.service.ACTION_ID_CHANGED";
     public static final String ACTION_POST_RESPONSE = "org.appspot.apprtc.service.ACTION_POST_RESPONSE";
     public static final String ACTION_CHAT_MESSAGE = "org.appspot.apprtc.service.ACTION_CHAT_MESSAGE";
     public static final String ACTION_FILE_MESSAGE = "org.appspot.apprtc.service.ACTION_FILE_MESSAGE";
@@ -300,9 +302,9 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
         }
     }
 
-    public void sendPatchMessage(String username, String password, String url) {
+    public void sendPatchMessage(String useridcombo, String secret, String url) {
         if (appRtcClient != null) {
-            appRtcClient.sendPatchMessage(username, password, url);
+            appRtcClient.sendPatchMessage(useridcombo, secret, url);
         }
     }
 
@@ -693,6 +695,16 @@ public class WebsocketService extends Service implements AppRTCClient.SignalingE
     @Override
     public void onRemoteIceCandidatesRemoved(SerializableIceCandidate[] candidates) {
 
+    }
+
+    @Override
+    public void onIdChanged(String id, String sid) {
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(ACTION_ID_CHANGED);
+        broadcastIntent.putExtra(EXTRA_ID, id);
+        broadcastIntent.putExtra(EXTRA_SID, sid);
+        sendBroadcast(broadcastIntent);
     }
 
     @Override

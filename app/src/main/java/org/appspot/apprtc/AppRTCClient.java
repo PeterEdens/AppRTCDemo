@@ -208,6 +208,8 @@ public interface AppRTCClient {
 
     void onSelf();
 
+    void onIdChanged(String id, String sid);
+
     void onTurnTtl(int ttl);
 
       void onConferenceUser(String roomName, String conferenceId, String id);

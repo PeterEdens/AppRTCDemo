@@ -74,6 +74,7 @@ import org.json.JSONObject;
 import javax.net.ssl.HttpsURLConnection;
 
 import static com.example.sharedresourceslib.BroadcastTypes.ACTION_PRESENCE_CHANGED;
+import static org.appspot.apprtc.service.WebsocketService.ACTION_ID_CHANGED;
 
 
 /**
@@ -154,7 +155,7 @@ public class ConnectActivity extends DrawerActivity {
 
       if (!mService.getIsConnected()) {
         if (!mConnectManual) {
-          mService.connectToServer(mServerName, mCurrentRoom);
+          getToken();
         }
       }
       else {
@@ -173,8 +174,21 @@ public class ConnectActivity extends DrawerActivity {
     }
   };
 
+  private void getToken() {
+
+    Account account = getCurrentOwnCloudAccount(this);
+    if (account != null) {
+      AccountManager accountMgr = AccountManager.get(this);
+      String serverUrl = accountMgr.getUserData(account, "oc_base_url");
+      String username = account.name.substring(0, account.name.indexOf('@'));
+      String password = accountMgr.getPassword(account);
+      mService.sendPostMessage(username, password, serverUrl + "/index.php/apps/spreedme/api/v1/user/token");
+    }
+  }
+
   private void onConnected() {
 
+    // login using credentials
     adapter.setCurrentRoom(mCurrentRoom);
     adapter.notifyDataSetChanged();
     mReconnectHandler.removeMessages(1);
@@ -239,12 +253,15 @@ public class ConnectActivity extends DrawerActivity {
 
     // try to reconnect
     if (!mConnectManual && mConnectionState == ConnectionState.DISCONNECTED) {
-      mService.connectToServer(mServerName, mCurrentRoom);
+      getToken();
     }
 
   }
 
   private boolean mConnectedToRoom;
+  private String mUseridCombo;
+  private String mSecret;
+
   private BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -297,8 +314,19 @@ public class ConnectActivity extends DrawerActivity {
       else if (intent.getAction().equals(WebsocketService.ACTION_POST_RESPONSE)) {
         String response = intent.getStringExtra(WebsocketService.EXTRA_RESPONSE);
         if (response.length() != 0) {
-
+          try {
+            JSONObject responseJson = new JSONObject(response);
+            mUseridCombo = responseJson.optString("useridcombo");
+            mSecret = responseJson.optString("secret");
+          } catch (JSONException e) {
+            e.printStackTrace();
+          }
+          mService.connectToServer(mServerName, mCurrentRoom);
         }
+      }
+      else if (intent.getAction().equals(ACTION_ID_CHANGED)) {
+
+        mService.sendPatchMessage(mUseridCombo, mSecret, "https://" + mServerName + "/webrtc/api/v1/sessions/");
       }
       else if (intent.getAction().equals(WebsocketService.ACTION_PATCH_RESPONSE)) {
         String response = intent.getStringExtra(WebsocketService.EXTRA_RESPONSE);
@@ -457,7 +485,7 @@ public class ConnectActivity extends DrawerActivity {
           mConnectedImage.setImageResource(R.drawable.ic_cancel_white_48dp);
         }
         else {
-          mService.connectToServer(mServerName, mCurrentRoom);
+          getToken();
           mConnectedImage.setImageResource(R.drawable.ic_lock_white_48dp);
           mConnectedImage.setVisibility(View.INVISIBLE);
           mConnectingProgress.setVisibility(View.VISIBLE);
@@ -475,6 +503,7 @@ public class ConnectActivity extends DrawerActivity {
     mIntentFilter.addAction(WebsocketService.ACTION_FILE_MESSAGE);
     mIntentFilter.addAction(WebsocketService.ACTION_ERROR);
     mIntentFilter.addAction(ACTION_PRESENCE_CHANGED);
+    mIntentFilter.addAction(ACTION_ID_CHANGED);
 
     // If an implicit VIEW intent is launching the app, go directly to that URL.
     final Intent intent = getIntent();
@@ -486,25 +515,26 @@ public class ConnectActivity extends DrawerActivity {
       String serverUrl = accountMgr.getUserData(account, "oc_base_url");
       mDisplayName = accountMgr.getUserData(account, "oc_display_name");
 
-      String name = account.name.substring(0, account.name.indexOf('@'));
-      int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
-      String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
-      Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
-      mCurrentRoom = sharedPref.getString(keyprefRoom, "");
+      if (serverUrl != null) {
+        String name = account.name.substring(0, account.name.indexOf('@'));
+        int size = getResources().getDimensionPixelSize(R.dimen.file_avatar_size);
+        String url = serverUrl + "/index.php/avatar/" + name + "/" + size;
+        Bitmap avatar = ThumbnailsCacheManager.getBitmapFromDiskCache(url);
+        mCurrentRoom = sharedPref.getString(keyprefRoom, "");
 
-      if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME) &&
-              savedInstanceState == null) {
-        mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
-        mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
-        sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
-        mRoomLocked = false;
-        mWaitingToEnterRoom = true;
-      }
-      else {
-        mServerName = serverUrl;
+        if (intent.hasExtra(RoomActivity.EXTRA_SERVER_NAME) && intent.hasExtra(RoomActivity.EXTRA_ROOM_NAME) &&
+                savedInstanceState == null) {
+          mServerName = intent.getStringExtra(RoomActivity.EXTRA_SERVER_NAME);
+          mCurrentRoom = intent.getStringExtra(RoomActivity.EXTRA_ROOM_NAME);
+          sharedPref.edit().putString(keyprefRoom, mCurrentRoom).commit();
+          mRoomLocked = false;
+          mWaitingToEnterRoom = true;
+        } else {
+          mServerName = serverUrl;
 
-        if (mServerName.startsWith("https://")) {
-          mServerName = mServerName.substring(8);
+          if (mServerName.startsWith("https://")) {
+            mServerName = mServerName.substring(8);
+          }
         }
       }
     }

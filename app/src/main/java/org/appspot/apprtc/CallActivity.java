@@ -649,7 +649,9 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
     remoteViewsList.add(remoteViews);
 
     updateVideoView();
-    Log.i(TAG, "remove view " + remoteViews.getName());
+    if (remoteViews != null) {
+      Log.i(TAG, "remove view " + remoteViews.getName());
+    }
   }
 
   private String mToken;
@@ -2026,7 +2028,7 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
       videoCapturer = createVideoCapturer();
     }
 
-    if (peerConnectionClient != null) {
+    if (peerConnectionClient != null && rootEglBase != null) {
       peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
               remoteRenderers, videoCapturer, signalingParameters);
 
@@ -2263,6 +2265,11 @@ public class CallActivity extends AppCompatActivity implements AppRTCClient.Sign
 
   @Override
   public void onSelf() {
+
+  }
+
+  @Override
+  public void onIdChanged(String id, String sid) {
 
   }
 

@@ -26,6 +26,12 @@ import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import com.androidnetworking.AndroidNetworking;
+import com.androidnetworking.common.Priority;
+import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.JSONArrayRequestListener;
+import com.androidnetworking.interfaces.StringRequestListener;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -245,13 +251,15 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   @Override
   public void sendPostMessage(String username, String password, String url) {
-    String message = "Basic " + Base64.encode(new String(username + ":" + password).getBytes(), Base64.NO_WRAP).toString();
+    String message = "basic " + Base64.encodeToString(new String(username + ":" + password).getBytes(), Base64.NO_WRAP);
+    String orig = new String(Base64.decode(Base64.encodeToString(new String(username + ":" + password).getBytes(), Base64.NO_WRAP).getBytes(), Base64.NO_WRAP));
 
     AsyncHttpURLConnection httpConnection =
             new AsyncHttpURLConnection("GET", url, "", new AsyncHttpEvents() {
               @Override
               public void onHttpError(String errorMessage) {
                 reportError("GAE POST error: " + errorMessage);
+                events.onChannelClose();
               }
 
               @Override
@@ -321,7 +329,9 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         jsonPut(jsonRoom, "Hello", json);
         jsonPut(jsonRoom, "Type", "Hello");
 
-        wsClient.send(jsonRoom.toString());
+        if (wsClient != null) {
+          wsClient.send(jsonRoom.toString());
+        }
 
 
 
@@ -915,10 +925,21 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   private void handleSelf(JSONObject json) throws JSONException {
     events.onSelf();
+    boolean changed = false;
+
     String id = json.getString("Id");
+    if (!mId.equals(id)) {
+      changed = true;
+    }
+
     mId = id;
     String sid = json.getString("Sid");
     mSid = sid;
+
+    if (changed) {
+      events.onIdChanged(mId, mSid);
+    }
+
     String turnText = json.optString("Turn");
     if (turnText.length() != 0) {
       JSONObject jsonTurn = new JSONObject(turnText);
@@ -1339,15 +1360,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   @Override
    public void sendPatchMessage(
-           String username, String password, final String url) {
-    long unixTime = (System.currentTimeMillis() / 1000L) + (60 * 60);
-    String useridcombo = unixTime + ":" + username;
+           String useridcombo, String secret, final String url) {
+
     JSONObject json = new JSONObject();
     try {
       json.put("id", mId);
       json.put("sid", mSid);
       json.put("useridcombo", useridcombo);
-      json.put("secret", encode("4f581d554a691d8c082c686af706010b9e2d26306d595c04803304af69e838d8", useridcombo));
+      json.put("secret", secret);
     } catch (JSONException e) {
       e.printStackTrace();
     } catch (Exception e) {
@@ -1356,7 +1376,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
     String requestURL = url + mId + "/";
 
-    AsyncHttpURLConnection httpConnection =
+    /*AsyncHttpURLConnection httpConnection =
             new AsyncHttpURLConnection("PATCH", requestURL, json.toString(), new AsyncHttpEvents() {
               @Override
               public void onHttpError(String errorMessage) {
@@ -1374,7 +1394,24 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
               }
             });
     httpConnection.setContentType("application/json");
-    httpConnection.send();
+    httpConnection.send();*/
+
+    AndroidNetworking.patch(requestURL)
+            .addJSONObjectBody(json) // posting json
+            .build()
+            .getAsString(new StringRequestListener() {
+
+              @Override
+              public void onResponse(String response) {
+                events.onPatchResponse(response);
+              }
+
+              @Override
+              public void onError(ANError error) {
+                reportError("PATCH error: " + error.getMessage());
+              }
+            });
+
   }
 
   // Converts a Java candidate to a JSONObject.

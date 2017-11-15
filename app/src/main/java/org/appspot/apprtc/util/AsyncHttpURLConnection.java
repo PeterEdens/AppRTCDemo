@@ -98,11 +98,13 @@ public class AsyncHttpURLConnection {
   void getCookies(HttpsURLConnection connection) {
 
     Map<String, List<String>> headerFields = connection.getHeaderFields();
-    List<String> cookiesHeader = headerFields.get(COOKIES_HEADER);
+    if (headerFields != null) {
+      List<String> cookiesHeader = headerFields.get(COOKIES_HEADER);
 
-    if (cookiesHeader != null) {
-      for (String cookie : cookiesHeader) {
-        msCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
+      if (cookiesHeader != null) {
+        for (String cookie : cookiesHeader) {
+          msCookieManager.getCookieStore().add(null, HttpCookie.parse(cookie).get(0));
+        }
       }
     }
   }
@@ -159,11 +161,12 @@ public class AsyncHttpURLConnection {
 
     HttpsURLConnection connection = null;
     try {
-      connection = (HttpsURLConnection) new URL(url).openConnection();
+      URL urlObj = new URL(url);
+      connection = (HttpsURLConnection) urlObj.openConnection();
       connection.setSSLSocketFactory(noSSLv3Factory);
 
-      HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier());
-      connection.setHostnameVerifier(new NullHostNameVerifier());
+      HttpsURLConnection.setDefaultHostnameVerifier(new NullHostNameVerifier(urlObj.getHost()));
+      connection.setHostnameVerifier(new NullHostNameVerifier(urlObj.getHost()));
       byte[] postData = new byte[0];
       if (message != null) {
         postData = message.getBytes("UTF-8");
@@ -175,16 +178,23 @@ public class AsyncHttpURLConnection {
                 TextUtils.join(";",  msCookieManager.getCookieStore().getCookies()));
       }
 
-      connection.setRequestMethod(method);
+      /*if (method.equals("PATCH")) {
+        connection.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+        connection.setRequestMethod("POST");
+      }
+      else {*/
+        connection.setRequestMethod(method);
+      //}
+
       if (authorization.length() != 0) {
-        connection.addRequestProperty("Authorization", authorization);
+        connection.setRequestProperty("Authorization", authorization);
       }
       connection.setUseCaches(false);
       connection.setDoInput(true);
       connection.setConnectTimeout(HTTP_TIMEOUT_MS);
       connection.setReadTimeout(HTTP_TIMEOUT_MS);
       // TODO(glaznev) - query request origin from pref_room_server_url_key preferences.
-      connection.addRequestProperty("origin", HTTP_ORIGIN);
+      //connection.addRequestProperty("origin", HTTP_ORIGIN);
       boolean doOutput = false;
       if (method.equals("POST") || method.equals("PATCH")) {
         doOutput = true;
@@ -205,7 +215,13 @@ public class AsyncHttpURLConnection {
       }
 
       // Get response.
-      int responseCode = connection.getResponseCode();
+      int responseCode = 200;
+      try {
+        connection.getResponseCode();
+      }
+      catch (IOException e) {
+
+      }
       getCookies(connection);
       InputStream responseStream;
 
@@ -237,6 +253,9 @@ public class AsyncHttpURLConnection {
         connection.disconnect();
       }
       events.onHttpError("HTTP " + method + " to " + url + " error: " + e.getMessage());
+    }
+    catch (ClassCastException e) {
+      e.printStackTrace();
     }
   }
 
